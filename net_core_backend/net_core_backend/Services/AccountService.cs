@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using BC = BCrypt.Net.BCrypt;
+using static Google.Apis.Auth.GoogleJsonWebSignature;
 
 namespace net_core_backend.Services
 {
@@ -29,85 +30,54 @@ namespace net_core_backend.Services
             this.httpContext = httpContext;
             this.appSettings = appSettings.Value;
         }
-
-
-        public async Task<Users> GetUserDetailsJWT(int id)
-        {
-            if (id == 0) throw new ArgumentException("There is no ID in the JWT Token");
-
-            using (var a = contextFactory.CreateDbContext())
-            {
-                return await a.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
-            }
-        }
-
-        public async Task<VerificationResponse> Login(LoginRequest model)
+        //TODO
+        public async Task<Users> Authenticate(Payload payload)
         {
             using(var a = contextFactory.CreateDbContext())
             {
-                var user = await a.Users.FirstOrDefaultAsync(x => x.Email == model.Email);
+                var user = await a.Users.FirstOrDefaultAsync(x => x.Email == payload.Email);
 
                 if (user == null)
                 {
-                    throw new ArgumentException("This email isn't registered in our system");
+                    user = new Users(
+                        payload.Email,
+                        payload.Name,
+                        payload.Subject,
+                        payload.Issuer);
+
+                    await a.AddAsync(user);
+                    await a.SaveChangesAsync();
                 }
 
-                if(!BC.Verify(model.Password, user.HashedPassword))
-                {
-                    throw new ArgumentException("Invalid password");
-                }
-
-
-                // authentication successful so generate jwt token
-                var token = generateJwtToken(user);
-
-                return new VerificationResponse(user, token);
+                return user;
             }
         }
 
 
 
-        public async Task<VerificationResponse> Register(AddUserRequest requestInfo)
+        public async Task<bool> Register(Payload payload)
         {
             using (var a = contextFactory.CreateDbContext())
             {
                 // Checks for existing
-                if (await a.Users.FirstOrDefaultAsync(x => x.Email == requestInfo.Email) != null)
+                if (await a.Users.FirstOrDefaultAsync(x => x.Email == payload.Email) != null)
                 {
                     throw new ArgumentException("There is already a user with this email in our system");
                 }
 
                 // Creates and adds a user
                 // Hashes and salts password
-                var user = new Users( 
-                    requestInfo.Email, 
-                    requestInfo.FirstName, 
-                    requestInfo.LastName,
-                    BC.HashPassword(requestInfo.Password));
-
-                // Creates a JWT Token for this user
-                var token = generateJwtToken(user);
+                var user = new Users(
+                    payload.Email,
+                    payload.Name, 
+                    payload.Subject,
+                    payload.Issuer);
 
                 await a.AddAsync(user);
                 await a.SaveChangesAsync();
 
-                return new VerificationResponse(user, token);
+                return true;
             }
-        }
-
-        private string generateJwtToken(Users user)
-        {
-            // generate token that is valid for 7 days
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()) }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
         }
     }
 }

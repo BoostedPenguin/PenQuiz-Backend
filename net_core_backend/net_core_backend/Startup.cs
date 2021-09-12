@@ -25,6 +25,7 @@ using net_core_backend.Helpers;
 using WebApi.Helpers;
 using AutoWrapper;
 using net_core_backend.Hubs;
+using System.Text;
 
 namespace net_core_backend
 {
@@ -86,6 +87,23 @@ namespace net_core_backend
                 });
             });
 
+            services.AddAuthentication()
+                .AddJwtBearer(cfg =>
+                {
+                    cfg.RequireHttpsMetadata = false;
+                    cfg.SaveToken = true;
+
+                    cfg.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<char[]>("AppSettings:Secret"))),
+                        ValidateIssuer = false,
+                        ValidateAudience = false
+                    };
+                });
+
+
+
             //services.AddCors(options => options.AddDefaultPolicy(p => p.AllowAnyOrigin()
             //                                    .AllowAnyMethod()
             //                                     .AllowAnyHeader()));
@@ -116,11 +134,11 @@ namespace net_core_backend
             //app.UseHttpsRedirection();
 
 
-            //app.UseAuthentication();
+            app.UseAuthentication();
 
-            //app.UseAuthorization();
+            app.UseAuthorization();
 
-            app.UseMiddleware<JwtMiddleware>();
+            //app.UseMiddleware<JwtMiddleware>();
 
 
             app.UseEndpoints(endpoints =>
