@@ -1,4 +1,5 @@
 ﻿using Google.Apis.Auth;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -18,6 +19,7 @@ using BC = BCrypt.Net.BCrypt;
 namespace net_core_backend.Controllers
 {
     [ApiController]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
@@ -28,6 +30,17 @@ namespace net_core_backend.Controllers
         {
             this.accountService = accountService;
             _appSettings = appSettings.Value;
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> NeedsAuth()
+        {
+            return Ok(new
+            {
+                content = "Requires auth",
+                idk = "But it works",
+            });
         }
 
         [AllowAnonymous]

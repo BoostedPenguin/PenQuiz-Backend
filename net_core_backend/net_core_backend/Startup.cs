@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using net_core_backend.Context;
 using net_core_backend.Models;
@@ -22,8 +21,6 @@ using net_core_backend.Services.Interfaces;
 using net_core_backend.Profiles;
 using Microsoft.OpenApi.Models;
 using net_core_backend.Helpers;
-using WebApi.Helpers;
-using AutoWrapper;
 using net_core_backend.Hubs;
 using System.Text;
 
@@ -67,14 +64,12 @@ namespace net_core_backend
 
             services.AddHttpClient();
 
-            services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
             });
 
-            services.AddSignalR();
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
@@ -87,26 +82,48 @@ namespace net_core_backend
                 });
             });
 
-            services.AddAuthentication()
-                .AddJwtBearer(cfg =>
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                //options.Authority = /* TODO: Insert Authority URL here */;
+
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+
+                options.TokenValidationParameters = new TokenValidationParameters()
                 {
-                    cfg.RequireHttpsMetadata = false;
-                    cfg.SaveToken = true;
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings").GetValue<string>("Secret"))),
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
 
-                    cfg.TokenValidationParameters = new TokenValidationParameters()
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
                     {
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<char[]>("AppSettings:Secret"))),
-                        ValidateIssuer = false,
-                        ValidateAudience = false
-                    };
-                });
+                        var accessToken = context.Request.Query["access_token"];
 
+                        // If the request is for our hub...
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            (path.StartsWithSegments("/chathubs")))
+                        {
+                            // Read the token out of the query string
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
+            });
 
+            services.AddSignalR();
+            services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
-            //services.AddCors(options => options.AddDefaultPolicy(p => p.AllowAnyOrigin()
-            //                                    .AllowAnyMethod()
-            //                                     .AllowAnyHeader()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace net_core_backend.Hubs
     {
         Task ReceiveMessage(string message);
     }
+    [Authorize]
     public class ChatHub : Hub<IChatClient>
     {
         //public async Task SendMessage(string message)
