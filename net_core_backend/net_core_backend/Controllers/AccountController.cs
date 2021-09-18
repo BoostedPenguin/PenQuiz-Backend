@@ -1,6 +1,7 @@
 ﻿using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -32,45 +33,28 @@ namespace net_core_backend.Controllers
             _appSettings = appSettings.Value;
         }
 
-        [Authorize]
         [HttpGet]
-        public async Task<IActionResult> NeedsAuth()
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(new
-            {
-                content = "Requires auth",
-                idk = "But it works",
-            });
+            var users = await accountService.GetUsers();
+            return Ok(users);
         }
 
         [AllowAnonymous]
-        [HttpPost("google")]
-        public async Task<IActionResult> Google([FromBody] UserView userView)
+        [HttpPost("authenticate")]
+        public async Task<IActionResult> Authenticate([FromBody] UserView userView)
         {
             try
             {
                 var payload = GoogleJsonWebSignature.ValidateAsync(userView.TokenId, new GoogleJsonWebSignature.ValidationSettings()).Result;
-                var user = await accountService.Authenticate(payload);
+                var response = await accountService.Authenticate(payload, ipAddress());
 
-                var claims = new[]
-                {
-                    //new Claim(JwtRegisteredClaimNames.Sub, Security.Encrypt(_appSettings.EmailSecret, user.Email)),
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                };
+                if (response == null)
+                    return BadRequest(new { message = "Validation failed." });
 
-                var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_appSettings.Secret));
-                var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                setTokenCookie(response.RefreshToken);
 
-                var token = new JwtSecurityToken(string.Empty,
-                  string.Empty,
-                  claims,
-                  expires: DateTime.Now.AddSeconds(55 * 60),
-                  signingCredentials: creds);
-                return Ok(new
-                {
-                    token = new JwtSecurityTokenHandler().WriteToken(token)
-                });
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -79,5 +63,72 @@ namespace net_core_backend.Controllers
             return BadRequest();
         }
 
+        [AllowAnonymous]
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken()
+        {
+            try
+            {
+                var refreshToken = Request.Cookies["refreshToken"];
+                var response = await accountService.RefreshToken(refreshToken, ipAddress());
+
+                if (response == null)
+                    return Unauthorized(new { message = "Invalid token" });
+
+                setTokenCookie(response.RefreshToken);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                BadRequest(ex.Message);
+            }
+            return BadRequest();
+        }
+
+
+        [HttpPost("revoke-token")]
+        public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenRequest model)
+        {
+            // accept token from request body or cookie
+            var token = model.Token ?? Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrEmpty(token))
+                return BadRequest(new { message = "Token is required" });
+
+            var response = await accountService.RevokeToken(token, ipAddress());
+
+            if (!response)
+                return NotFound(new { message = "Token not found" });
+
+            return Ok(new { message = "Token revoked" });
+        }
+
+        [HttpGet("{id}/refresh-tokens")]
+        public async Task<IActionResult> GetRefreshTokens(int id)
+        {
+            var user = await accountService.GetById(id);
+            if (user == null) return NotFound();
+
+            return Ok(user.RefreshTokens);
+        }
+
+        private void setTokenCookie(string token)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddDays(7)
+            };
+            Response.Cookies.Append("refreshToken", token, cookieOptions);
+        }
+
+        private string ipAddress()
+        {
+            if (Request.Headers.ContainsKey("X-Forwarded-For"))
+                return Request.Headers["X-Forwarded-For"];
+            else
+                return HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+        }
     }
 }

@@ -12,20 +12,17 @@ namespace net_core_backend.Models
         }
 
 
-        public Users(string email, string fName, string lName, string hashedPassword)
+        public Users(string email, string username)
         {
             this.Email = email;
-            this.FirstName = fName;
-            this.LastName = lName;
-            this.HashedPassword = hashedPassword;
+            this.Username = username;
         }
 
         public bool Admin { get; set; }
         public string Email { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string Username { get; set; }
 
         [JsonIgnore]
-        public string HashedPassword { get; set; }
+        public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

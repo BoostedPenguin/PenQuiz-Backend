@@ -32,18 +32,9 @@ namespace net_core_backend.Models
                     .HasColumnName("email")
                     .HasMaxLength(100);
 
-                entity.Property(e => e.FirstName)
+                entity.Property(e => e.Username)
                     .IsRequired()
-                    .HasColumnName("first_name")
-                    .HasMaxLength(50);
-
-                entity.Property(e => e.HashedPassword)
-                    .HasColumnName("hashedPassword")
-                    .HasMaxLength(250);
-
-                entity.Property(e => e.LastName)
-                    .IsRequired()
-                    .HasColumnName("last_name")
+                    .HasColumnName("username")
                     .HasMaxLength(50);
             });
 

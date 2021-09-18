@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BC = BCrypt.Net.BCrypt;
 using static Google.Apis.Auth.GoogleJsonWebSignature;
+using System.Security.Cryptography;
 
 namespace net_core_backend.Services
 {
@@ -30,8 +31,8 @@ namespace net_core_backend.Services
             this.httpContext = httpContext;
             this.appSettings = appSettings.Value;
         }
-        //TODO
-        public async Task<Users> Authenticate(Payload payload)
+
+        public async Task<AuthenticateResponse> Authenticate(Payload payload, string ipAddress)
         {
             using(var a = contextFactory.CreateDbContext())
             {
@@ -41,42 +42,126 @@ namespace net_core_backend.Services
                 {
                     user = new Users(
                         payload.Email,
-                        payload.Name,
-                        payload.Subject,
-                        payload.Issuer);
+                        payload.Name);
 
                     await a.AddAsync(user);
                     await a.SaveChangesAsync();
                 }
 
-                return user;
+                var jwtToken = generateJwtToken(user);
+                var refreshToken = generateRefreshToken(ipAddress);
+
+                user.RefreshTokens.Add(refreshToken);
+                a.Update(user);
+                await a.SaveChangesAsync();
+
+                return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
             }
         }
 
+        public async Task<AuthenticateResponse> RefreshToken(string token, string ipaddress)
+        {
+            using(var a = contextFactory.CreateDbContext())
+            {
+                var user = a.Users.SingleOrDefault(x => x.RefreshTokens.Any(y => y.Token == token));
+
+                // No user found with token
+                if (user == null) return null;
+
+                var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+
+                // No active refresh tokens
+                if (!refreshToken.IsActive) return null;
+
+                var newRefreshToken = generateRefreshToken(ipaddress);
+                refreshToken.Revoked = DateTime.UtcNow;
+                refreshToken.RevokedByIp = ipaddress;
+                refreshToken.ReplacedByToken = newRefreshToken.Token;
+                user.RefreshTokens.Add(newRefreshToken);
+
+                a.Update(user);
+                await a.SaveChangesAsync();
 
 
-        public async Task<bool> Register(Payload payload)
+                var jwtToken = generateJwtToken(user);
+
+                return new AuthenticateResponse(user, jwtToken, newRefreshToken.Token);
+            }
+        }
+
+        public async Task<bool> RevokeToken(string token, string ipAddress)
         {
             using (var a = contextFactory.CreateDbContext())
             {
-                // Checks for existing
-                if (await a.Users.FirstOrDefaultAsync(x => x.Email == payload.Email) != null)
-                {
-                    throw new ArgumentException("There is already a user with this email in our system");
-                }
 
-                // Creates and adds a user
-                // Hashes and salts password
-                var user = new Users(
-                    payload.Email,
-                    payload.Name, 
-                    payload.Subject,
-                    payload.Issuer);
+                var user = a.Users.SingleOrDefault(u => u.RefreshTokens.Any(t => t.Token == token));
 
-                await a.AddAsync(user);
+                // return false if no user found with token
+                if (user == null) return false;
+
+                var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+
+                // return false if token is not active
+                if (!refreshToken.IsActive) return false;
+
+                // revoke token and save
+                refreshToken.Revoked = DateTime.UtcNow;
+                refreshToken.RevokedByIp = ipAddress;
+                a.Update(user);
                 await a.SaveChangesAsync();
 
                 return true;
+            }
+        }
+
+        public async Task<Users> GetById(int id)
+        {
+            using (var a = contextFactory.CreateDbContext())
+            {
+                return await a.Users.FindAsync(id);
+            }
+        }
+
+        public async Task<List<Users>> GetUsers()
+        {
+            using (var a = contextFactory.CreateDbContext())
+            {
+                return await a.Users.ToListAsync();
+            }
+        }
+
+        private string generateJwtToken(Users user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.Name, user.Id.ToString())
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key), 
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        private RefreshToken generateRefreshToken(string ipAddress)
+        {
+            using (var rngCryptoServiceProvider = new RNGCryptoServiceProvider())
+            {
+                var randomBytes = new byte[64];
+                rngCryptoServiceProvider.GetBytes(randomBytes);
+                return new RefreshToken
+                {
+                    Token = Convert.ToBase64String(randomBytes),
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    Created = DateTime.UtcNow,
+                    CreatedByIp = ipAddress
+                };
             }
         }
     }
