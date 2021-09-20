@@ -74,7 +74,7 @@ namespace net_core_backend
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:19006/")
+                    builder.WithOrigins("http://localhost:19006/, http://192.168.0.100:19006/, exp://192.168.0.100:19000")
                                 .SetIsOriginAllowed((host) => true)
                                 .AllowAnyHeader()
                                 .AllowAnyMethod()
@@ -148,7 +148,7 @@ namespace net_core_backend
 
             app.UseCors();
 
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
 
             app.UseAuthentication();

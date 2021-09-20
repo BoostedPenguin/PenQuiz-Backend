@@ -20,6 +20,7 @@ namespace net_core_backend
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    webBuilder.UseUrls("https://*:5000");
                     webBuilder.UseStartup<Startup>();
                 });
     }
