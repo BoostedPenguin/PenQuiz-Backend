@@ -12,6 +12,7 @@ using net_core_backend.Services;
 using net_core_backend.ViewModel;
 using AutoMapper;
 using net_core_backend.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace net_core_backend.Controllers
 {
@@ -33,7 +34,6 @@ namespace net_core_backend.Controllers
             this.mapper = mapper;
             context = _context;
         }
-
 
         [HttpGet("{word}")]
         public async Task<IActionResult> AddSomething([FromRoute] string word)
