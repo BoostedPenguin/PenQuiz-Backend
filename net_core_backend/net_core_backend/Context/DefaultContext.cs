@@ -20,7 +20,6 @@ namespace net_core_backend.Models
         public virtual DbSet<Borders> Borders { get; set; }
         public virtual DbSet<GameInstance> GameInstance { get; set; }
         public virtual DbSet<GameResult> GameResult { get; set; }
-        public virtual DbSet<MapObject> MapObject { get; set; }
         public virtual DbSet<MapTerritory> MapTerritory { get; set; }
         public virtual DbSet<Maps> Maps { get; set; }
         public virtual DbSet<ObjectTerritory> ObjectTerritory { get; set; }
@@ -98,15 +97,6 @@ namespace net_core_backend.Models
                     .HasMaxLength(255);
             });
 
-            modelBuilder.Entity<MapObject>(entity =>
-            {
-                entity.Property(e => e.Id).HasColumnName("id");
-
-                entity.Property(e => e.GameInstanceId).HasColumnName("gameInstanceId");
-
-                entity.Property(e => e.Mapid).HasColumnName("mapid");
-            });
-
             modelBuilder.Entity<MapTerritory>(entity =>
             {
                 entity.HasIndex(e => e.MapId);
@@ -137,6 +127,7 @@ namespace net_core_backend.Models
                     .HasColumnName("name")
                     .HasMaxLength(50)
                     .IsUnicode(false);
+
             });
 
             modelBuilder.Entity<ObjectTerritory>(entity =>

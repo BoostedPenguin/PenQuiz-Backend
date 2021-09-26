@@ -11,5 +11,9 @@ namespace net_core_backend.Models
         public bool? InProgress { get; set; }
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
+        public int? Mapid { get; set; }
+
+        public virtual Participants Participants { get; set; }
+
     }
 }

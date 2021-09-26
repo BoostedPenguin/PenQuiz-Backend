@@ -21,6 +21,10 @@
     <Compile Remove="Migrations\20210926163415_initial.Designer.cs" />
     <Compile Remove="Migrations\20210926164407_refreshtoken-fix.cs" />
     <Compile Remove="Migrations\20210926164407_refreshtoken-fix.Designer.cs" />
+    <Compile Remove="Migrations\20210926173247_removed-redudnant-table.cs" />
+    <Compile Remove="Migrations\20210926173247_removed-redudnant-table.Designer.cs" />
+    <Compile Remove="Migrations\20210926173740_removed-redunant-table.cs" />
+    <Compile Remove="Migrations\20210926173740_removed-redunant-table.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>
