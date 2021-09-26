@@ -110,7 +110,7 @@ namespace net_core_backend.Controllers
             var user = await accountService.GetById(id);
             if (user == null) return NotFound();
 
-            return Ok(user.RefreshTokens);
+            return Ok(user.RefreshToken);
         }
 
         private void setTokenCookie(string token)

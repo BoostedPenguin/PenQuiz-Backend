@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using net_core_backend.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,6 +24,20 @@ namespace net_core_backend.Context
             var context = new DefaultContext(options.Options);
             
             context.Database.EnsureCreated();
+        }
+
+        public ContextFactory()
+        {
+            string path = Directory.GetCurrentDirectory();
+
+            IConfigurationBuilder builder =
+                new ConfigurationBuilder()
+                    .SetBasePath(path)
+                    .AddJsonFile("appsettings.json");
+
+            IConfigurationRoot config = builder.Build();
+
+            connectionString = config.GetConnectionString("SQLCONNSTR_Database");
         }
 
         public DefaultContext CreateDbContext(string[] args = null)

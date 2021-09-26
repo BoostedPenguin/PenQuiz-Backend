@@ -115,15 +115,15 @@ namespace net_core_backend.Services
             async Task<MapTerritory[]> getBorders(int territoryId)
             {
                 var borderTerritories = await a.MapTerritory
-                    .Include(x => x.BordersNextToTerritoryReference)
-                    .Include(x => x.BordersThisTerritoryReference)
+                    .Include(x => x.BordersNextToTerritoryNavigation)
+                    .Include(x => x.BordersThisTerritoryNavigation)
                     .Where(x => x.Id == territoryId) 
                     .Select(x => new
                     {
-                        left = x.BordersNextToTerritoryReference
-                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryReference : x.NextToTerritoryReference).ToList(),
-                        right = x.BordersThisTerritoryReference
-                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryReference : x.NextToTerritoryReference).ToList()
+                        left = x.BordersNextToTerritoryNavigation
+                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryNavigation : x.NextToTerritoryNavigation).ToList(),
+                        right = x.BordersThisTerritoryNavigation
+                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryNavigation : x.NextToTerritoryNavigation).ToList()
                     })
                     .FirstOrDefaultAsync();
 

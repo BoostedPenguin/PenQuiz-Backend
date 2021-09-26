@@ -51,7 +51,7 @@ namespace net_core_backend.Services
                 var jwtToken = generateJwtToken(user);
                 var refreshToken = generateRefreshToken(ipAddress);
 
-                user.RefreshTokens.Add(refreshToken);
+                user.RefreshToken.Add(refreshToken);
                 a.Update(user);
                 await a.SaveChangesAsync();
 
@@ -63,13 +63,12 @@ namespace net_core_backend.Services
         {
             using(var a = contextFactory.CreateDbContext())
             {
-                var user = a.Users.SingleOrDefault(x => x.RefreshTokens.Any(y => y.Token == token));
+                var user = a.Users.SingleOrDefault(x => x.RefreshToken.Any(y => y.Token == token));
 
                 // No user found with token
                 if (user == null) return null;
 
-                var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
-
+                var refreshToken = user.RefreshToken.Single(x => x.Token == token);
                 // No active refresh tokens
                 if (!refreshToken.IsActive) return null;
 
@@ -77,7 +76,7 @@ namespace net_core_backend.Services
                 refreshToken.Revoked = DateTime.UtcNow;
                 refreshToken.RevokedByIp = ipaddress;
                 refreshToken.ReplacedByToken = newRefreshToken.Token;
-                user.RefreshTokens.Add(newRefreshToken);
+                user.RefreshToken.Add(newRefreshToken);
 
                 a.Update(user);
                 await a.SaveChangesAsync();
@@ -94,12 +93,12 @@ namespace net_core_backend.Services
             using (var a = contextFactory.CreateDbContext())
             {
 
-                var user = a.Users.SingleOrDefault(u => u.RefreshTokens.Any(t => t.Token == token));
+                var user = a.Users.SingleOrDefault(u => u.RefreshToken.Any(t => t.Token == token));
 
                 // return false if no user found with token
                 if (user == null) return false;
 
-                var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+                var refreshToken = user.RefreshToken.Single(x => x.Token == token);
 
                 // return false if token is not active
                 if (!refreshToken.IsActive) return false;

@@ -8,7 +8,7 @@ namespace net_core_backend.Models
         public int ThisTerritory { get; set; }
         public int NextToTerritory { get; set; }
 
-        public virtual MapTerritory ThisTerritoryReference { get; set; }
-        public virtual MapTerritory NextToTerritoryReference { get; set; }
+        public virtual MapTerritory NextToTerritoryNavigation { get; set; }
+        public virtual MapTerritory ThisTerritoryNavigation { get; set; }
     }
 }
