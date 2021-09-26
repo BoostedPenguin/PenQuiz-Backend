@@ -36,7 +36,7 @@ namespace net_core_backend.Services
         {
             using(var a = contextFactory.CreateDbContext())
             {
-                var user = await a.Users.FirstOrDefaultAsync(x => x.Email == payload.Email);
+                var user = await a.Users.Include(x => x.RefreshToken).FirstOrDefaultAsync(x => x.Email == payload.Email);
 
                 if (user == null)
                 {
@@ -63,7 +63,7 @@ namespace net_core_backend.Services
         {
             using(var a = contextFactory.CreateDbContext())
             {
-                var user = a.Users.SingleOrDefault(x => x.RefreshToken.Any(y => y.Token == token));
+                var user = a.Users.Include(x => x.RefreshToken).SingleOrDefault(x => x.RefreshToken.Any(y => y.Token == token));
 
                 // No user found with token
                 if (user == null) return null;

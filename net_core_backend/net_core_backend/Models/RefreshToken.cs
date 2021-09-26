@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 namespace net_core_backend.Models
 {
-    [Owned]
     public partial class RefreshToken
     {
         public int Id { get; set; }

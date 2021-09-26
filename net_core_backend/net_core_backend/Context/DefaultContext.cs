@@ -172,6 +172,17 @@ namespace net_core_backend.Models
                     .HasMaxLength(255);
             });
 
+            modelBuilder.Entity<RefreshToken>(entity =>
+            {
+                entity.HasKey(e => new { e.UsersId, e.Id });
+
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+                entity.HasOne(d => d.Users)
+                    .WithMany(p => p.RefreshToken)
+                    .HasForeignKey(d => d.UsersId);
+            });
+
             modelBuilder.Entity<RoundQuestion>(entity =>
             {
                 entity.Property(e => e.Id).HasColumnName("id");
@@ -229,7 +240,6 @@ namespace net_core_backend.Models
                     .HasColumnName("username")
                     .HasMaxLength(50);
 
-                entity.OwnsMany(e => e.RefreshToken);
             });
 
             OnModelCreatingPartial(modelBuilder);
