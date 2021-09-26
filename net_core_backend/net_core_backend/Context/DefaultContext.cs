@@ -27,7 +27,7 @@ namespace net_core_backend.Models
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.Admin).HasColumnName("admin");
+                entity.Property(e => e.IsAdmin).HasColumnName("admin");
 
                 entity.Property(e => e.Email)
                     .IsRequired()

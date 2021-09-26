@@ -9,8 +9,10 @@ using System.Threading.Tasks;
 namespace net_core_backend.Models
 {
     [Owned]
-    public class RefreshToken : DefaultModel
+    public class RefreshToken
     {
+        public int Id { get; set; }
+
         public string Token { get; set; }
         public DateTime Expires { get; set; }
         public bool IsExpired => DateTime.UtcNow >= Expires;

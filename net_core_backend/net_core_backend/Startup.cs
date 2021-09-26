@@ -54,7 +54,7 @@ namespace net_core_backend
             services.AddSingleton<IContextFactory>(new ContextFactoryTesting(Configuration.GetConnectionString("Testing_SQLCONNSTR_Database")));
             
             //Uncomment this when you've setup a database connection string
-            //services.AddSingleton<IContextFactory>(new ContextFactory(Configuration.GetConnectionString("SQLCONNSTR_Database")));
+            services.AddSingleton<IContextFactory>(new ContextFactory(Configuration.GetConnectionString("SQLCONNSTR_Database")));
 
             services.AddSingleton<IExampleService, ExampleService>();
             

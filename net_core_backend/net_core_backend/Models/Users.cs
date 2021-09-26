@@ -4,13 +4,14 @@ using System.Collections.Generic;
 
 namespace net_core_backend.Models
 {
-    public partial class Users : DefaultModel
+    public partial class Users
     {
         public Users()
         {
 
         }
 
+        public int Id { get; set; }
 
         public Users(string email, string username)
         {
@@ -18,9 +19,12 @@ namespace net_core_backend.Models
             this.Username = username;
         }
 
-        public bool Admin { get; set; }
         public string Email { get; set; }
         public string Username { get; set; }
+        public bool IsAdmin { get; set; } = false;
+        public bool IsBanned { get; set; } = false;
+        public bool IsOnline { get; set; }
+        public bool Provider { get; set; }
 
         [JsonIgnore]
         public List<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
