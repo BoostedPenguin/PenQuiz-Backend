@@ -42,22 +42,22 @@ namespace net_core_backend.Models
 
             modelBuilder.Entity<Borders>(entity =>
             {
-                entity.HasKey(e => new { e.ThisTer, e.BordersTer })
+                entity.HasKey(e => new { e.ThisTerritory, e.NextToTerritory })
                     .HasName("pk_myConstraint");
 
-                entity.Property(e => e.ThisTer).HasColumnName("thisTER");
+                entity.Property(e => e.ThisTerritory).HasColumnName("ThisTerritory");
 
-                entity.Property(e => e.BordersTer).HasColumnName("bordersTER");
+                entity.Property(e => e.NextToTerritory).HasColumnName("NextToTerritory");
 
-                entity.HasOne(d => d.BordersTerNavigation)
-                    .WithMany(p => p.BordersBordersTerNavigation)
-                    .HasForeignKey(d => d.BordersTer)
+                entity.HasOne(d => d.ThisTerritoryReference)
+                    .WithMany(p => p.BordersNextToTerritoryReference)
+                    .HasForeignKey(d => d.NextToTerritory)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Borders_MapTerritory1");
 
-                entity.HasOne(d => d.ThisTerNavigation)
-                    .WithMany(p => p.BordersThisTerNavigation)
-                    .HasForeignKey(d => d.ThisTer)
+                entity.HasOne(d => d.NextToTerritoryReference)
+                    .WithMany(p => p.BordersThisTerritoryReference)
+                    .HasForeignKey(d => d.ThisTerritory)
                     .HasConstraintName("FK_Borders_MapTerritory");
             });
 

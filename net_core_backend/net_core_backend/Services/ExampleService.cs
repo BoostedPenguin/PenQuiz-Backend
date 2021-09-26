@@ -49,10 +49,16 @@ namespace net_core_backend.Services
                 TerritoryName = "Fourth territory",
             };
 
+            var ter5 = new MapTerritory()
+            {
+                TerritoryName = "Fifth territory",
+            };
+
             firstMap.MapTerritory.Add(ter1);
             firstMap.MapTerritory.Add(ter2);
             firstMap.MapTerritory.Add(ter3);
             firstMap.MapTerritory.Add(ter4);
+            firstMap.MapTerritory.Add(ter5);
 
             a.Add(firstMap);
             await a.SaveChangesAsync();
@@ -60,28 +66,20 @@ namespace net_core_backend.Services
 
             // Add borders to first element
 
-            a.Add(new Borders() { BordersTer = ter2.Id, ThisTer = ter1.Id });
-            a.Add(new Borders() { BordersTer = ter4.Id, ThisTer = ter1.Id });
-            a.Add(new Borders() { BordersTer = ter3.Id, ThisTer = ter2.Id });
-            a.Add(new Borders() { BordersTer = ter3.Id, ThisTer = ter4.Id });
+            await addBorderIfNotExistant(ter1.Id, ter2.Id);
+            await addBorderIfNotExistant(ter1.Id, ter3.Id);
+            await addBorderIfNotExistant(ter1.Id, ter5.Id);
 
-            await a.SaveChangesAsync();
+            await addBorderIfNotExistant(ter2.Id, ter1.Id);
+            await addBorderIfNotExistant(ter2.Id, ter3.Id);
 
-            // Get third territory with all it's border
+            await addBorderIfNotExistant(ter3.Id, ter2.Id);
+            await addBorderIfNotExistant(ter3.Id, ter1.Id);
+            await addBorderIfNotExistant(ter3.Id, ter5.Id);
+            await addBorderIfNotExistant(ter3.Id, ter4.Id);
 
-            var thirdTerritory = await
-                a.Maps
-                .Include(x => x.MapTerritory)
-                .ThenInclude(x => x.BordersBordersTerNavigation)
-                .ThenInclude(x => x.BordersTerNavigation)
-                .SelectMany(x => x.MapTerritory)
-                .FirstOrDefaultAsync(x => x.TerritoryName == "Third territory");
-
-
-            var thirdTerritoryBorders = thirdTerritory
-                .BordersBordersTerNavigation
-                .Concat(thirdTerritory.BordersThisTerNavigation)
-                .ToList();
+            await addBorderIfNotExistant(ter4.Id, ter3.Id);
+            await addBorderIfNotExistant(ter4.Id, ter5.Id);
 
 
             async Task<bool> addBorderIfNotExistant(int territoryId, int territoryId2)
@@ -90,7 +88,7 @@ namespace net_core_backend.Services
 
                 if(!areBorders)
                 {
-                    a.Add(new Borders() { ThisTer = territoryId, BordersTer = territoryId2 });
+                    a.Add(new Borders() { ThisTerritory = territoryId, NextToTerritory = territoryId2 });
                     await a.SaveChangesAsync();
 
                     return true;
@@ -103,7 +101,7 @@ namespace net_core_backend.Services
             async Task<bool> areTheyBorders(int territoryId, int territoryId2)
             {
                 var borders = await a.Borders
-                    .Where(x => (x.BordersTer == territoryId && x.ThisTer == territoryId2) || (x.BordersTer == territoryId2 && x.ThisTer == territoryId))
+                    .Where(x => (x.NextToTerritory == territoryId && x.ThisTerritory == territoryId2) || (x.NextToTerritory == territoryId2 && x.ThisTerritory == territoryId))
                     .ToListAsync();
 
                 return borders.Count != 0;
@@ -117,25 +115,25 @@ namespace net_core_backend.Services
             async Task<MapTerritory[]> getBorders(int territoryId)
             {
                 var borderTerritories = await a.MapTerritory
-                    .Include(x => x.BordersBordersTerNavigation)
-                    .Include(x => x.BordersThisTerNavigation)
+                    .Include(x => x.BordersNextToTerritoryReference)
+                    .Include(x => x.BordersThisTerritoryReference)
                     .Where(x => x.Id == territoryId) 
                     .Select(x => new
                     {
-                        left = x.BordersBordersTerNavigation
-                            .Select(x => x.ThisTer == territoryId ? x.BordersTerNavigation : x.ThisTerNavigation).ToList(),
-                        right = x.BordersThisTerNavigation
-                            .Select(x => x.ThisTer == territoryId ? x.BordersTerNavigation : x.ThisTerNavigation).ToList()
+                        left = x.BordersNextToTerritoryReference
+                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryReference : x.NextToTerritoryReference).ToList(),
+                        right = x.BordersThisTerritoryReference
+                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryReference : x.NextToTerritoryReference).ToList()
                     })
                     .FirstOrDefaultAsync();
 
                 return borderTerritories.left.Concat(borderTerritories.right).ToArray();
             }
 
-            await getBorders(2);
+            var borders = await getBorders(1);
 
 
-            var result = await isAttackPossible(4, 1);
+            var result = await isAttackPossible(2, 5);
 
             await addBorderIfNotExistant(1, 3);
 

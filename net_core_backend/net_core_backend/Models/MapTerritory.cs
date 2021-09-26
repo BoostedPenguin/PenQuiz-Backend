@@ -7,8 +7,8 @@ namespace net_core_backend.Models
     {
         public MapTerritory()
         {
-            BordersBordersTerNavigation = new HashSet<Borders>();
-            BordersThisTerNavigation = new HashSet<Borders>();
+            BordersNextToTerritoryReference = new HashSet<Borders>();
+            BordersThisTerritoryReference = new HashSet<Borders>();
         }
 
         public int Id { get; set; }
@@ -16,7 +16,7 @@ namespace net_core_backend.Models
         public int MapId { get; set; }
 
         public virtual Maps Map { get; set; }
-        public virtual ICollection<Borders> BordersBordersTerNavigation { get; set; }
-        public virtual ICollection<Borders> BordersThisTerNavigation { get; set; }
+        public virtual ICollection<Borders> BordersNextToTerritoryReference { get; set; }
+        public virtual ICollection<Borders> BordersThisTerritoryReference { get; set; }
     }
 }

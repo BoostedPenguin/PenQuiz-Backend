@@ -5,10 +5,10 @@ namespace net_core_backend.Models
 {
     public partial class Borders
     {
-        public int ThisTer { get; set; }
-        public int BordersTer { get; set; }
+        public int ThisTerritory { get; set; }
+        public int NextToTerritory { get; set; }
 
-        public virtual MapTerritory BordersTerNavigation { get; set; }
-        public virtual MapTerritory ThisTerNavigation { get; set; }
+        public virtual MapTerritory ThisTerritoryReference { get; set; }
+        public virtual MapTerritory NextToTerritoryReference { get; set; }
     }
 }
