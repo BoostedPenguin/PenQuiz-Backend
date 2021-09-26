@@ -40,9 +40,7 @@ namespace net_core_backend.Services
 
                 if (user == null)
                 {
-                    user = new Users(
-                        payload.Email,
-                        payload.Name);
+                    user = new Users() { Email = payload.Email, Username = payload.Name };
 
                     await a.AddAsync(user);
                     await a.SaveChangesAsync();

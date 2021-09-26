@@ -9,6 +9,7 @@ namespace net_core_backend.Models
         {
             BordersNextToTerritoryNavigation = new HashSet<Borders>();
             BordersThisTerritoryNavigation = new HashSet<Borders>();
+            ObjectTerritory = new HashSet<ObjectTerritory>();
         }
 
         public int Id { get; set; }
@@ -18,5 +19,6 @@ namespace net_core_backend.Models
         public virtual Maps Map { get; set; }
         public virtual ICollection<Borders> BordersNextToTerritoryNavigation { get; set; }
         public virtual ICollection<Borders> BordersThisTerritoryNavigation { get; set; }
+        public virtual ICollection<ObjectTerritory> ObjectTerritory { get; set; }
     }
 }

@@ -7,14 +7,9 @@ namespace net_core_backend.Models
     {
         public Users()
         {
+            Participants = new HashSet<Participants>();
             RefreshToken = new HashSet<RefreshToken>();
         }
-        public Users(string email, string username)
-        {
-            this.Email = email;
-            this.Username = username;
-        }
-
 
         public int Id { get; set; }
         public string Email { get; set; }
@@ -24,6 +19,7 @@ namespace net_core_backend.Models
         public bool IsOnline { get; set; }
         public bool Provider { get; set; }
 
+        public virtual ICollection<Participants> Participants { get; set; }
         public virtual ICollection<RefreshToken> RefreshToken { get; set; }
     }
 }

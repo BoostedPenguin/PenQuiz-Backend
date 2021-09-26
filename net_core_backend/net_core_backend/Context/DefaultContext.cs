@@ -31,9 +31,6 @@ namespace net_core_backend.Models
         public virtual DbSet<RoundsHistory> RoundsHistory { get; set; }
         public virtual DbSet<Users> Users { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -48,6 +45,11 @@ namespace net_core_backend.Models
                 entity.Property(e => e.Correct).HasColumnName("correct");
 
                 entity.Property(e => e.QuestionId).HasColumnName("questionId");
+
+                entity.HasOne(d => d.Question)
+                    .WithMany(p => p.Answers)
+                    .HasForeignKey(d => d.QuestionId)
+                    .HasConstraintName("FK__Answers__questio__5DCAEF64");
             });
 
             modelBuilder.Entity<Borders>(entity =>
@@ -71,6 +73,8 @@ namespace net_core_backend.Models
 
             modelBuilder.Entity<GameInstance>(entity =>
             {
+                entity.HasIndex(e => e.ParticipantsId);
+
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.EndTime)
@@ -86,6 +90,20 @@ namespace net_core_backend.Models
                 entity.Property(e => e.StartTime)
                     .HasColumnName("start_time")
                     .HasColumnType("datetime");
+
+                entity.HasOne(d => d.Map)
+                    .WithMany(p => p.GameInstance)
+                    .HasForeignKey(d => d.Mapid)
+                    .HasConstraintName("FK_GameInstance_Maps");
+
+                entity.HasOne(d => d.Participants)
+                    .WithMany(p => p.GameInstance)
+                    .HasForeignKey(d => d.ParticipantsId);
+
+                entity.HasOne(d => d.Result)
+                    .WithMany(p => p.GameInstance)
+                    .HasForeignKey(d => d.ResultId)
+                    .HasConstraintName("FK__GameInsta__resul__59063A47");
             });
 
             modelBuilder.Entity<GameResult>(entity =>
@@ -127,7 +145,6 @@ namespace net_core_backend.Models
                     .HasColumnName("name")
                     .HasMaxLength(50)
                     .IsUnicode(false);
-
             });
 
             modelBuilder.Entity<ObjectTerritory>(entity =>
@@ -139,6 +156,16 @@ namespace net_core_backend.Models
                 entity.Property(e => e.MapTerritoryId).HasColumnName("mapTerritoryId");
 
                 entity.Property(e => e.TakenBy).HasColumnName("takenBy");
+
+                entity.HasOne(d => d.MapObject)
+                    .WithMany(p => p.ObjectTerritory)
+                    .HasForeignKey(d => d.MapObjectId)
+                    .HasConstraintName("FK__ObjectTer__mapOb__5AEE82B9");
+
+                entity.HasOne(d => d.MapTerritory)
+                    .WithMany(p => p.ObjectTerritory)
+                    .HasForeignKey(d => d.MapTerritoryId)
+                    .HasConstraintName("FK__ObjectTer__mapTe__59FA5E80");
             });
 
             modelBuilder.Entity<Participants>(entity =>
@@ -150,6 +177,16 @@ namespace net_core_backend.Models
                 entity.Property(e => e.PlayerId).HasColumnName("playerId");
 
                 entity.Property(e => e.Score).HasColumnName("score");
+
+                entity.HasOne(d => d.Game)
+                    .WithMany(p => p.ParticipantsNavigation)
+                    .HasForeignKey(d => d.GameId)
+                    .HasConstraintName("FK__Participa__gameI__5812160E");
+
+                entity.HasOne(d => d.Player)
+                    .WithMany(p => p.Participants)
+                    .HasForeignKey(d => d.PlayerId)
+                    .HasConstraintName("FK__Participa__playe__571DF1D5");
             });
 
             modelBuilder.Entity<Questions>(entity =>
@@ -181,6 +218,16 @@ namespace net_core_backend.Models
                 entity.Property(e => e.QuestionId).HasColumnName("questionId");
 
                 entity.Property(e => e.RoundId).HasColumnName("roundId");
+
+                entity.HasOne(d => d.Question)
+                    .WithMany(p => p.RoundQuestion)
+                    .HasForeignKey(d => d.QuestionId)
+                    .HasConstraintName("FK__RoundQues__quest__5FB337D6");
+
+                entity.HasOne(d => d.Round)
+                    .WithMany(p => p.RoundQuestion)
+                    .HasForeignKey(d => d.RoundId)
+                    .HasConstraintName("FK__RoundQues__round__5EBF139D");
             });
 
             modelBuilder.Entity<Rounds>(entity =>
@@ -207,6 +254,16 @@ namespace net_core_backend.Models
                 entity.Property(e => e.RoundId).HasColumnName("roundID");
 
                 entity.Property(e => e.RoundWinnerId).HasColumnName("roundWinnerId");
+
+                entity.HasOne(d => d.GameInstance)
+                    .WithMany(p => p.RoundsHistory)
+                    .HasForeignKey(d => d.GameInstanceId)
+                    .HasConstraintName("FK__RoundsHis__gameI__5CD6CB2B");
+
+                entity.HasOne(d => d.Round)
+                    .WithMany(p => p.RoundsHistory)
+                    .HasForeignKey(d => d.RoundId)
+                    .HasConstraintName("FK__RoundsHis__round__5BE2A6F2");
             });
 
             modelBuilder.Entity<Users>(entity =>
@@ -230,7 +287,6 @@ namespace net_core_backend.Models
                     .IsRequired()
                     .HasColumnName("username")
                     .HasMaxLength(50);
-
             });
 
             OnModelCreatingPartial(modelBuilder);

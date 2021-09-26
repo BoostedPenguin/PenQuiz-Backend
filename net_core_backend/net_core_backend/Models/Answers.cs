@@ -9,5 +9,7 @@ namespace net_core_backend.Models
         public int? QuestionId { get; set; }
         public string Answer { get; set; }
         public bool? Correct { get; set; }
+
+        public virtual Questions Question { get; set; }
     }
 }
