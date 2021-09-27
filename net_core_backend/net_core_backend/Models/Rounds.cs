@@ -11,7 +11,7 @@ namespace net_core_backend.Models
         }
 
         public int Id { get; set; }
-        public int? TotalRounds { get; set; }
+        public int TotalRounds { get; set; }
 
         public virtual ICollection<RoundsHistory> RoundsHistory { get; set; }
     }

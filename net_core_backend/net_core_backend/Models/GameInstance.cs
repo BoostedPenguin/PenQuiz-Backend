@@ -13,13 +13,13 @@ namespace net_core_backend.Models
         }
 
         public int Id { get; set; }
-        public int? ResultId { get; set; }
-        public int? QuestionTimerSeconds { get; set; }
-        public bool? InProgress { get; set; }
-        public DateTime? StartTime { get; set; }
+        public int ResultId { get; set; }
+        public int QuestionTimerSeconds { get; set; }
+        public bool InProgress { get; set; }
+        public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-        public int? Mapid { get; set; }
-        public int? ParticipantsId { get; set; }
+        public int Mapid { get; set; }
+        public int ParticipantsId { get; set; }
 
         public virtual Maps Map { get; set; }
         public virtual Participants Participants { get; set; }

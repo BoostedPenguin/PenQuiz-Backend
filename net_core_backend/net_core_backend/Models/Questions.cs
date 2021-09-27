@@ -13,7 +13,7 @@ namespace net_core_backend.Models
 
         public int Id { get; set; }
         public string Question { get; set; }
-        public bool? IsNumberQuestion { get; set; }
+        public bool IsNumberQuestion { get; set; }
 
         public virtual ICollection<Answers> Answers { get; set; }
         public virtual ICollection<RoundQuestion> RoundQuestion { get; set; }

@@ -11,9 +11,9 @@ namespace net_core_backend.Models
         }
 
         public int Id { get; set; }
-        public int? PlayerId { get; set; }
-        public int? GameId { get; set; }
-        public int? Score { get; set; }
+        public int PlayerId { get; set; }
+        public int GameId { get; set; }
+        public int Score { get; set; }
 
         public virtual GameInstance Game { get; set; }
         public virtual Users Player { get; set; }

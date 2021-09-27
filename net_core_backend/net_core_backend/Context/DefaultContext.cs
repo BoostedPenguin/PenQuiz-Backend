@@ -37,6 +37,8 @@ namespace net_core_backend.Context
         {
             modelBuilder.Entity<Answers>(entity =>
             {
+                entity.HasIndex(e => e.QuestionId);
+
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.Answer)
@@ -74,7 +76,11 @@ namespace net_core_backend.Context
 
             modelBuilder.Entity<GameInstance>(entity =>
             {
+                entity.HasIndex(e => e.Mapid);
+
                 entity.HasIndex(e => e.ParticipantsId);
+
+                entity.HasIndex(e => e.ResultId);
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
@@ -150,6 +156,10 @@ namespace net_core_backend.Context
 
             modelBuilder.Entity<ObjectTerritory>(entity =>
             {
+                entity.HasIndex(e => e.MapObjectId);
+
+                entity.HasIndex(e => e.MapTerritoryId);
+
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.MapObjectId).HasColumnName("mapObjectId");
@@ -171,6 +181,10 @@ namespace net_core_backend.Context
 
             modelBuilder.Entity<Participants>(entity =>
             {
+                entity.HasIndex(e => e.GameId);
+
+                entity.HasIndex(e => e.PlayerId);
+
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.GameId).HasColumnName("gameId");
@@ -182,6 +196,7 @@ namespace net_core_backend.Context
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.ParticipantsNavigation)
                     .HasForeignKey(d => d.GameId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK__Participa__gameI__5812160E");
 
                 entity.HasOne(d => d.Player)
@@ -214,6 +229,10 @@ namespace net_core_backend.Context
 
             modelBuilder.Entity<RoundQuestion>(entity =>
             {
+                entity.HasIndex(e => e.QuestionId);
+
+                entity.HasIndex(e => e.RoundId);
+
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.QuestionId).HasColumnName("questionId");
@@ -240,6 +259,10 @@ namespace net_core_backend.Context
 
             modelBuilder.Entity<RoundsHistory>(entity =>
             {
+                entity.HasIndex(e => e.GameInstanceId);
+
+                entity.HasIndex(e => e.RoundId);
+
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.AttackerId).HasColumnName("attackerId");
@@ -294,5 +317,6 @@ namespace net_core_backend.Context
         }
 
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
     }
 }
