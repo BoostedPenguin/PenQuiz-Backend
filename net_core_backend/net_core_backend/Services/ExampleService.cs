@@ -25,9 +25,11 @@ namespace net_core_backend.Services
 
         public async Task DoSomething()
         {
-
             var a = contextFactory.CreateDbContext();
-            var firstMap = new Maps() { Name = "First map" };
+
+            var firstMap = new Maps() { Name = "Antarctica map" };
+
+
 
             var ter1 = new MapTerritory()
             {
@@ -62,7 +64,6 @@ namespace net_core_backend.Services
 
             a.Add(firstMap);
             await a.SaveChangesAsync();
-
 
             // Add borders to first element
 
@@ -114,6 +115,12 @@ namespace net_core_backend.Services
 
             async Task<MapTerritory[]> getBorders(int territoryId)
             {
+                var bt = await a.MapTerritory
+                    .Include(x => x.BordersNextToTerritoryNavigation)
+                    .Include(x => x.BordersThisTerritoryNavigation)
+                    .Where(x => x.Id == territoryId)
+                    .FirstOrDefaultAsync();
+
                 var borderTerritories = await a.MapTerritory
                     .Include(x => x.BordersNextToTerritoryNavigation)
                     .Include(x => x.BordersThisTerritoryNavigation)
@@ -121,21 +128,21 @@ namespace net_core_backend.Services
                     .Select(x => new
                     {
                         left = x.BordersNextToTerritoryNavigation
-                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryNavigation : x.NextToTerritoryNavigation).ToList(),
+                            .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList(),
                         right = x.BordersThisTerritoryNavigation
-                            .Select(x => x.ThisTerritory == territoryId ? x.ThisTerritoryNavigation : x.NextToTerritoryNavigation).ToList()
+                            .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList()
                     })
                     .FirstOrDefaultAsync();
 
                 return borderTerritories.left.Concat(borderTerritories.right).ToArray();
             }
 
-            var borders = await getBorders(1);
+            var borders = await getBorders(4);
 
 
-            var result = await isAttackPossible(2, 5);
+            var result = await isAttackPossible(4, 1);
 
-            await addBorderIfNotExistant(1, 3);
+            await addBorderIfNotExistant(5, 3);
 
 
 
