@@ -20,10 +20,6 @@ namespace net_core_backend.Context
 
             var options = new DbContextOptionsBuilder<DefaultContext>();
             options.UseSqlServer(connectionString);
-
-            var context = new DefaultContext(options.Options);
-            
-            context.Database.EnsureCreated();
         }
 
         public ContextFactory()

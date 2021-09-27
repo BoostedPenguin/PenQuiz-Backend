@@ -5,13 +5,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using net_core_backend.Models;
+using net_core_backend.Context;
 
 namespace net_core_backend.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    [Migration("20210926174135_removed-redunant-table")]
-    partial class removedredunanttable
+    [Migration("20210927084957_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -43,6 +43,8 @@ namespace net_core_backend.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
 
                     b.ToTable("Answers");
                 });
@@ -99,7 +101,11 @@ namespace net_core_backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Mapid");
+
                     b.HasIndex("ParticipantsId");
+
+                    b.HasIndex("ResultId");
 
                     b.ToTable("GameInstance");
                 });
@@ -190,6 +196,10 @@ namespace net_core_backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("MapObjectId");
+
+                    b.HasIndex("MapTerritoryId");
+
                     b.ToTable("ObjectTerritory");
                 });
 
@@ -214,6 +224,10 @@ namespace net_core_backend.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("PlayerId");
 
                     b.ToTable("Participants");
                 });
@@ -294,6 +308,10 @@ namespace net_core_backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("RoundId");
+
                     b.ToTable("RoundQuestion");
                 });
 
@@ -349,6 +367,10 @@ namespace net_core_backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GameInstanceId");
+
+                    b.HasIndex("RoundId");
+
                     b.ToTable("RoundsHistory");
                 });
 
@@ -393,6 +415,14 @@ namespace net_core_backend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("net_core_backend.Models.Answers", b =>
+                {
+                    b.HasOne("net_core_backend.Models.Questions", "Question")
+                        .WithMany("Answers")
+                        .HasForeignKey("QuestionId")
+                        .HasConstraintName("FK__Answers__questio__5DCAEF64");
+                });
+
             modelBuilder.Entity("net_core_backend.Models.Borders", b =>
                 {
                     b.HasOne("net_core_backend.Models.MapTerritory", "NextToTerritoryNavigation")
@@ -411,9 +441,19 @@ namespace net_core_backend.Migrations
 
             modelBuilder.Entity("net_core_backend.Models.GameInstance", b =>
                 {
+                    b.HasOne("net_core_backend.Models.Maps", "Map")
+                        .WithMany("GameInstance")
+                        .HasForeignKey("Mapid")
+                        .HasConstraintName("FK_GameInstance_Maps");
+
                     b.HasOne("net_core_backend.Models.Participants", "Participants")
-                        .WithMany()
+                        .WithMany("GameInstance")
                         .HasForeignKey("ParticipantsId");
+
+                    b.HasOne("net_core_backend.Models.GameResult", "Result")
+                        .WithMany("GameInstance")
+                        .HasForeignKey("ResultId")
+                        .HasConstraintName("FK__GameInsta__resul__59063A47");
                 });
 
             modelBuilder.Entity("net_core_backend.Models.MapTerritory", b =>
@@ -425,6 +465,32 @@ namespace net_core_backend.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("net_core_backend.Models.ObjectTerritory", b =>
+                {
+                    b.HasOne("net_core_backend.Models.GameInstance", "MapObject")
+                        .WithMany("ObjectTerritory")
+                        .HasForeignKey("MapObjectId")
+                        .HasConstraintName("FK__ObjectTer__mapOb__5AEE82B9");
+
+                    b.HasOne("net_core_backend.Models.MapTerritory", "MapTerritory")
+                        .WithMany("ObjectTerritory")
+                        .HasForeignKey("MapTerritoryId")
+                        .HasConstraintName("FK__ObjectTer__mapTe__59FA5E80");
+                });
+
+            modelBuilder.Entity("net_core_backend.Models.Participants", b =>
+                {
+                    b.HasOne("net_core_backend.Models.GameInstance", "Game")
+                        .WithMany("ParticipantsNavigation")
+                        .HasForeignKey("GameId")
+                        .HasConstraintName("FK__Participa__gameI__5812160E");
+
+                    b.HasOne("net_core_backend.Models.Users", "Player")
+                        .WithMany("Participants")
+                        .HasForeignKey("PlayerId")
+                        .HasConstraintName("FK__Participa__playe__571DF1D5");
+                });
+
             modelBuilder.Entity("net_core_backend.Models.RefreshToken", b =>
                 {
                     b.HasOne("net_core_backend.Models.Users", "Users")
@@ -432,6 +498,32 @@ namespace net_core_backend.Migrations
                         .HasForeignKey("UsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("net_core_backend.Models.RoundQuestion", b =>
+                {
+                    b.HasOne("net_core_backend.Models.Questions", "Question")
+                        .WithMany("RoundQuestion")
+                        .HasForeignKey("QuestionId")
+                        .HasConstraintName("FK__RoundQues__quest__5FB337D6");
+
+                    b.HasOne("net_core_backend.Models.RoundsHistory", "Round")
+                        .WithMany("RoundQuestion")
+                        .HasForeignKey("RoundId")
+                        .HasConstraintName("FK__RoundQues__round__5EBF139D");
+                });
+
+            modelBuilder.Entity("net_core_backend.Models.RoundsHistory", b =>
+                {
+                    b.HasOne("net_core_backend.Models.GameInstance", "GameInstance")
+                        .WithMany("RoundsHistory")
+                        .HasForeignKey("GameInstanceId")
+                        .HasConstraintName("FK__RoundsHis__gameI__5CD6CB2B");
+
+                    b.HasOne("net_core_backend.Models.Rounds", "Round")
+                        .WithMany("RoundsHistory")
+                        .HasForeignKey("RoundId")
+                        .HasConstraintName("FK__RoundsHis__round__5BE2A6F2");
                 });
 #pragma warning restore 612, 618
         }

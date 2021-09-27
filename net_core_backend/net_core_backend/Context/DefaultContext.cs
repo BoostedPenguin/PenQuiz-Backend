@@ -1,8 +1,9 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using net_core_backend.Models;
 
-namespace net_core_backend.Models
+namespace net_core_backend.Context
 {
     public partial class DefaultContext : DbContext
     {

@@ -46,5 +46,9 @@
     <PackageReference Include="Xunit.DependencyInjection" Version="7.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
 
 </Project>
