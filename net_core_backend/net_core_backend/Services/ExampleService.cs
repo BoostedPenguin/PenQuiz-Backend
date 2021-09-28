@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace net_core_backend.Services
 {
@@ -25,11 +27,12 @@ namespace net_core_backend.Services
 
         public async Task DoSomething()
         {
-            AddMapTerritoryBorders();
+            await DoesThisMapExist();
+
 
             // End
 
-            var borders = await getBorders("Ronetia");
+            var borders = await getBorders("Dager");
 
 
             // IsAttackPossible
@@ -41,147 +44,6 @@ namespace net_core_backend.Services
 
 
             // Do something
-        }
-
-        async Task AddMapTerritoryBorders()
-        {
-            var a = contextFactory.CreateDbContext();
-
-            await a.Database.EnsureDeletedAsync();
-            await a.Database.EnsureCreatedAsync();
-
-            var firstMap = new Maps() { Name = "Antarctica map" };
-
-            var mapTerritories = new List<MapTerritory>()
-            {
-                new MapTerritory() {TerritoryName = "Vibri"},
-                new MapTerritory() {TerritoryName = "Ranku"},
-                new MapTerritory() {TerritoryName = "Dager"},
-                new MapTerritory() {TerritoryName = "Ramac"},
-                new MapTerritory() {TerritoryName = "Napana"},
-                new MapTerritory() {TerritoryName = "Rilanor"},
-                new MapTerritory() {TerritoryName = "Tustra"},
-                new MapTerritory() {TerritoryName = "Sopore"},
-                new MapTerritory() {TerritoryName = "Caba"},
-                new MapTerritory() {TerritoryName = "Lisu"},
-                new MapTerritory() {TerritoryName = "Bavi"},
-                new MapTerritory() {TerritoryName = "Kide"},
-                new MapTerritory() {TerritoryName = "Wistan"},
-                new MapTerritory() {TerritoryName = "Ronetia"},
-                new MapTerritory() {TerritoryName = "Caydo"},
-                new MapTerritory() {TerritoryName = "Prusnia"},
-                new MapTerritory() {TerritoryName = "Rospa"},
-                new MapTerritory() {TerritoryName = "Laly"},
-                new MapTerritory() {TerritoryName = "Sona"},
-                new MapTerritory() {TerritoryName = "Renyt"},
-            };
-
-            firstMap.MapTerritory = mapTerritories;
-            a.Add(firstMap);
-            await a.SaveChangesAsync();
-
-            // Add borders to elements
-            await addBorderIfNotExistant("Vibri", "Ranku");
-            await addBorderIfNotExistant("Vibri", "Dager");
-            await addBorderIfNotExistant("Vibri", "Ramac");
-
-            await addBorderIfNotExistant("Ranku", "Vibri");
-            await addBorderIfNotExistant("Ranku", "Dager");
-
-            await addBorderIfNotExistant("Dager", "Ranku");
-            await addBorderIfNotExistant("Dager", "Vibri");
-            await addBorderIfNotExistant("Dager", "Ramac");
-            await addBorderIfNotExistant("Dager", "Renyt");
-            await addBorderIfNotExistant("Dager", "Ronetia");
-
-            await addBorderIfNotExistant("Ramac", "Vibri");
-            await addBorderIfNotExistant("Ramac", "Dager");
-            await addBorderIfNotExistant("Ramac", "Renyt");
-            await addBorderIfNotExistant("Ramac", "Rilanor");
-            await addBorderIfNotExistant("Ramac", "Napana");
-
-            await addBorderIfNotExistant("Napana", "Ramac");
-            await addBorderIfNotExistant("Napana", "Rilanor");
-            await addBorderIfNotExistant("Napana", "Tustra");
-
-            await addBorderIfNotExistant("Tustra", "Napana");
-            await addBorderIfNotExistant("Tustra", "Rilanor");
-            await addBorderIfNotExistant("Tustra", "Sopore");
-
-            await addBorderIfNotExistant("Sopore", "Tustra");
-            await addBorderIfNotExistant("Sopore", "Rilanor");
-            await addBorderIfNotExistant("Sopore", "Lisu");
-            await addBorderIfNotExistant("Sopore", "Caydo");
-
-            await addBorderIfNotExistant("Caydo", "Sopore");
-            await addBorderIfNotExistant("Caydo", "Lisu");
-
-            await addBorderIfNotExistant("Rilanor", "Ramac");
-            await addBorderIfNotExistant("Rilanor", "Napana");
-            await addBorderIfNotExistant("Rilanor", "Tustra");
-            await addBorderIfNotExistant("Rilanor", "Sopore");
-            await addBorderIfNotExistant("Rilanor", "Lisu");
-            await addBorderIfNotExistant("Rilanor", "Renyt");
-
-            await addBorderIfNotExistant("Lisu", "Rilanor");
-            await addBorderIfNotExistant("Lisu", "Sopore");
-            await addBorderIfNotExistant("Lisu", "Caydo");
-            await addBorderIfNotExistant("Lisu", "Laly");
-            await addBorderIfNotExistant("Lisu", "Kide");
-            await addBorderIfNotExistant("Lisu", "Renyt");
-
-            await addBorderIfNotExistant("Renyt", "Dager");
-            await addBorderIfNotExistant("Renyt", "Ramac");
-            await addBorderIfNotExistant("Renyt", "Rilanor");
-            await addBorderIfNotExistant("Renyt", "Lisu");
-            await addBorderIfNotExistant("Renyt", "Kide");
-            await addBorderIfNotExistant("Renyt", "Ronetia");
-
-            await addBorderIfNotExistant("Kide", "Renyt");
-            await addBorderIfNotExistant("Kide", "Lisu");
-            await addBorderIfNotExistant("Kide", "Laly");
-            await addBorderIfNotExistant("Kide", "Sona");
-            await addBorderIfNotExistant("Kide", "Ronetia");
-
-            await addBorderIfNotExistant("Laly", "Lisu");
-            await addBorderIfNotExistant("Laly", "Kide");
-            await addBorderIfNotExistant("Laly", "Sona");
-            await addBorderIfNotExistant("Laly", "Caba");
-
-            await addBorderIfNotExistant("Caba", "Laly");
-            await addBorderIfNotExistant("Caba", "Sona");
-            await addBorderIfNotExistant("Caba", "Wistan");
-
-            await addBorderIfNotExistant("Sona", "Kide");
-            await addBorderIfNotExistant("Sona", "Laly");
-            await addBorderIfNotExistant("Sona", "Caba");
-            await addBorderIfNotExistant("Sona", "Wistan");
-            await addBorderIfNotExistant("Sona", "Ronetia");
-
-            await addBorderIfNotExistant("Ronetia", "Dager");
-            await addBorderIfNotExistant("Ronetia", "Renyt");
-            await addBorderIfNotExistant("Ronetia", "Kide");
-            await addBorderIfNotExistant("Ronetia", "Sona");
-            await addBorderIfNotExistant("Ronetia", "Wistan");
-            await addBorderIfNotExistant("Ronetia", "Prusnia");
-
-            await addBorderIfNotExistant("Prusnia", "Ronetia");
-            await addBorderIfNotExistant("Prusnia", "Wistan");
-            await addBorderIfNotExistant("Prusnia", "Rospa");
-            await addBorderIfNotExistant("Prusnia", "Bavi");
-
-            await addBorderIfNotExistant("Wistan", "Caba");
-            await addBorderIfNotExistant("Wistan", "Sona");
-            await addBorderIfNotExistant("Wistan", "Ronetia");
-            await addBorderIfNotExistant("Wistan", "Prusnia");
-            await addBorderIfNotExistant("Wistan", "Rospa");
-
-            await addBorderIfNotExistant("Rospa", "Wistan");
-            await addBorderIfNotExistant("Rospa", "Prusnia");
-            await addBorderIfNotExistant("Rospa", "Bavi");
-
-            await addBorderIfNotExistant("Bavi", "Rospa");
-            await addBorderIfNotExistant("Bavi", "Prusnia");
         }
 
         async Task<bool> addBorderIfNotExistant(int territoryId, int territoryId2)
@@ -259,6 +121,98 @@ namespace net_core_backend.Services
                 .ToListAsync();
 
             return borders.Count != 0;
+        }
+
+        async Task GenerateDefaultMap()
+        {
+            // Read json file
+            Dictionary<string, List<string>> borders = ReadMapJson();
+
+            // Generate map with territories
+            await generateMap(borders);
+
+            // Generate borders for each territory
+            await generateBorders(borders);
+        }
+
+        private async Task generateMap(Dictionary<string, List<string>> borders)
+        {
+            using var a = contextFactory.CreateDbContext();
+            var firstMap = new Maps() { Name = "Antarctica" };
+
+            var mapTerritories = new List<MapTerritory>();
+
+
+            foreach (var mainTerritory in borders)
+            {
+                mapTerritories.Add(new MapTerritory() { TerritoryName = mainTerritory.Key });
+            }
+
+            firstMap.MapTerritory = mapTerritories;
+
+            a.Add(firstMap);
+            await a.SaveChangesAsync();
+        }
+
+        private async Task generateBorders(Dictionary<string, List<string>> borders)
+        {
+            // Add borders
+            foreach (var mainTerritory in borders)
+            {
+                foreach (var border in mainTerritory.Value)
+                {
+                    await addBorderIfNotExistant(mainTerritory.Key, border);
+                }
+            }
+        }
+
+        private Dictionary<string, List<string>> ReadMapJson()
+        {
+            using StreamReader r = new StreamReader("antarcticaborders.json");
+            
+            string json = r.ReadToEnd();
+            return JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
+        }
+
+        /// <summary>
+        /// Should be ran on every start to validate if map exists or not
+        /// </summary>
+        /// <returns></returns>
+        async Task DoesThisMapExist()
+        {
+            using var a = contextFactory.CreateDbContext();
+            var fileTerritories = ReadMapJson();
+
+            var antarctica = await a.Maps
+                .Include(x => x.MapTerritory)
+                .Where(x => x.Name == "Antarctica")
+                .FirstOrDefaultAsync();
+
+            if(antarctica == null)
+            {
+                await GenerateDefaultMap();
+                return;
+            }
+
+            // Regenerate everything
+            if(antarctica.MapTerritory.Count != fileTerritories.Count)
+            {
+                a.Remove(antarctica);
+                a.RemoveRange(antarctica.MapTerritory);
+                await a.SaveChangesAsync();
+
+                await GenerateDefaultMap();
+                return;
+            }
+
+            foreach(var territory in ReadMapJson())
+            {
+                if(antarctica.MapTerritory.FirstOrDefault(x => x.TerritoryName == territory.Key) == null)
+                {
+                    // This territory is missing
+                    throw new ArgumentException($"`{territory.Key}` territory is missing from the database. Please notify an administrator.");
+                }
+            }
         }
 
         async Task<bool> areTheyBorders(string territoryName, string territoryName2)

@@ -1,0 +1,124 @@
+{
+    "Vibri": [
+        "Ranku",
+        "Dager",
+        "Ramac"
+    ],
+    "Ranku": [
+        "Vibri",
+        "Dager"
+    ],
+    "Dager": [
+        "Ranku",
+        "Vibri",
+        "Ramac",
+        "Renyt",
+        "Ronetia"
+    ],
+    "Ramac": [
+        "Vibri",
+        "Dager",
+        "Renyt",
+        "Rilanor",
+        "Napana"
+    ],
+    "Napana": [
+        "Ramac",
+        "Rilanor",
+        "Tustra"
+    ],
+    "Tustra": [
+        "Napana",
+        "Rilanor",
+        "Sopore"
+    ],
+    "Sopore": [
+        "Tustra",
+        "Rilanor",
+        "Lisu",
+        "Caydo"
+    ],
+    "Caydo": [
+        "Sopore",
+        "Lisu"
+    ],
+    "Rilanor": [
+        "Ramac",
+        "Napana",
+        "Tustra",
+        "Sopore",
+        "Lisu",
+        "Renyt"
+    ],
+    "Lisu": [
+        "Rilanor",
+        "Sopore",
+        "Caydo",
+        "Laly",
+        "Kide",
+        "Renyt"
+    ],
+    "Renyt": [
+        "Dager",
+        "Ramac",
+        "Rilanor",
+        "Lisu",
+        "Kide",
+        "Ronetia"
+    ],
+    "Kide": [
+        "Renyt",
+        "Lisu",
+        "Laly",
+        "Sona",
+        "Ronetia"
+    ],
+    "Laly": [
+        "Lisu",
+        "Kide",
+        "Sona",
+        "Caba"
+    ],
+    "Caba": [
+        "Laly",
+        "Sona",
+        "Wistan"
+    ],
+    "Sona": [
+        "Kide",
+        "Laly",
+        "Caba",
+        "Wistan",
+        "Ronetia"
+    ],
+    "Ronetia": [
+        "Dager",
+        "Renyt",
+        "Kide",
+        "Sona",
+        "Wistan",
+        "Prusnia"
+    ],
+    "Prusnia": [
+        "Ronetia",
+        "Wistan",
+        "Rospa",
+        "Bavi"
+    ],
+    "Wistan": [
+        "Caba",
+        "Sona",
+        "Ronetia",
+        "Prusnia",
+        "Rospa"
+    ],
+    "Rospa": [
+        "Wistan",
+        "Prusnia",
+        "Bavi"
+    ],
+    "Bavi": [
+        "Rospa",
+        "Prusnia"
+    ]
+}
