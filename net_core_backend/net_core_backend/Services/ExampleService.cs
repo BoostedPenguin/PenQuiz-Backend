@@ -27,11 +27,11 @@ namespace net_core_backend.Services
             this.mapGeneratorService = mapGeneratorService;
         }
 
-        public async Task DoSomething()
+        public async Task<bool> DoSomething()
         {
             var borders = await mapGeneratorService.GetBorders("srg", "ar");
 
-            var g = 5;
+            return false;
         }
     }
 }

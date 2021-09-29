@@ -49,7 +49,7 @@ namespace net_core_backend.Services
 
             if (defaultQuestionsMissing.Count > 0)
             {
-                await a.AddRangeAsync(defaultQuestions.Where(x => defaultQuestionsMissing.Contains(x.Question)).ToList(););
+                await a.AddRangeAsync(defaultQuestions.Where(x => defaultQuestionsMissing.Contains(x.Question)).ToList());
                 await a.SaveChangesAsync();
             }
 
