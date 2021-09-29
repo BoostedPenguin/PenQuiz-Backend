@@ -29,7 +29,7 @@ namespace net_core_backend.Services
 
         public async Task DoSomething()
         {
-            var borders = await mapGeneratorService.GetBorders("srg");
+            var borders = await mapGeneratorService.GetBorders("srg", "ar");
 
             var g = 5;
         }
