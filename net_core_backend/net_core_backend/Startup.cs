@@ -60,6 +60,8 @@ namespace net_core_backend
             
             services.AddSingleton<IAccountService, AccountService>();
 
+            services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
+
             services.AddHttpContextAccessor();
 
             services.AddHttpClient();
@@ -122,8 +124,10 @@ namespace net_core_backend
             });
 
             services.AddSignalR();
+            
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
+            services.AddHostedService<BackgroundTaskService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -141,7 +145,6 @@ namespace net_core_backend
                 app.UseDeveloperExceptionPage();
             }
 
-
             app.UseRouting();
 
             //app.UseApiResponseAndExceptionWrapper();
@@ -150,13 +153,11 @@ namespace net_core_backend
 
             app.UseHttpsRedirection();
 
-
             app.UseAuthentication();
 
             app.UseAuthorization();
 
             //app.UseMiddleware<JwtMiddleware>();
-
 
             app.UseEndpoints(endpoints =>
             {
