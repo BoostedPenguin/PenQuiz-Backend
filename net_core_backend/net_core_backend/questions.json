@@ -1,0 +1,48 @@
+[
+    {
+        "Question": "Which is my favourite option?",
+        "IsNumberQuestion": false,
+        "Answers": [
+            {
+                "Answer": "First option",
+                "Correct": false
+            },
+            {
+                "Answer": "Second option",
+                "Correct": true
+            },
+            {
+                "Answer": "Third option",
+                "Correct": false
+            },
+            {
+                "Answer": "Fourth option",
+                "Correct": false
+            }
+
+        ]
+    },
+    {
+        "Question": "What is a cool option?",
+        "IsNumberQuestion": false,
+        "Answers": [
+            {
+                "Answer": "Coolio option",
+                "Correct": false
+            },
+            {
+                "Answer": "Very coolio option",
+                "Correct": false
+            },
+            {
+                "Answer": "Semi coolio option",
+                "Correct": true
+            },
+            {
+                "Answer": "awesome option",
+                "Correct": false
+            }
+
+        ]
+    }
+]

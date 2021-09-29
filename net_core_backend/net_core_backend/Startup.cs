@@ -62,6 +62,8 @@ namespace net_core_backend
 
             services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
 
+            services.AddSingleton<IQuestionService, QuestionService>();
+
             services.AddHttpContextAccessor();
 
             services.AddHttpClient();

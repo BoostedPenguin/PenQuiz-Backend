@@ -22,9 +22,16 @@ namespace net_core_backend
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             using var scope = serviceProvider.CreateScope();
-            var service = scope.ServiceProvider.GetRequiredService<IMapGeneratorService>();
 
-            await service.ValidateMap();
+            // Validate map
+            var mapGeneratorService = scope.ServiceProvider.GetRequiredService<IMapGeneratorService>();
+
+            await mapGeneratorService.ValidateMap();
+
+            // Validate questions
+            var questionService = scope.ServiceProvider.GetRequiredService<IQuestionService>();
+
+            await questionService.AddDefaultQuestions();
         }
 
         public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

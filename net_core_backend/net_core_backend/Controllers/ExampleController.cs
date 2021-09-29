@@ -27,12 +27,14 @@ namespace net_core_backend.Controllers
         private readonly ILogger<ExampleController> _logger;
         private readonly IMapper mapper;
         private readonly IExampleService context;
+        private readonly IQuestionService questionService;
 
-        public ExampleController(ILogger<ExampleController> logger,IMapper mapper, IExampleService _context)
+        public ExampleController(ILogger<ExampleController> logger,IMapper mapper, IExampleService _context, IQuestionService questionService)
         {
             _logger = logger;
             this.mapper = mapper;
             context = _context;
+            this.questionService = questionService;
         }
 
         [HttpGet("{word}")]
@@ -40,7 +42,8 @@ namespace net_core_backend.Controllers
         {
             try
             {
-                await context.DoSomething();
+                //await context.DoSomething();
+                await questionService.AddDefaultQuestions();
 
                 var result = new DefaultModel() { Id = 5 };
 
