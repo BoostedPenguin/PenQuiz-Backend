@@ -14,7 +14,7 @@ namespace net_core_backend.Models
         public int Id { get; set; }
         public string Email { get; set; }
         public string Username { get; set; }
-        public bool IsAdmin { get; set; }
+        public string Role { get; set; }
         public bool IsBanned { get; set; }
         public bool IsOnline { get; set; }
         public bool Provider { get; set; }

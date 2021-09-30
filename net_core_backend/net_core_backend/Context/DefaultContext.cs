@@ -301,7 +301,7 @@ namespace net_core_backend.Context
                     .HasColumnName("email")
                     .HasMaxLength(100);
 
-                entity.Property(e => e.IsAdmin).HasColumnName("isAdmin");
+                entity.Property(e => e.Role).HasColumnName("role").IsRequired().HasDefaultValue("user");
 
                 entity.Property(e => e.IsBanned).HasColumnName("isBanned");
 
