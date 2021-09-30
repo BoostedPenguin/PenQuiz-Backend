@@ -10,6 +10,6 @@ namespace net_core_backend.Models
         public int QuestionId { get; set; }
 
         public virtual Questions Question { get; set; }
-        public virtual RoundsHistory Round { get; set; }
+        public virtual Rounds Round { get; set; }
     }
 }

@@ -8,8 +8,8 @@ namespace net_core_backend.Models
         public GameInstance()
         {
             ObjectTerritory = new HashSet<ObjectTerritory>();
-            ParticipantsNavigation = new HashSet<Participants>();
-            RoundsHistory = new HashSet<RoundsHistory>();
+            Participants = new HashSet<Participants>();
+            Rounds = new HashSet<Rounds>();
         }
 
         public int Id { get; set; }
@@ -20,12 +20,12 @@ namespace net_core_backend.Models
         public DateTime? EndTime { get; set; }
         public int Mapid { get; set; }
         public int ParticipantsId { get; set; }
+        public int GameCreatorId { get; set; }
 
         public virtual Maps Map { get; set; }
-        public virtual Participants Participants { get; set; }
         public virtual GameResult Result { get; set; }
         public virtual ICollection<ObjectTerritory> ObjectTerritory { get; set; }
-        public virtual ICollection<Participants> ParticipantsNavigation { get; set; }
-        public virtual ICollection<RoundsHistory> RoundsHistory { get; set; }
+        public virtual ICollection<Participants> Participants { get; set; }
+        public virtual ICollection<Rounds> Rounds { get; set; }
     }
 }

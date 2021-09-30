@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using net_core_backend.Context;
 
 namespace net_core_backend.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20210930181854_added-game-creator")]
+    partial class addedgamecreator
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,7 +354,7 @@ namespace net_core_backend.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("NOT_STARTED");
 
-                    b.Property<int?>("RoundWinnerId")
+                    b.Property<int>("RoundWinnerId")
                         .HasColumnName("roundWinnerId")
                         .HasColumnType("int");
 
@@ -380,12 +382,6 @@ namespace net_core_backend.Migrations
                     b.Property<bool>("IsBanned")
                         .HasColumnName("isBanned")
                         .HasColumnType("bit");
-
-                    b.Property<bool>("IsInGame")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("isInGame")
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsOnline")
                         .HasColumnName("isOnline")
@@ -448,6 +444,12 @@ namespace net_core_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("net_core_backend.Models.Participants", "Participants")
+                        .WithMany("GameInstance")
+                        .HasForeignKey("ParticipantsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("net_core_backend.Models.GameResult", "Result")
                         .WithMany("GameInstance")
                         .HasForeignKey("ResultId")
@@ -485,7 +487,7 @@ namespace net_core_backend.Migrations
             modelBuilder.Entity("net_core_backend.Models.Participants", b =>
                 {
                     b.HasOne("net_core_backend.Models.GameInstance", "Game")
-                        .WithMany("Participants")
+                        .WithMany("ParticipantsNavigation")
                         .HasForeignKey("GameId")
                         .HasConstraintName("FK__Participa__gameI__5812160E")
                         .IsRequired();

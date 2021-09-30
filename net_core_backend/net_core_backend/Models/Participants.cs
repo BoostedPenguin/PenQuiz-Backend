@@ -7,7 +7,6 @@ namespace net_core_backend.Models
     {
         public Participants()
         {
-            GameInstance = new HashSet<GameInstance>();
         }
 
         public int Id { get; set; }
@@ -17,6 +16,5 @@ namespace net_core_backend.Models
 
         public virtual GameInstance Game { get; set; }
         public virtual Users Player { get; set; }
-        public virtual ICollection<GameInstance> GameInstance { get; set; }
     }
 }

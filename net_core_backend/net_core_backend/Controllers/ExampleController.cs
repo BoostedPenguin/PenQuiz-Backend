@@ -28,24 +28,25 @@ namespace net_core_backend.Controllers
         private readonly IMapper mapper;
         private readonly IExampleService context;
         private readonly IQuestionService questionService;
+        private readonly IGameService gameService;
 
-        public ExampleController(ILogger<ExampleController> logger,IMapper mapper, IExampleService _context, IQuestionService questionService)
+        public ExampleController(ILogger<ExampleController> logger,IMapper mapper, IExampleService _context, IQuestionService questionService, IGameService gameService)
         {
             _logger = logger;
             this.mapper = mapper;
             context = _context;
             this.questionService = questionService;
+            this.gameService = gameService;
         }
 
-        [Authorize(Roles = "admin")]
         [HttpGet("{word}")]
         public async Task<IActionResult> AddSomething([FromRoute] string word)
         {
             try
             {
-                await context.DoSomething();
-                await questionService.AddDefaultQuestions();
-
+                //await context.DoSomething();
+                //await questionService.AddDefaultQuestions();
+                await gameService.CreateGameLobby();
                 var result = new DefaultModel() { Id = 5 };
 
                 var dto = mapper.Map<ExampleViewModel>(result);

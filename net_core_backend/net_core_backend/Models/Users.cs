@@ -18,6 +18,7 @@ namespace net_core_backend.Models
         public bool IsBanned { get; set; }
         public bool IsOnline { get; set; }
         public bool Provider { get; set; }
+        public bool IsInGame { get; set; }
 
         public virtual ICollection<Participants> Participants { get; set; }
         public virtual ICollection<RefreshToken> RefreshToken { get; set; }

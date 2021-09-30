@@ -29,7 +29,6 @@ namespace net_core_backend.Context
         public virtual DbSet<RefreshToken> RefreshToken { get; set; }
         public virtual DbSet<RoundQuestion> RoundQuestion { get; set; }
         public virtual DbSet<Rounds> Rounds { get; set; }
-        public virtual DbSet<RoundsHistory> RoundsHistory { get; set; }
         public virtual DbSet<Users> Users { get; set; }
 
 
@@ -90,6 +89,8 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.InProgress).HasColumnName("inProgress");
 
+                entity.Property(e => e.GameCreatorId).HasColumnName("gameCreatorId");
+
                 entity.Property(e => e.QuestionTimerSeconds).HasColumnName("questionTimerSeconds");
 
                 entity.Property(e => e.ResultId).HasColumnName("resultId");
@@ -102,10 +103,6 @@ namespace net_core_backend.Context
                     .WithMany(p => p.GameInstance)
                     .HasForeignKey(d => d.Mapid)
                     .HasConstraintName("FK_GameInstance_Maps");
-
-                entity.HasOne(d => d.Participants)
-                    .WithMany(p => p.GameInstance)
-                    .HasForeignKey(d => d.ParticipantsId);
 
                 entity.HasOne(d => d.Result)
                     .WithMany(p => p.GameInstance)
@@ -196,7 +193,7 @@ namespace net_core_backend.Context
                 entity.Property(e => e.Score).HasColumnName("score");
 
                 entity.HasOne(d => d.Game)
-                    .WithMany(p => p.ParticipantsNavigation)
+                    .WithMany(p => p.Participants)
                     .HasForeignKey(d => d.GameId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK__Participa__gameI__5812160E");
@@ -256,16 +253,7 @@ namespace net_core_backend.Context
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.TotalRounds).HasColumnName("totalRounds");
-            });
-
-            modelBuilder.Entity<RoundsHistory>(entity =>
-            {
                 entity.HasIndex(e => e.GameInstanceId);
-
-                entity.HasIndex(e => e.RoundId);
-
-                entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.AttackerId).HasColumnName("attackerId");
 
@@ -275,21 +263,16 @@ namespace net_core_backend.Context
                     .HasColumnName("description")
                     .HasMaxLength(255);
 
-                entity.Property(e => e.GameInstanceId).HasColumnName("gameInstanceId");
+                entity.Property(e => e.RoundStage).HasConversion<string>().HasDefaultValue(RoundStage.NOT_STARTED);
 
-                entity.Property(e => e.RoundId).HasColumnName("roundID");
+                entity.Property(e => e.GameInstanceId).HasColumnName("gameInstanceId");
 
                 entity.Property(e => e.RoundWinnerId).HasColumnName("roundWinnerId");
 
                 entity.HasOne(d => d.GameInstance)
-                    .WithMany(p => p.RoundsHistory)
+                    .WithMany(p => p.Rounds)
                     .HasForeignKey(d => d.GameInstanceId)
                     .HasConstraintName("FK__RoundsHis__gameI__5CD6CB2B");
-
-                entity.HasOne(d => d.Round)
-                    .WithMany(p => p.RoundsHistory)
-                    .HasForeignKey(d => d.RoundId)
-                    .HasConstraintName("FK__RoundsHis__round__5BE2A6F2");
             });
 
             modelBuilder.Entity<Users>(entity =>
@@ -304,6 +287,8 @@ namespace net_core_backend.Context
                 entity.Property(e => e.Role).HasColumnName("role").IsRequired().HasDefaultValue("user");
 
                 entity.Property(e => e.IsBanned).HasColumnName("isBanned");
+
+                entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
 
                 entity.Property(e => e.IsOnline).HasColumnName("isOnline");
 

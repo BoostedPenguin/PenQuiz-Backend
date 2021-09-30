@@ -23,6 +23,7 @@ namespace net_core_backend.Services
         Task<bool> AreTheyBorders(int territoryId, int territoryId2);
         Task<MapTerritory[]> GetBorders(string territoryName, string mapName);
         Task<MapTerritory[]> GetBorders(int territoryId);
+        Task<int> GetAmountOfTerritories(int mapId);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -54,6 +55,12 @@ namespace net_core_backend.Services
 
 
             // Do something
+        }
+
+        public async Task ChooseStartedTerritories()
+        {
+            var territories = new List<MapTerritory>();
+            //TODO
         }
 
         private async Task<bool> AddBorderIfNotExistant(int territoryId, int territoryId2)
@@ -255,6 +262,15 @@ namespace net_core_backend.Services
             if (bothTerritories.Count > 2) throw new ArgumentException("There was 1 or more territory name, bound to this map, which was duplicated in our db.");
 
             return await AreTheyBorders(bothTerritories[0].Id, bothTerritories[1].Id);
+        }
+
+        public async Task<int> GetAmountOfTerritories(int mapId)
+        {
+            using var a = contextFactory.CreateDbContext();
+
+            var totalTerritories = await a.MapTerritory.Where(x => x.MapId == mapId).CountAsync();
+
+            return totalTerritories;
         }
     }
 }
