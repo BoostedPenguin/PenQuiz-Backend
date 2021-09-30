@@ -29,7 +29,8 @@ namespace net_core_backend.Services
 
         public async Task<bool> DoSomething()
         {
-            var borders = await mapGeneratorService.GetBorders("srg", "ar");
+            //var borders = await mapGeneratorService.GetBorders("srg", "ar");
+            var b = httpContext.GetCurrentUserId();
 
             return false;
         }

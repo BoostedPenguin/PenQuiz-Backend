@@ -43,7 +43,7 @@ namespace net_core_backend.Controllers
         {
             try
             {
-                //await context.DoSomething();
+                await context.DoSomething();
                 await questionService.AddDefaultQuestions();
 
                 var result = new DefaultModel() { Id = 5 };
