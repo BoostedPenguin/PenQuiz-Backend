@@ -100,10 +100,13 @@ namespace net_core_backend
 
                 options.TokenValidationParameters = new TokenValidationParameters()
                 {
+                    ValidateIssuer = true,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ValidIssuer = Configuration.GetSection("AppSettings").GetValue<string>("Issuer"),
+                    ValidAudience = Configuration.GetSection("AppSettings").GetValue<string>("Issuer"),
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings").GetValue<string>("Secret"))),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
                 };
 
                 options.Events = new JwtBearerEvents

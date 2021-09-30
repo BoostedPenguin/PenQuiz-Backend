@@ -35,13 +35,6 @@ namespace backend_testing_xunit
             services.AddHttpClient();
 
             services.AddAutoMapper(c => c.AddProfile<AutoMapping>(), typeof(Startup));
-
-            services.AddSingleton<IExampleService, ExampleService>();
-
-
-            // Comment this if you don't want to seed the database
-            // WARNING: It may cause unexpected database errors
-            //DatabaseSeeder.Seed(new ContextFactory(Configuration.GetConnectionString("Testing_SQLCONNSTR_Database")));
         }
     }
 }

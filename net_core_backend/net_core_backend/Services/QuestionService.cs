@@ -68,7 +68,12 @@ namespace net_core_backend.Services
                 throw new ArgumentException("There isn't a question with that id in our database");
 
             var answer = questionAnswers.Answers.FirstOrDefault(x => x.Id == selectedAnswer);
-
+            
+            // TODO enter if the user answered correctly or falsely inside of roundquestions
+            // Either give / or not give him a territory
+            // If you give him update his boundries
+            // If you don't give him remove "attackedBy" from territory || make it neutral
+            // Update his score
             return questionAnswers;
         }
 

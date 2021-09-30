@@ -9,6 +9,7 @@ namespace net_core_backend.Models
         public int MapTerritoryId { get; set; }
         public int MapObjectId { get; set; }
         public int? TakenBy { get; set; }
+        public int? AttackedBy { get; set; }
 
         public virtual GameInstance MapObject { get; set; }
         public virtual MapTerritory MapTerritory { get; set; }

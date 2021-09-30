@@ -37,6 +37,7 @@ namespace net_core_backend.Controllers
             this.questionService = questionService;
         }
 
+        [Authorize]
         [HttpGet("{word}")]
         public async Task<IActionResult> AddSomething([FromRoute] string word)
         {

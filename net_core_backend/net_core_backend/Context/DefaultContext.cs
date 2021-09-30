@@ -168,6 +168,8 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.TakenBy).HasColumnName("takenBy");
 
+                entity.Property(e => e.AttackedBy).HasColumnName("attackedBy");
+
                 entity.HasOne(d => d.MapObject)
                     .WithMany(p => p.ObjectTerritory)
                     .HasForeignKey(d => d.MapObjectId)
