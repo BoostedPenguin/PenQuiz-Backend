@@ -39,7 +39,10 @@ namespace net_core_backend.Services.Extensions
         /// <returns></returns>
         public static int GetCurrentUserId(this IHttpContextAccessor httpContext)
         {
-            return int.Parse(httpContext.HttpContext.User.Claims.Where(x => x.Type == "id").Select(x => x.Value).FirstOrDefault());
+            return int.Parse(httpContext.HttpContext.User.Claims
+                .Where(x => x.Type == ClaimTypes.NameIdentifier)
+                .Select(x => x.Value)
+                .FirstOrDefault());
         }
     }
 }

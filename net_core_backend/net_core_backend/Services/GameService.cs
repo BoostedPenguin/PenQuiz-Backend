@@ -13,9 +13,18 @@ namespace net_core_backend.Services
     public interface IGameService
     {
         void AddParticipantToGame();
-        Task CreateGameLobby();
+        Task<GameInstance> CreateGameLobby();
         void RemoveParticipantFromGame();
         Task StartGame();
+    }
+
+    public class ExistingGameException : Exception
+    {
+        public GameInstance ExistingGame { get; }
+        public ExistingGameException(GameInstance existingGame, string message) : base(message)
+        {
+            this.ExistingGame = existingGame;
+        }
     }
 
     public class GameService : DataService<DefaultModel>, IGameService
@@ -35,9 +44,140 @@ namespace net_core_backend.Services
             this.mapGeneratorService = mapGeneratorService;
         }
 
-        public async Task CreateGameLobby()
+        public async Task<GameInstance> CreateGameLobby()
         {
             // Create url-link for people to join // Random string in header?
+            // CLOSE ALL OTHER IN_LOBBY OPEN INSTANCES BY THIS PLAYER
+            
+            using var db = contextFactory.CreateDbContext();
+            var userId = httpContextAccessor.GetCurrentUserId();
+
+            try
+            {
+                await CanPersonJoin(userId);
+            }
+            catch(ExistingGameException game)
+            {
+                return game.ExistingGame;
+            }
+
+            var map = await db.Maps.Where(x => x.Name == DefaultMap).FirstOrDefaultAsync();
+
+
+            if (map == null)
+            {
+                await mapGeneratorService.ValidateMap();
+            }
+
+            var invitationLink = CreateInvitiationUrl();
+            var gameInstance = new GameInstance()
+            {
+                GameState = GameState.IN_LOBBY,
+                InvitationLink = invitationLink,
+                GameCreatorId = userId,
+                Map = map,
+                StartTime = DateTime.Now,
+                QuestionTimerSeconds = 30,
+            };
+
+            gameInstance.Participants.Add(new Participants() 
+            {
+                PlayerId = userId,
+                Score = 0,
+            });
+
+            await db.AddAsync(gameInstance);
+            await db.SaveChangesAsync();
+
+
+            return gameInstance;
+        }
+
+        private async Task<bool> CanPersonJoin(int userId)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var userGames = await db.GameInstance
+                .Include(x => x.Participants)
+                .Where(x => (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS) && x.Participants
+                    .Any(y => y.PlayerId == userId))
+                .ToListAsync();
+
+
+            // IF THERE ARE ANY IN_PROGRESS INSTANCES WITH THIS PLAYER PREVENT LOBBY CREATION
+            if (userGames.Any(x => x.GameState == GameState.IN_PROGRESS))
+            {
+                throw new ArgumentException("You already have a game in progress. It has to finish first.");
+            }
+
+            var lobbyGames = userGames.Where(x => x.GameState == GameState.IN_LOBBY).ToList();
+
+            // You shouldn't be able to participate in more than 1 lobby game open.
+            // It happend because some error. Close all game lobbies.
+            if (lobbyGames.Count() > 1)
+            {
+                lobbyGames.ForEach(x => x.GameState = GameState.CANCELED);
+
+                db.UpdateRange(lobbyGames);
+                await db.SaveChangesAsync();
+                throw new ArgumentException("Oops. There was an internal server error. Please, start a new game lobby");
+            }
+
+
+            // User participates already in an open lobby.
+            // Redirect him to this instead of creating a new instance.
+            if (lobbyGames.Count() == 1)
+            {
+                throw new ExistingGameException(lobbyGames[0], "User participates already in an open lobby");
+            }
+
+            return true;
+        }
+
+        public async Task<GameInstance> JoinGameLobby(string lobbyUrl)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var userId = httpContextAccessor.GetCurrentUserId();
+            var gameInstance = await db.GameInstance
+                .Include(x => x.Participants)
+                .Where(x => x.InvitationLink == lobbyUrl)
+                .FirstOrDefaultAsync();
+
+            if (gameInstance == null)
+                throw new ArgumentException("The invitation link is invalid");
+
+            if (gameInstance.Participants.Count() > RequiredPlayers)
+                throw new ArgumentException("Sorry, this lobby has reached the max amount of players");
+
+            try
+            {
+                await CanPersonJoin(userId);
+            }
+            catch (ExistingGameException game)
+            {
+                return game.ExistingGame;
+            }
+
+
+            gameInstance.Participants.Add(new Participants()
+            {
+                PlayerId = userId,
+                Score = 0
+            });
+
+            db.Update(gameInstance);
+            await db.SaveChangesAsync();
+
+            return gameInstance;
+        }
+
+        public string CreateInvitiationUrl()
+        {
+            var baseUrl = httpContextAccessor.HttpContext.Request.Host.Value;
+            baseUrl = $"http://{baseUrl}/game/join/{Guid.NewGuid():N}";
+
+            return baseUrl;
         }
 
         public void AddParticipantToGame()
@@ -60,7 +200,7 @@ namespace net_core_backend.Services
             var gameInstance = await a.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
-                .Where(x => x.GameCreatorId == userId && x.InProgress)
+                .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
 
             if (gameInstance == null) throw new ArgumentException("Game instance is null or has completed already");
@@ -101,7 +241,7 @@ namespace net_core_backend.Services
                 }
             }
             //TODO
-            // Can't start game if any player is in another game
+            // Create ObjectTerritories = MapTerritories :)
         }
 
         class UserAttackOrder

@@ -17,22 +17,18 @@ namespace net_core_backend.Services
     public class ExampleService : DataService<DefaultModel>, IExampleService
     {
         private readonly IContextFactory contextFactory;
-        private readonly IHttpContextAccessor httpContext;
-        private readonly IMapGeneratorService mapGeneratorService;
 
-        public ExampleService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        public ExampleService(IContextFactory _contextFactory) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
-            httpContext = httpContextAccessor;
-            this.mapGeneratorService = mapGeneratorService;
         }
 
         public async Task<bool> DoSomething()
         {
             //var borders = await mapGeneratorService.GetBorders("srg", "ar");
-            var b = httpContext.GetCurrentUserId();
+            //var b = httpContext.GetCurrentUserId();
 
-            return false;
+            return true;
         }
     }
 }

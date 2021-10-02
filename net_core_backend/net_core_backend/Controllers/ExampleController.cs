@@ -24,19 +24,11 @@ namespace net_core_backend.Controllers
     [Route("api/[controller]")]
     public class ExampleController : ControllerBase
     {
-        private readonly ILogger<ExampleController> _logger;
-        private readonly IMapper mapper;
         private readonly IExampleService context;
-        private readonly IQuestionService questionService;
-        private readonly IGameService gameService;
 
-        public ExampleController(ILogger<ExampleController> logger,IMapper mapper, IExampleService _context, IQuestionService questionService, IGameService gameService)
+        public ExampleController(IExampleService _context)
         {
-            _logger = logger;
-            this.mapper = mapper;
             context = _context;
-            this.questionService = questionService;
-            this.gameService = gameService;
         }
 
         [HttpGet("{word}")]
@@ -44,14 +36,11 @@ namespace net_core_backend.Controllers
         {
             try
             {
-                //await context.DoSomething();
+                var result = await context.DoSomething();
                 //await questionService.AddDefaultQuestions();
-                await gameService.CreateGameLobby();
-                var result = new DefaultModel() { Id = 5 };
+                //await gameService.CreateGameLobby();
 
-                var dto = mapper.Map<ExampleViewModel>(result);
-
-                return Ok("Scaffolding worked");
+                return Ok($"Did scaffolding work: {result}");
             }
             catch (Exception ex)
             {

@@ -21,9 +21,13 @@ namespace backend_testing_xunit
     public class ExampleControllerTest : IDisposable
     {
         DefaultContext context;
+        Mock<IContextFactory> mockContextFactory;
         public ExampleControllerTest()
         {
+            mockContextFactory = new Mock<IContextFactory>();
+
             context = CreateDbContext();
+            mockContextFactory.Setup(x => x.CreateDbContext(null)).Returns(context);
         }
 
 
@@ -39,15 +43,17 @@ namespace backend_testing_xunit
             return dbContext;
         }
 
+
+
         [Fact]
         public async Task ExampleTest()
         {
-            var b = new Mock<IExampleService>();
-            b.Setup(x => x.DoSomething()).ReturnsAsync(true);
 
-            var g = context.Questions.ToList();
+            var service = new ExampleService(mockContextFactory.Object);
 
-            Assert.Equal(true, true);
+            var result = await service.DoSomething();
+
+            Assert.True(result);
         }
 
         public void Dispose()

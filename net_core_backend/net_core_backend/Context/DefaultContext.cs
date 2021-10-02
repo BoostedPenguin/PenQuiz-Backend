@@ -87,7 +87,11 @@ namespace net_core_backend.Context
                     .HasColumnName("end_time")
                     .HasColumnType("datetime");
 
-                entity.Property(e => e.InProgress).HasColumnName("inProgress");
+                entity.Property(e => e.GameState).HasConversion<string>().HasDefaultValue(GameState.IN_LOBBY);
+
+                entity.Property(e => e.InvitationLink)
+                    .HasColumnName("invitationLink")
+                    .HasMaxLength(1500);
 
                 entity.Property(e => e.GameCreatorId).HasColumnName("gameCreatorId");
 
