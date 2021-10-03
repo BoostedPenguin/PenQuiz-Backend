@@ -71,5 +71,15 @@ namespace backend_testing_xunit
 
             Assert.NotNull(result);
         }
+
+        [Fact]
+        public async Task TestJoinGameLobby()
+        {
+            var prepare = await gameService.CreateGameLobby();
+
+            var result = await gameService.JoinGameLobby(prepare.InvitationLink);
+
+            Assert.NotNull(result);
+        }
     }
 }

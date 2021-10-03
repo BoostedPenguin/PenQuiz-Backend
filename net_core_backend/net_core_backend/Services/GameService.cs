@@ -12,9 +12,8 @@ namespace net_core_backend.Services
 {
     public interface IGameService
     {
-        void AddParticipantToGame();
         Task<GameInstance> CreateGameLobby();
-        void RemoveParticipantFromGame();
+        Task RemoveParticipantFromGame(int personToRemove);
         Task StartGame();
     }
 
@@ -180,14 +179,28 @@ namespace net_core_backend.Services
             return baseUrl;
         }
 
-        public void AddParticipantToGame()
+        public async Task RemoveParticipantFromGame(int personToRemoveID)
         {
+            using var db = contextFactory.CreateDbContext();
 
-        }
+            var userId = httpContextAccessor.GetCurrentUserId();
+            var gameInstance = await db.GameInstance
+                .Include(x => x.Participants)
+                .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
+                .FirstOrDefaultAsync();
 
-        public void RemoveParticipantFromGame()
-        {
+            if (gameInstance == null)
+                throw new ArgumentException("You aren't the owner of any games that are currently in lobby");
 
+            var removePerson = gameInstance.Participants
+                .Where(x => x.PlayerId == personToRemoveID)
+                .FirstOrDefault();
+
+            if (removePerson == null)
+                throw new ArgumentException("This person isn't in your game lobby.");
+
+            db.Remove(removePerson);
+            await db.SaveChangesAsync();
         }
 
         public async Task StartGame()
@@ -203,16 +216,19 @@ namespace net_core_backend.Services
                 .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
 
-            if (gameInstance == null) throw new ArgumentException("Game instance is null or has completed already");
+            if (gameInstance == null) 
+                throw new ArgumentException("Game instance is null or has completed already");
 
             var allPlayers = gameInstance.Participants.ToList();
 
-            if (allPlayers.Count != RequiredPlayers) throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
+            if (allPlayers.Count != RequiredPlayers) 
+                throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
 
             // Make sure no player is in another game
             foreach(var user in allPlayers)
             {
-                if (user.Player.IsInGame) throw new ArgumentException($"Can't start game. `{user.Player.Username}` is in another game currently.");
+                if (user.Player.IsInGame) 
+                    throw new ArgumentException($"Can't start game. `{user.Player.Username}` is in another game currently.");
             }
 
             // Get default map id
@@ -273,11 +289,11 @@ namespace net_core_backend.Services
 
             // Store 
             var attackOrder = new List<List<int>>();
-            while (emptyTerritories >= 3)
+            while (emptyTerritories >= RequiredPlayers)
             {
                 var fullRound = new List<int>();
 
-                while (fullRound.Count < 3)
+                while (fullRound.Count < RequiredPlayers)
                 {
                     var person = userIds[r.Next(0, RequiredPlayers)];
                     if (!fullRound.Contains(person))
