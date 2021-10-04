@@ -86,6 +86,24 @@ namespace net_core_backend.Controllers
             return BadRequest();
         }
 
+        [AllowAnonymous]
+        [HttpPost("revoke-cookie")]
+        public async Task<IActionResult> RevokeCookie()
+        {
+            try
+            {
+                var refreshToken = Request.Cookies["refreshToken"];
+                await accountService.RevokeCookie(refreshToken, ipAddress());
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                BadRequest(ex.Message);
+            }
+            return BadRequest();
+        }
+
 
         [HttpPost("revoke-token")]
         public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenRequest model)

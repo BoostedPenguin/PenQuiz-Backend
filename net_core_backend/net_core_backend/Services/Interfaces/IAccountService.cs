@@ -11,7 +11,7 @@ namespace net_core_backend.Services.Interfaces
         Task<Users> GetById(int id);
         Task<List<Users>> GetUsers();
         Task<AuthenticateResponse> RefreshToken(string token, string ipaddress);
-
+        Task RevokeCookie(string token, string ipAddress);
         Task<bool> RevokeToken(string token, string ipAddress);
     }
 }

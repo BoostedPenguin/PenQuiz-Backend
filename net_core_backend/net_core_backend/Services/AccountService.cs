@@ -57,6 +57,26 @@ namespace net_core_backend.Services
             }
         }
 
+        public async Task RevokeCookie(string token, string ipAddress)
+        {
+            using var a = contextFactory.CreateDbContext();
+            var user = a.Users.Include(x => x.RefreshToken).SingleOrDefault(x => x.RefreshToken.Any(y => y.Token == token));
+
+            // No user found with token
+            if (user == null) return;
+
+            var refreshToken = user.RefreshToken.Single(x => x.Token == token);
+            // No active refresh tokens
+            if (!refreshToken.IsActive) return;
+
+            refreshToken.Revoked = DateTime.UtcNow;
+            refreshToken.RevokedByIp = ipAddress;
+            refreshToken.ReplacedByToken = null;
+
+            a.Update(user);
+            await a.SaveChangesAsync();
+        }
+
         public async Task<AuthenticateResponse> RefreshToken(string token, string ipaddress)
         {
             using(var a = contextFactory.CreateDbContext())
