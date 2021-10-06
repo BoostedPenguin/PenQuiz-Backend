@@ -35,6 +35,7 @@ namespace net_core_backend.Services
         private const string DefaultMap = "Antarctica";
 
         const int RequiredPlayers = 3;
+        const int InvitationCodeLength = 4;
 
         public GameService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
@@ -68,11 +69,15 @@ namespace net_core_backend.Services
                 await mapGeneratorService.ValidateMap();
             }
 
-            var invitationLink = CreateInvitiationUrl();
+            var invitationLink = new int[InvitationCodeLength];
+            for(var i = 0; i < InvitationCodeLength; i++)
+            {
+                invitationLink[i] = r.Next(0, 9);
+            }
             var gameInstance = new GameInstance()
             {
                 GameState = GameState.IN_LOBBY,
-                InvitationLink = invitationLink,
+                InvitationLink = invitationLink.ToString(),
                 GameCreatorId = userId,
                 Map = map,
                 StartTime = DateTime.Now,
@@ -140,7 +145,7 @@ namespace net_core_backend.Services
             var userId = httpContextAccessor.GetCurrentUserId();
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
-                .Where(x => x.InvitationLink == lobbyUrl)
+                .Where(x => x.InvitationLink == lobbyUrl && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
 
             if (gameInstance == null)
@@ -171,11 +176,12 @@ namespace net_core_backend.Services
             return gameInstance;
         }
 
+        [Obsolete("Not storing whole url in db, just game inv prefix")]
         public string CreateInvitiationUrl()
         {
             var baseUrl = httpContextAccessor.HttpContext.Request.Host.Value;
             baseUrl = $"http://{baseUrl}/game/join/{Guid.NewGuid():N}";
-
+            Guid.NewGuid().ToString("N");
             return baseUrl;
         }
 
