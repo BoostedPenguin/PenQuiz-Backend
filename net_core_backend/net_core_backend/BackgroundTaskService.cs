@@ -28,6 +28,11 @@ namespace net_core_backend
 
             await mapGeneratorService.ValidateMap();
 
+            // Cancel all "stuck" games
+            var gameService = scope.ServiceProvider.GetRequiredService<IGameService>();
+
+            await gameService.CancelOngoingGames();
+
             // Validate questions
             var questionService = scope.ServiceProvider.GetRequiredService<IQuestionService>();
 

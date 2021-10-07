@@ -12,6 +12,7 @@ namespace net_core_backend.Services
 {
     public interface IGameService
     {
+        Task CancelOngoingGames();
         Task<GameInstance> CreateGameLobby();
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
         Task<GameInstance> RemoveOnDisconnect(int personToRemoveID);
@@ -144,6 +145,19 @@ namespace net_core_backend.Services
             return true;
         }
 
+        public async Task CancelOngoingGames()
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var ongoingGames = await db.GameInstance
+                .Include(x => x.Participants)
+                .Where(x => x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS)
+                .ToListAsync();
+            ongoingGames.ForEach(x => x.GameState = GameState.CANCELED);
+
+            await db.SaveChangesAsync();
+        }
+
         public async Task<GameInstance> JoinGameLobby(string lobbyUrl)
         {
             using var db = contextFactory.CreateDbContext();
@@ -157,6 +171,7 @@ namespace net_core_backend.Services
 
             if (gameInstance == null)
                 throw new ArgumentException("The invitation link is invalid");
+
 
             if (gameInstance.Participants.Count() > RequiredPlayers)
                 throw new ArgumentException("Sorry, this lobby has reached the max amount of players");
