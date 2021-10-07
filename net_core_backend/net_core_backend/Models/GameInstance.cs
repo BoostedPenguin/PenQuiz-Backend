@@ -31,7 +31,6 @@ namespace net_core_backend.Models
         public string InvitationLink { get; set; }
 
         public virtual Maps Map { get; set; }
-        public virtual GameResult Result { get; set; }
         public virtual ICollection<ObjectTerritory> ObjectTerritory { get; set; }
         public virtual ICollection<Participants> Participants { get; set; }
         public virtual ICollection<Rounds> Rounds { get; set; }

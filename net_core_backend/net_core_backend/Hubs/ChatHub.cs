@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using net_core_backend.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,15 +15,17 @@ namespace net_core_backend.Hubs
     [Authorize]
     public class ChatHub : Hub<IChatClient>
     {
-        //public async Task SendMessage(string message)
-        //{
-        //    await Clients.All.SendAsync("ReceiveMessage", Context.User);
-        //}
+        private readonly IExampleService service;
 
+        public ChatHub(IExampleService service)
+        {
+            this.service = service;
+        }
         // Same as above but it's strongly typed without magic strings ("receivemessage") is defined
         public async Task SendMessage(string message)
         {
-            await Clients.All.ReceiveMessage(message);
+            var result = await service.DoSomething();
+            await Clients.All.ReceiveMessage($"{message} | and the service injection is: {result}");
         }
 
         // Call only whoever called the method

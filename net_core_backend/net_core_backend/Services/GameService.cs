@@ -13,7 +13,9 @@ namespace net_core_backend.Services
     public interface IGameService
     {
         Task<GameInstance> CreateGameLobby();
-        Task RemoveParticipantFromGame(int personToRemove);
+        Task<GameInstance> JoinGameLobby(string lobbyUrl);
+        Task<GameInstance> RemoveOnDisconnect(int personToRemoveID);
+        Task<GameInstance> RemoveParticipantFromGame(int personToRemoveID);
         Task StartGame();
     }
 
@@ -69,15 +71,15 @@ namespace net_core_backend.Services
                 await mapGeneratorService.ValidateMap();
             }
 
-            var invitationLink = new int[InvitationCodeLength];
+            var invitationLink = "";
             for(var i = 0; i < InvitationCodeLength; i++)
             {
-                invitationLink[i] = r.Next(0, 9);
+                invitationLink += r.Next(0, 9).ToString();
             }
             var gameInstance = new GameInstance()
             {
                 GameState = GameState.IN_LOBBY,
-                InvitationLink = invitationLink.ToString(),
+                InvitationLink = invitationLink,
                 GameCreatorId = userId,
                 Map = map,
                 StartTime = DateTime.Now,
@@ -93,8 +95,11 @@ namespace net_core_backend.Services
             await db.AddAsync(gameInstance);
             await db.SaveChangesAsync();
 
-
-            return gameInstance;
+            return await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.Id == gameInstance.Id)
+                .FirstOrDefaultAsync();
         }
 
         private async Task<bool> CanPersonJoin(int userId)
@@ -103,6 +108,7 @@ namespace net_core_backend.Services
 
             var userGames = await db.GameInstance
                 .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
                 .Where(x => (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS) && x.Participants
                     .Any(y => y.PlayerId == userId))
                 .ToListAsync();
@@ -145,6 +151,7 @@ namespace net_core_backend.Services
             var userId = httpContextAccessor.GetCurrentUserId();
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
                 .Where(x => x.InvitationLink == lobbyUrl && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
 
@@ -173,7 +180,11 @@ namespace net_core_backend.Services
             db.Update(gameInstance);
             await db.SaveChangesAsync();
 
-            return gameInstance;
+            return await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.Id == gameInstance.Id)
+                .FirstOrDefaultAsync();
         }
 
         [Obsolete("Not storing whole url in db, just game inv prefix")]
@@ -185,7 +196,8 @@ namespace net_core_backend.Services
             return baseUrl;
         }
 
-        public async Task RemoveParticipantFromGame(int personToRemoveID)
+        // TODO
+        public async Task<GameInstance> RemoveParticipantFromGame(int personToRemoveId)
         {
             using var db = contextFactory.CreateDbContext();
 
@@ -193,6 +205,19 @@ namespace net_core_backend.Services
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
                 .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
+                .FirstOrDefaultAsync();
+            return null;
+        }
+
+        public async Task<GameInstance> RemoveOnDisconnect(int personToRemoveID)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var gameInstance = await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.Participants
+                    .Any(x => x.PlayerId == personToRemoveID) && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
 
             if (gameInstance == null)
@@ -205,8 +230,20 @@ namespace net_core_backend.Services
             if (removePerson == null)
                 throw new ArgumentException("This person isn't in your game lobby.");
 
-            db.Remove(removePerson);
+            // On creator disconnect or lobby kill.
+            if(personToRemoveID == gameInstance.GameCreatorId)
+            {
+                gameInstance.GameState = GameState.CANCELED;
+                var removeAll = gameInstance.Participants.Where(x => x.PlayerId != personToRemoveID).ToList();
+                db.RemoveRange(removeAll);
+            }
+            else
+            {
+                db.Remove(removePerson);
+            }
             await db.SaveChangesAsync();
+
+            return gameInstance;
         }
 
         public async Task StartGame()

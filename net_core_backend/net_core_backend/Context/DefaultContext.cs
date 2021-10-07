@@ -20,7 +20,6 @@ namespace net_core_backend.Context
         public virtual DbSet<Answers> Answers { get; set; }
         public virtual DbSet<Borders> Borders { get; set; }
         public virtual DbSet<GameInstance> GameInstance { get; set; }
-        public virtual DbSet<GameResult> GameResult { get; set; }
         public virtual DbSet<MapTerritory> MapTerritory { get; set; }
         public virtual DbSet<Maps> Maps { get; set; }
         public virtual DbSet<ObjectTerritory> ObjectTerritory { get; set; }
@@ -108,19 +107,6 @@ namespace net_core_backend.Context
                     .HasForeignKey(d => d.Mapid)
                     .HasConstraintName("FK_GameInstance_Maps");
 
-                entity.HasOne(d => d.Result)
-                    .WithMany(p => p.GameInstance)
-                    .HasForeignKey(d => d.ResultId)
-                    .HasConstraintName("FK__GameInsta__resul__59063A47");
-            });
-
-            modelBuilder.Entity<GameResult>(entity =>
-            {
-                entity.Property(e => e.Id).HasColumnName("id");
-
-                entity.Property(e => e.Description)
-                    .HasColumnName("description")
-                    .HasMaxLength(255);
             });
 
             modelBuilder.Entity<MapTerritory>(entity =>

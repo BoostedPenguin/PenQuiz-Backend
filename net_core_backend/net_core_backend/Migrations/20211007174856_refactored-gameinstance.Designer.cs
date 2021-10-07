@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using net_core_backend.Context;
 
 namespace net_core_backend.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20211007174856_refactored-gameinstance")]
+    partial class refactoredgameinstance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -117,6 +119,24 @@ namespace net_core_backend.Migrations
                     b.HasIndex("ResultId");
 
                     b.ToTable("GameInstance");
+                });
+
+            modelBuilder.Entity("net_core_backend.Models.GameResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("id")
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Description")
+                        .HasColumnName("description")
+                        .HasColumnType("nvarchar(255)")
+                        .HasMaxLength(255);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GameResult");
                 });
 
             modelBuilder.Entity("net_core_backend.Models.MapTerritory", b =>
@@ -434,6 +454,13 @@ namespace net_core_backend.Migrations
                         .WithMany("GameInstance")
                         .HasForeignKey("Mapid")
                         .HasConstraintName("FK_GameInstance_Maps")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("net_core_backend.Models.GameResult", "Result")
+                        .WithMany("GameInstance")
+                        .HasForeignKey("ResultId")
+                        .HasConstraintName("FK__GameInsta__resul__59063A47")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

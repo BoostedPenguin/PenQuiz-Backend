@@ -120,7 +120,7 @@ namespace net_core_backend
                         // If the request is for our hub...
                         var path = context.HttpContext.Request.Path;
                         if (!string.IsNullOrEmpty(accessToken) &&
-                            (path.StartsWithSegments("/chathubs")))
+                            (path.StartsWithSegments("/chathubs") || path.StartsWithSegments("/gamehubs")))
                         {
                             // Read the token out of the query string
                             context.Token = accessToken;
@@ -130,7 +130,10 @@ namespace net_core_backend
                 };
             });
 
-            services.AddSignalR();
+            services.AddSignalR().AddNewtonsoftJsonProtocol(x =>
+            {
+                x.PayloadSerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+            });
             
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
@@ -170,6 +173,7 @@ namespace net_core_backend
             {
                 endpoints.MapControllers();
                 endpoints.MapHub<ChatHub>("/chathubs");
+                endpoints.MapHub<GameHub>("/gamehubs");
             });
         }
     }
