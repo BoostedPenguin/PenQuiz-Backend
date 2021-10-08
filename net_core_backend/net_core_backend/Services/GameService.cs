@@ -20,12 +20,22 @@ namespace net_core_backend.Services
         Task StartGame();
     }
 
-    public class ExistingGameException : Exception
+    [Serializable]
+    public class ExistingLobbyGameException : Exception
     {
         public GameInstance ExistingGame { get; }
-        public ExistingGameException(GameInstance existingGame, string message) : base(message)
+        public ExistingLobbyGameException(GameInstance existingGame, string message) : base(message)
         {
             this.ExistingGame = existingGame;
+        }
+    }
+
+    [Serializable]
+    public class JoiningGameException : Exception
+    {
+        public JoiningGameException(string message) : base(message)
+        {
+
         }
     }
 
@@ -59,7 +69,7 @@ namespace net_core_backend.Services
             {
                 await CanPersonJoin(userId);
             }
-            catch(ExistingGameException game)
+            catch(ExistingLobbyGameException game)
             {
                 return game.ExistingGame;
             }
@@ -118,7 +128,7 @@ namespace net_core_backend.Services
             // IF THERE ARE ANY IN_PROGRESS INSTANCES WITH THIS PLAYER PREVENT LOBBY CREATION
             if (userGames.Any(x => x.GameState == GameState.IN_PROGRESS))
             {
-                throw new ArgumentException("You already have a game in progress. It has to finish first.");
+                throw new JoiningGameException("You already have a game in progress. It has to finish first.");
             }
 
             var lobbyGames = userGames.Where(x => x.GameState == GameState.IN_LOBBY).ToList();
@@ -131,7 +141,7 @@ namespace net_core_backend.Services
 
                 db.UpdateRange(lobbyGames);
                 await db.SaveChangesAsync();
-                throw new ArgumentException("Oops. There was an internal server error. Please, start a new game lobby");
+                throw new JoiningGameException("Oops. There was an internal server error. Please, start a new game lobby");
             }
 
 
@@ -139,7 +149,7 @@ namespace net_core_backend.Services
             // Redirect him to this instead of creating a new instance.
             if (lobbyGames.Count() == 1)
             {
-                throw new ExistingGameException(lobbyGames[0], "User participates already in an open lobby");
+                throw new ExistingLobbyGameException(lobbyGames[0], "User participates already in an open lobby");
             }
 
             return true;
@@ -170,17 +180,17 @@ namespace net_core_backend.Services
                 .FirstOrDefaultAsync();
 
             if (gameInstance == null)
-                throw new ArgumentException("The invitation link is invalid");
+                throw new JoiningGameException("The invitation link is invalid");
 
 
             if (gameInstance.Participants.Count() > RequiredPlayers)
-                throw new ArgumentException("Sorry, this lobby has reached the max amount of players");
+                throw new JoiningGameException("Sorry, this lobby has reached the max amount of players");
 
             try
             {
                 await CanPersonJoin(userId);
             }
-            catch (ExistingGameException game)
+            catch (ExistingLobbyGameException game)
             {
                 return game.ExistingGame;
             }
