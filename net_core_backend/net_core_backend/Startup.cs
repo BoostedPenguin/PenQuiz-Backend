@@ -106,6 +106,7 @@ namespace net_core_backend
                     ValidateAudience = false,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ClockSkew = TimeSpan.Zero,
                     ValidIssuer = Configuration.GetSection("AppSettings").GetValue<string>("Issuer"),
                     ValidAudience = Configuration.GetSection("AppSettings").GetValue<string>("Issuer"),
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings").GetValue<string>("Secret"))),

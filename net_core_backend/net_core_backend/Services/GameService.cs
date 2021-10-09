@@ -6,6 +6,7 @@ using net_core_backend.Services.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace net_core_backend.Services
@@ -64,7 +65,6 @@ namespace net_core_backend.Services
             
             using var db = contextFactory.CreateDbContext();
             var userId = httpContextAccessor.GetCurrentUserId();
-
             try
             {
                 await CanPersonJoin(userId);
@@ -82,11 +82,16 @@ namespace net_core_backend.Services
                 await mapGeneratorService.ValidateMap();
             }
 
-            var invitationLink = "";
-            for(var i = 0; i < InvitationCodeLength; i++)
+            var invitationLink = GenerateInvCode();
+            
+            while(await db.GameInstance
+                .Where(x => x.InvitationLink == invitationLink && 
+                    (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS))
+                .FirstOrDefaultAsync() != null)
             {
-                invitationLink += r.Next(0, 9).ToString();
+                invitationLink = GenerateInvCode();
             }
+
             var gameInstance = new GameInstance()
             {
                 GameState = GameState.IN_LOBBY,
@@ -111,6 +116,16 @@ namespace net_core_backend.Services
                 .ThenInclude(x => x.Player)
                 .Where(x => x.Id == gameInstance.Id)
                 .FirstOrDefaultAsync();
+        }
+
+        private string GenerateInvCode()
+        {
+            var invitationLink = "";
+            for (var i = 0; i < InvitationCodeLength; i++)
+            {
+                invitationLink += r.Next(0, 9).ToString();
+            }
+            return invitationLink;
         }
 
         private async Task<bool> CanPersonJoin(int userId)
