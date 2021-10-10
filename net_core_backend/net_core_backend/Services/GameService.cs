@@ -16,7 +16,7 @@ namespace net_core_backend.Services
         Task CancelOngoingGames();
         Task<GameInstance> CreateGameLobby();
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
-        Task<GameInstance> RemoveOnDisconnect(int personToRemoveID);
+        Task<GameInstance> RemoveCurrentPerson();
         Task<GameInstance> RemoveParticipantFromGame(int personToRemoveID);
         Task StartGame();
     }
@@ -32,7 +32,16 @@ namespace net_core_backend.Services
     }
 
     [Serializable]
-    public class JoiningGameException : Exception
+    public class GameException : Exception
+    {
+        public GameException(string message) : base(message)
+        {
+
+        }
+    }
+
+    [Serializable]
+    public class JoiningGameException : GameException
     {
         public JoiningGameException(string message) : base(message)
         {
@@ -237,6 +246,7 @@ namespace net_core_backend.Services
         }
 
         // TODO
+        // As owner remove someone from group
         public async Task<GameInstance> RemoveParticipantFromGame(int personToRemoveId)
         {
             using var db = contextFactory.CreateDbContext();
@@ -249,32 +259,33 @@ namespace net_core_backend.Services
             return null;
         }
 
-        public async Task<GameInstance> RemoveOnDisconnect(int personToRemoveID)
+        public async Task<GameInstance> RemoveCurrentPerson()
         {
             using var db = contextFactory.CreateDbContext();
 
+            var userId = httpContextAccessor.GetCurrentUserId();
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
                 .Where(x => x.Participants
-                    .Any(x => x.PlayerId == personToRemoveID) && x.GameState == GameState.IN_LOBBY)
+                    .Any(x => x.PlayerId == userId) && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
 
             if (gameInstance == null)
                 throw new ArgumentException("You aren't the owner of any games that are currently in lobby");
 
             var removePerson = gameInstance.Participants
-                .Where(x => x.PlayerId == personToRemoveID)
+                .Where(x => x.PlayerId == userId)
                 .FirstOrDefault();
 
             if (removePerson == null)
                 throw new ArgumentException("This person isn't in your game lobby.");
 
             // On creator disconnect or lobby kill.
-            if(personToRemoveID == gameInstance.GameCreatorId)
+            if(userId == gameInstance.GameCreatorId)
             {
                 gameInstance.GameState = GameState.CANCELED;
-                var removeAll = gameInstance.Participants.Where(x => x.PlayerId != personToRemoveID).ToList();
+                var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
                 db.RemoveRange(removeAll);
             }
             else

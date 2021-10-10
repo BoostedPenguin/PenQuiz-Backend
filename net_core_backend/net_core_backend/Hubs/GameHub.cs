@@ -17,7 +17,7 @@ namespace net_core_backend.Hubs
         Task GetGameInstance(GameInstance instance);
         Task AllLobbyPlayers(Users[] users);
         Task LobbyCanceled();
-        Task JoiningGameException(string message);
+        Task GameException(string message);
     }
     [Authorize]
     public class GameHub : Hub<IGameHub>
@@ -40,16 +40,27 @@ namespace net_core_backend.Hubs
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            var userId = int.Parse(Context.User.Claims
-                .Where(x => x.Type == ClaimTypes.NameIdentifier)
-                .Select(x => x.Value)
-                .FirstOrDefault());
+            //var userId = int.Parse(Context.User.Claims
+            //    .Where(x => x.Type == ClaimTypes.NameIdentifier)
+            //    .Select(x => x.Value)
+            //    .FirstOrDefault());
 
-            var gameInstance = await gameService.RemoveOnDisconnect(userId);
+            try
+            {
+                await RemoveCurrentPersonFromGame();
+            }
+            finally {
+                await base.OnDisconnectedAsync(exception);
+            }
+        }
+
+        private async Task RemoveCurrentPersonFromGame()
+        {
+            var gameInstance = await gameService.RemoveCurrentPerson();
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
 
-            if(gameInstance.GameState == GameState.CANCELED)
+            if (gameInstance.GameState == GameState.CANCELED)
             {
                 await Clients.Group(gameInstance.InvitationLink).LobbyCanceled();
             }
@@ -58,7 +69,18 @@ namespace net_core_backend.Hubs
                 var users = gameInstance.Participants.Select(x => x.Player).ToArray();
                 await Clients.Group(gameInstance.InvitationLink).AllLobbyPlayers(users);
             }
-            await base.OnDisconnectedAsync(exception);
+        }
+
+        public async Task LeaveGameLobby()
+        {
+            try
+            {
+                await RemoveCurrentPersonFromGame();
+            }
+            catch(Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
         }
 
         public async Task CreateGameLobby()
@@ -75,7 +97,7 @@ namespace net_core_backend.Hubs
             }
             catch(Exception ex)
             {
-                await Clients.Caller.JoiningGameException(ex.Message);
+                await Clients.Caller.GameException(ex.Message);
             }
         }
 
@@ -94,7 +116,7 @@ namespace net_core_backend.Hubs
             }
             catch(Exception ex)
             {
-                await Clients.Caller.JoiningGameException(ex.Message);
+                await Clients.Caller.GameException(ex.Message);
             }
         }
     }
