@@ -10,6 +10,7 @@ namespace net_core_backend.Models
         }
 
         public int Id { get; set; }
+        public string AvatarName { get; set; }
         public int PlayerId { get; set; }
         public int GameId { get; set; }
         public int Score { get; set; }

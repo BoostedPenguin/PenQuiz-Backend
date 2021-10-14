@@ -182,6 +182,12 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.Score).HasColumnName("score");
 
+                entity.Property(e => e.AvatarName)
+                    .IsRequired()
+                    .HasColumnName("avatarName")
+                    .HasDefaultValue("penguinAvatar.svg")
+                    .HasMaxLength(50);
+
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.Participants)
                     .HasForeignKey(d => d.GameId)

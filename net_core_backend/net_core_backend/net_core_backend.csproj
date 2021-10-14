@@ -29,6 +29,8 @@
     <Compile Remove="Migrations\20210930180155_reworked-rounds-table.Designer.cs" />
     <Compile Remove="Migrations\20210930183010_fixed-gameinstance-participants.cs" />
     <Compile Remove="Migrations\20210930183010_fixed-gameinstance-participants.Designer.cs" />
+    <Compile Remove="Migrations\20211013152248_AddedGameAvatar.cs" />
+    <Compile Remove="Migrations\20211013152248_AddedGameAvatar.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

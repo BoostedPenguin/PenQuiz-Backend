@@ -115,6 +115,7 @@ namespace net_core_backend.Services
             {
                 PlayerId = userId,
                 Score = 0,
+                AvatarName = GetRandomAvatar(gameInstance)
             });
 
             await db.AddAsync(gameInstance);
@@ -135,6 +136,30 @@ namespace net_core_backend.Services
                 invitationLink += r.Next(0, 9).ToString();
             }
             return invitationLink;
+        }
+
+        public string[] Avatars = new string[3]
+        {
+            "penguinAvatar.svg",
+            "penguinAvatar2.svg",
+            "penguinAvatar3.svg",
+        };
+        private string GetRandomAvatar(GameInstance game)
+        {
+            if (Avatars.Length < RequiredPlayers)
+                throw new ArgumentException("There aren't enough avatars for every player. Contact an administrator.");
+
+            var selectedAvatar = "";
+            while(string.IsNullOrEmpty(selectedAvatar))
+            {
+                var randomAvatar = Avatars[r.Next(0, Avatars.Length)];
+
+                var duplicate = game.Participants.FirstOrDefault(x => x.AvatarName == randomAvatar);
+                if (duplicate != null) continue;
+                
+                selectedAvatar = randomAvatar;
+            }
+            return selectedAvatar;
         }
 
         private async Task<bool> CanPersonJoin(int userId)
@@ -223,7 +248,8 @@ namespace net_core_backend.Services
             gameInstance.Participants.Add(new Participants()
             {
                 PlayerId = userId,
-                Score = 0
+                Score = 0,
+                AvatarName = GetRandomAvatar(gameInstance)
             });
 
             db.Update(gameInstance);

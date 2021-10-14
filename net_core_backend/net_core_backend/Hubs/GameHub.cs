@@ -15,9 +15,10 @@ namespace net_core_backend.Hubs
     public interface IGameHub
     {
         Task GetGameInstance(GameInstance instance);
-        Task AllLobbyPlayers(Users[] users);
         Task LobbyCanceled();
+        Task PersonLeft();
         Task GameException(string message);
+        Task NavigateToLobby();
     }
     [Authorize]
     public class GameHub : Hub<IGameHub>
@@ -33,6 +34,12 @@ namespace net_core_backend.Hubs
 
         public override async Task OnConnectedAsync()
         {
+            var b = Context.ConnectionId;
+            var userId = int.Parse(Context.User.Claims
+                .Where(x => x.Type == ClaimTypes.NameIdentifier)
+                .Select(x => x.Value)
+                .FirstOrDefault());
+            var g = 5;
             //await Groups.AddToGroupAsync(Context.ConnectionId, "SignalR Users");
             //await base.OnConnectedAsync();
         }
@@ -57,8 +64,8 @@ namespace net_core_backend.Hubs
         private async Task RemoveCurrentPersonFromGame()
         {
             var gameInstance = await gameService.RemoveCurrentPerson();
-
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
+            await Clients.Caller.PersonLeft();
 
             if (gameInstance.GameState == GameState.CANCELED)
             {
@@ -66,9 +73,10 @@ namespace net_core_backend.Hubs
             }
             else
             {
-                var users = gameInstance.Participants.Select(x => x.Player).ToArray();
-                await Clients.Group(gameInstance.InvitationLink).AllLobbyPlayers(users);
+                //var users = gameInstance.Participants.Select(x => x.Player).ToArray();
+                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
             }
+
         }
 
         public async Task LeaveGameLobby()
@@ -89,11 +97,13 @@ namespace net_core_backend.Hubs
             {
                 var result = await gameService.CreateGameLobby();
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
-                await Clients.Caller.GetGameInstance(result);
+                //await Clients.Caller.GetGameInstance(result);
 
-                var users = result.Participants.Select(x => x.Player).ToArray();
+                //var users = result.Participants.Select(x => x.Player).ToArray();
                 //var current = result.Participants.Where(x => x.PlayerId == httpContext.GetCurrentUserId()).FirstOrDefault();
-                await Clients.Group(result.InvitationLink).AllLobbyPlayers(users);
+                //await Clients.Group(result.InvitationLink).AllLobbyPlayers(users);
+                await Clients.Group(result.InvitationLink).GetGameInstance(result);
+                await Clients.Caller.NavigateToLobby();
             }
             catch(Exception ex)
             {
@@ -108,13 +118,15 @@ namespace net_core_backend.Hubs
                 var game = await gameService.JoinGameLobby(code);
 
                 await Groups.AddToGroupAsync(Context.ConnectionId, game.InvitationLink);
-                await Clients.Caller.GetGameInstance(game);
+                //await Clients.Caller.GetGameInstance(game);
 
-                var users = game.Participants.Select(x => x.Player).ToArray();
+                //var users = game.Participants.Select(x => x.Player).ToArray();
                 //var current = result.Participants.Where(x => x.PlayerId == httpContext.GetCurrentUserId()).FirstOrDefault();
-                await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
+                //await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
+                await Clients.Group(game.InvitationLink).GetGameInstance(game);
+                await Clients.Caller.NavigateToLobby();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }
