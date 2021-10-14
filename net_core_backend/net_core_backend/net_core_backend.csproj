@@ -31,6 +31,8 @@
     <Compile Remove="Migrations\20210930183010_fixed-gameinstance-participants.Designer.cs" />
     <Compile Remove="Migrations\20211013152248_AddedGameAvatar.cs" />
     <Compile Remove="Migrations\20211013152248_AddedGameAvatar.Designer.cs" />
+    <Compile Remove="Migrations\20211014112811_GameRoundNumberConcurrency.cs" />
+    <Compile Remove="Migrations\20211014112811_GameRoundNumberConcurrency.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

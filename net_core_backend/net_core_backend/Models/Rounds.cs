@@ -23,7 +23,16 @@ namespace net_core_backend.Models
         /// For the attack mode
         /// </summary>
         public RoundStage RoundStage { get; set; }
-        public int AttackerId { get; set; }
+        public bool IsLastUntakenTerritories { get; set; }
+
+        // For concurrency
+        // Every round you add you give +1 number to this
+        // In gameInstance you have "CurrentRound" property
+        // It links to the currently playing round
+        // When a round is complete go to the next round by adding 1 to this round number
+        // If it returns 0 items have this gameroundnumber then this is the limit
+        public int GameRoundNumber { get; set; }
+        public int? AttackerId { get; set; }
         public int? DefenderId { get; set; }
         public int GameInstanceId { get; set; }
         public string Description { get; set; }

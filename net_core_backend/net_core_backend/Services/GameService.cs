@@ -18,7 +18,7 @@ namespace net_core_backend.Services
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
         Task<GameInstance> RemoveCurrentPerson();
         Task<GameInstance> RemoveParticipantFromGame(int personToRemoveID);
-        Task StartGame();
+        Task<GameInstance> StartGame();
     }
 
     [Serializable]
@@ -323,7 +323,7 @@ namespace net_core_backend.Services
             return gameInstance;
         }
 
-        public async Task StartGame()
+        public async Task<GameInstance> StartGame()
         {
             using var a = contextFactory.CreateDbContext();
             var userId = httpContextAccessor.GetCurrentUserId();
@@ -351,37 +351,142 @@ namespace net_core_backend.Services
                     throw new ArgumentException($"Can't start game. `{user.Player.Username}` is in another game currently.");
             }
 
+
             // Get default map id
             var mapId = await a.Maps.Where(x => x.Name == DefaultMap).Select(x => x.Id).FirstAsync();
 
-            var order = await GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), mapId);
+            // Create the game territories from the map territory templates
+            var gameTerritories = await CreateGameTerritories(a, mapId, gameInstance.Id);
 
-            var totalMultiQuestionRounds = order.UserRoundAttackOrders.Count() * RequiredPlayers;
+            // Includes capitals
+            var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
+            
+            // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
+            var initialRounding = await CreateNeutralAttackRounding(mapId, allPlayers);
+
+            // Assign all object territories & rounds and change gamestate
+            gameInstance.GameState = GameState.IN_PROGRESS;
+            gameInstance.ObjectTerritory = gameTerritories;
+            gameInstance.Rounds = initialRounding;
+            gameInstance.GameRoundNumber = 1;
+
+            a.Update(gameInstance);
+            await a.SaveChangesAsync();
+
+            return gameInstance;
+        }
+
+        public async Task<Rounds[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers)
+        {
+
+            var order = await GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), mapId);
 
             // Create default rounds
             var finalRounds = new List<Rounds>();
+
+            // Stores game round number for each round
+            var gameRoundNumber = 1;
             
             // Full rounds
             for (var i = 0; i < order.UserRoundAttackOrders.Count(); i++)
             {
                 // Inner round
-                foreach(var roundAttackerId in order.UserRoundAttackOrders[i])
+                foreach (var roundAttackerId in order.UserRoundAttackOrders[i])
                 {
                     finalRounds.Add(new Rounds
                     {
+                        GameRoundNumber = gameRoundNumber++,
                         AttackerId = roundAttackerId,
                         DefenderId = null,
-                        Description = $"Attacker vs NEUTRAL territory",
+                        Description = $"Fixed question. Attacker vs NEUTRAL territory",
                         RoundStage = RoundStage.NOT_STARTED,
                     });
                 }
             }
-            //TODO
-            // Create ObjectTerritories = MapTerritories :)
+
+            // Question territories
+            for(var questionTer = 0; questionTer < order.LeftTerritories; questionTer++)
+            {
+                finalRounds.Add(new Rounds
+                {
+                    GameRoundNumber = gameRoundNumber++,
+                    AttackerId = null,
+                    DefenderId = null,
+                    IsLastUntakenTerritories = true,
+                    Description = $"Number question. Attacker vs NEUTRAL territory",
+                    RoundStage = RoundStage.NOT_STARTED,
+                });
+            }
+
+            // +1 because of the way we add to the local variable
+            // -3 because we remove the capitals which are already given
+            if (gameRoundNumber != order.TotalTerritories + 1 - RequiredPlayers)
+                throw new ArgumentException("Total game round numbers generated weren't equal to the total territories on the map");
+
+            return finalRounds.ToArray();
+        }
+
+
+        public async Task<ObjectTerritory[]> CreateGameTerritories(DefaultContext a, int mapId, int gameInstanceId)
+        {
+            var originTerritories = await a.MapTerritory.Where(x => x.MapId == mapId).ToListAsync();
+
+            var gameTer = new List<ObjectTerritory>();
+            foreach (var ter in originTerritories)
+            {
+                gameTer.Add(new ObjectTerritory()
+                {
+                    MapTerritoryId = ter.Id,
+                    GameInstanceId = gameInstanceId,
+                });
+            }
+            return gameTer.ToArray();
+        }
+
+        public async Task<ObjectTerritory[]> ChooseCapitals(DefaultContext a, ObjectTerritory[] allTerritories, Participants[] participants)
+        {
+            var capitals = new List<ObjectTerritory>();
+
+            // Get 3 capitals
+            while(capitals.Count() < RequiredPlayers)
+            {
+                var randomTerritory = allTerritories[r.Next(0, allTerritories.Count())];
+
+                // Capital already here
+                if (capitals.Contains(randomTerritory)) continue;
+
+                var borders = await mapGeneratorService.GetBorders(randomTerritory.MapTerritoryId);
+                
+                var borderWithOtherCapitals = capitals.Where(x => borders.Any(y => y.Id == x.MapTerritoryId)).FirstOrDefault();
+
+                if (borderWithOtherCapitals != null) continue;
+                
+                capitals.Add(randomTerritory);
+            }
+
+            // Give each capital to a random player
+            while(capitals.Where(x => x.TakenBy != null).ToList().Count() < RequiredPlayers)
+            {
+                var randomPlayer = participants[r.Next(0, RequiredPlayers)];
+                if (capitals.Any(x => x.TakenBy == randomPlayer.PlayerId)) continue;
+
+                capitals.First(x => x.TakenBy == null).TakenBy = randomPlayer.PlayerId;
+            }
+
+            // TEST IF ALLTERRITORIES CHANGES OR NOT BASED ON REFERENCE !!!!
+
+            return allTerritories;
         }
 
         class UserAttackOrder
         {
+            /// <summary>
+            /// Goes like this:
+            /// First 3 rounds are stored in a list
+            /// Each person gets random attack order in them: 2, 3, 1
+            /// Then that gets stored in a list itself
+            /// 1 {1, 3, 2}   2 {2, 3, 1}  3{3, 1, 2} etc.
+            /// </summary>
             public List<List<int>> UserRoundAttackOrders { get; set; }
             public int TotalTerritories { get; set; }
             public int LeftTerritories { get; set; }

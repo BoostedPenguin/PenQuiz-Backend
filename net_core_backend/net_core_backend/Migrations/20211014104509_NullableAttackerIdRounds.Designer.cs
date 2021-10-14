@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using net_core_backend.Context;
 
 namespace net_core_backend.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20211014104509_NullableAttackerIdRounds")]
+    partial class NullableAttackerIdRounds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -77,10 +79,6 @@ namespace net_core_backend.Migrations
 
                     b.Property<int>("GameCreatorId")
                         .HasColumnName("gameCreatorId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GameRoundNumber")
-                        .HasColumnName("gameRoundNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("GameState")
@@ -346,16 +344,6 @@ namespace net_core_backend.Migrations
                     b.Property<int>("GameInstanceId")
                         .HasColumnName("gameInstanceId")
                         .HasColumnType("int");
-
-                    b.Property<int>("GameRoundNumber")
-                        .HasColumnName("gameRoundNumber")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsLastUntakenTerritories")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("isLastUntakenTerritories")
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
 
                     b.Property<string>("RoundStage")
                         .IsRequired()

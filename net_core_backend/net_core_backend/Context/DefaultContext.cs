@@ -82,6 +82,8 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
+                entity.Property(e => e.GameRoundNumber).HasColumnName("gameRoundNumber");
+
                 entity.Property(e => e.EndTime)
                     .HasColumnName("end_time")
                     .HasColumnType("datetime");
@@ -143,13 +145,13 @@ namespace net_core_backend.Context
 
             modelBuilder.Entity<ObjectTerritory>(entity =>
             {
-                entity.HasIndex(e => e.MapObjectId);
+                entity.HasIndex(e => e.GameInstanceId);
 
                 entity.HasIndex(e => e.MapTerritoryId);
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.MapObjectId).HasColumnName("mapObjectId");
+                entity.Property(e => e.GameInstanceId).HasColumnName("gameInstanceId");
 
                 entity.Property(e => e.MapTerritoryId).HasColumnName("mapTerritoryId");
 
@@ -157,10 +159,10 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.AttackedBy).HasColumnName("attackedBy");
 
-                entity.HasOne(d => d.MapObject)
+                entity.HasOne(d => d.GameInstance)
                     .WithMany(p => p.ObjectTerritory)
-                    .HasForeignKey(d => d.MapObjectId)
-                    .HasConstraintName("FK__ObjectTer__mapOb__5AEE82B9");
+                    .HasForeignKey(d => d.GameInstanceId)
+                    .HasConstraintName("FK__ObjectTer__gameIn__5AEE82B9");
 
                 entity.HasOne(d => d.MapTerritory)
                     .WithMany(p => p.ObjectTerritory)
@@ -251,9 +253,16 @@ namespace net_core_backend.Context
 
                 entity.HasIndex(e => e.GameInstanceId);
 
-                entity.Property(e => e.AttackerId).HasColumnName("attackerId");
+                entity.Property(e => e.AttackerId).IsRequired(false).HasColumnName("attackerId");
 
                 entity.Property(e => e.DefenderId).HasColumnName("defenderId");
+
+                entity.Property(e => e.GameRoundNumber).HasColumnName("gameRoundNumber");
+
+                entity.Property(e => e.IsLastUntakenTerritories)
+                    .IsRequired()
+                    .HasDefaultValue(false)
+                    .HasColumnName("isLastUntakenTerritories");
 
                 entity.Property(e => e.Description)
                     .HasColumnName("description")

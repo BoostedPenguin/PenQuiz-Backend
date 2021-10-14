@@ -29,6 +29,8 @@ namespace net_core_backend.Models
         public int GameCreatorId { get; set; }
         public GameState GameState { get; set; }
         public string InvitationLink { get; set; }
+        // It links to the currently playing round
+        public int GameRoundNumber { get; set; }
 
         public virtual Maps Map { get; set; }
         public virtual ICollection<ObjectTerritory> ObjectTerritory { get; set; }

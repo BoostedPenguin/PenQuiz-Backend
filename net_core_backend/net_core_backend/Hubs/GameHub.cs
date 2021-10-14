@@ -111,6 +111,20 @@ namespace net_core_backend.Hubs
             }
         }
 
+        public async Task StartGame()
+        {
+            try
+            {
+                var gameInstance = await gameService.StartGame();
+
+                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
+            }
+            catch(Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
         public async Task JoinGameLobby(string code)
         {
             try
