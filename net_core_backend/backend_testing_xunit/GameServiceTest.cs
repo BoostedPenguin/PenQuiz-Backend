@@ -29,6 +29,7 @@ namespace backend_testing_xunit
         TestingContextFactory mockContextFactory;
         Mock<IHttpContextAccessor> mockHttpContextAccessor;
         GameService gameService;
+        GameLobbyService gameLobby;
         public GameServiceTest()
         {
             var context = new ContextFactory();
@@ -50,7 +51,8 @@ namespace backend_testing_xunit
             var b = new MapGeneratorService(mockContextFactory, mockHttpContextAccessor.Object);
 
 
-            gameService = new GameService(mockContextFactory, mockHttpContextAccessor.Object, b);
+            gameService = new GameService(mockContextFactory, mockHttpContextAccessor.Object);
+            gameLobby = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, b);
         }
 
 
@@ -67,7 +69,7 @@ namespace backend_testing_xunit
         [Fact]
         public async Task TestCreateGameLobby()
         {
-            var result = await gameService.CreateGameLobby();
+            var result = await gameLobby.CreateGameLobby();
 
             Assert.NotNull(result);
         }
@@ -75,9 +77,9 @@ namespace backend_testing_xunit
         [Fact]
         public async Task TestJoinGameLobby()
         {
-            var prepare = await gameService.CreateGameLobby();
+            var prepare = await gameLobby.CreateGameLobby();
 
-            var result = await gameService.JoinGameLobby(prepare.InvitationLink);
+            var result = await gameLobby.JoinGameLobby(prepare.InvitationLink);
 
             Assert.NotNull(result);
         }

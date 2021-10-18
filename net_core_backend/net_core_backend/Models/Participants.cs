@@ -13,6 +13,7 @@ namespace net_core_backend.Models
         public string AvatarName { get; set; }
         public int PlayerId { get; set; }
         public int GameId { get; set; }
+        public bool IsBot { get; set; }
         public int Score { get; set; }
 
         public virtual GameInstance Game { get; set; }

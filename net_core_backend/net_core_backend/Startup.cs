@@ -66,6 +66,8 @@ namespace net_core_backend
 
             services.AddSingleton<IGameService, GameService>();
 
+            services.AddSingleton<IGameLobbyService, GameLobbyService>();
+
             services.AddHttpContextAccessor();
 
             services.AddHttpClient();

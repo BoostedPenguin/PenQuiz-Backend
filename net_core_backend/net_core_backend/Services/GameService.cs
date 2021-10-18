@@ -14,11 +14,8 @@ namespace net_core_backend.Services
     public interface IGameService
     {
         Task CancelOngoingGames();
-        Task<GameInstance> CreateGameLobby();
-        Task<GameInstance> JoinGameLobby(string lobbyUrl);
-        Task<GameInstance> RemoveCurrentPerson();
-        Task<GameInstance> RemoveParticipantFromGame(int personToRemoveID);
-        Task<GameInstance> StartGame();
+        Task<GameInstance> OnPlayerLoginConnection();
+        Task<GameInstance> PersonDisconnected();
     }
 
     [Serializable]
@@ -53,155 +50,15 @@ namespace net_core_backend.Services
     {
         private readonly IContextFactory contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
-        private readonly IMapGeneratorService mapGeneratorService;
-        private readonly Random r = new Random();
-        private const string DefaultMap = "Antarctica";
+        public const string DefaultMap = "Antarctica";
 
-        const int RequiredPlayers = 3;
-        const int InvitationCodeLength = 4;
+        public const int RequiredPlayers = 3;
+        public const int InvitationCodeLength = 4;
 
-        public GameService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        public GameService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
-            this.mapGeneratorService = mapGeneratorService;
-        }
-
-        public async Task<GameInstance> CreateGameLobby()
-        {
-            // Create url-link for people to join // Random string in header?
-            // CLOSE ALL OTHER IN_LOBBY OPEN INSTANCES BY THIS PLAYER
-            
-            using var db = contextFactory.CreateDbContext();
-            var userId = httpContextAccessor.GetCurrentUserId();
-            try
-            {
-                await CanPersonJoin(userId);
-            }
-            catch(ExistingLobbyGameException game)
-            {
-                return game.ExistingGame;
-            }
-
-            var map = await db.Maps.Where(x => x.Name == DefaultMap).FirstOrDefaultAsync();
-
-
-            if (map == null)
-            {
-                await mapGeneratorService.ValidateMap();
-            }
-
-            var invitationLink = GenerateInvCode();
-            
-            while(await db.GameInstance
-                .Where(x => x.InvitationLink == invitationLink && 
-                    (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS))
-                .FirstOrDefaultAsync() != null)
-            {
-                invitationLink = GenerateInvCode();
-            }
-
-            var gameInstance = new GameInstance()
-            {
-                GameState = GameState.IN_LOBBY,
-                InvitationLink = invitationLink,
-                GameCreatorId = userId,
-                Map = map,
-                StartTime = DateTime.Now,
-                QuestionTimerSeconds = 30,
-            };
-
-            gameInstance.Participants.Add(new Participants() 
-            {
-                PlayerId = userId,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
-
-            await db.AddAsync(gameInstance);
-            await db.SaveChangesAsync();
-
-            return await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.Id == gameInstance.Id)
-                .FirstOrDefaultAsync();
-        }
-
-        private string GenerateInvCode()
-        {
-            var invitationLink = "";
-            for (var i = 0; i < InvitationCodeLength; i++)
-            {
-                invitationLink += r.Next(0, 9).ToString();
-            }
-            return invitationLink;
-        }
-
-        public string[] Avatars = new string[3]
-        {
-            "penguinAvatar.svg",
-            "penguinAvatar2.svg",
-            "penguinAvatar3.svg",
-        };
-        private string GetRandomAvatar(GameInstance game)
-        {
-            if (Avatars.Length < RequiredPlayers)
-                throw new ArgumentException("There aren't enough avatars for every player. Contact an administrator.");
-
-            var selectedAvatar = "";
-            while(string.IsNullOrEmpty(selectedAvatar))
-            {
-                var randomAvatar = Avatars[r.Next(0, Avatars.Length)];
-
-                var duplicate = game.Participants.FirstOrDefault(x => x.AvatarName == randomAvatar);
-                if (duplicate != null) continue;
-                
-                selectedAvatar = randomAvatar;
-            }
-            return selectedAvatar;
-        }
-
-        private async Task<bool> CanPersonJoin(int userId)
-        {
-            using var db = contextFactory.CreateDbContext();
-
-            var userGames = await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS) && x.Participants
-                    .Any(y => y.PlayerId == userId))
-                .ToListAsync();
-
-
-            // IF THERE ARE ANY IN_PROGRESS INSTANCES WITH THIS PLAYER PREVENT LOBBY CREATION
-            if (userGames.Any(x => x.GameState == GameState.IN_PROGRESS))
-            {
-                throw new JoiningGameException("You already have a game in progress. It has to finish first.");
-            }
-
-            var lobbyGames = userGames.Where(x => x.GameState == GameState.IN_LOBBY).ToList();
-
-            // You shouldn't be able to participate in more than 1 lobby game open.
-            // It happend because some error. Close all game lobbies.
-            if (lobbyGames.Count() > 1)
-            {
-                lobbyGames.ForEach(x => x.GameState = GameState.CANCELED);
-
-                db.UpdateRange(lobbyGames);
-                await db.SaveChangesAsync();
-                throw new JoiningGameException("Oops. There was an internal server error. Please, start a new game lobby");
-            }
-
-
-            // User participates already in an open lobby.
-            // Redirect him to this instead of creating a new instance.
-            if (lobbyGames.Count() == 1)
-            {
-                throw new ExistingLobbyGameException(lobbyGames[0], "User participates already in an open lobby");
-            }
-
-            return true;
         }
 
         public async Task CancelOngoingGames()
@@ -217,50 +74,44 @@ namespace net_core_backend.Services
             await db.SaveChangesAsync();
         }
 
-        public async Task<GameInstance> JoinGameLobby(string lobbyUrl)
+        public async Task<GameInstance> OnPlayerLoginConnection()
         {
+            // Checks if there are any in-progress games and tries to put him back in that state
             using var db = contextFactory.CreateDbContext();
-
             var userId = httpContextAccessor.GetCurrentUserId();
-            var gameInstance = await db.GameInstance
+
+            var ongoingGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
-                .Where(x => x.InvitationLink == lobbyUrl && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
+                .Where(x => x.GameState == GameState.IN_PROGRESS && x.Participants
+                    .Any(y => y.PlayerId == userId))
+                .ToListAsync();
 
-            if (gameInstance == null)
-                throw new JoiningGameException("The invitation link is invalid");
-
-
-            if (gameInstance.Participants.Count() > RequiredPlayers)
-                throw new JoiningGameException("Sorry, this lobby has reached the max amount of players");
-
-            try
+            // There shouldn't be more than 1 active game for a given player at any time.
+            // This is a bug, cancel all games for this player
+            if(ongoingGames.Count() > 1)
             {
-                await CanPersonJoin(userId);
-            }
-            catch (ExistingLobbyGameException game)
-            {
-                return game.ExistingGame;
+                ongoingGames.ForEach(x => x.GameState = GameState.CANCELED);
+                db.Update(ongoingGames);
+                await db.SaveChangesAsync();
+                throw new GameException("There shouldn't be more than 1 active game for a given player at any time");
             }
 
-
-            gameInstance.Participants.Add(new Participants()
+            if (ongoingGames.Count() == 1)
             {
-                PlayerId = userId,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
+                var currentGameInstance = ongoingGames.First();
+                var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == userId);
+                thisUser.IsBot = false;
+                
+                db.Update(thisUser);
+                await db.SaveChangesAsync();
+                
+                return currentGameInstance;
+            }
 
-            db.Update(gameInstance);
-            await db.SaveChangesAsync();
-
-            return await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.Id == gameInstance.Id)
-                .FirstOrDefaultAsync();
+            return null;
         }
+
 
         [Obsolete("Not storing whole url in db, just game inv prefix")]
         public string CreateInvitiationUrl()
@@ -271,266 +122,88 @@ namespace net_core_backend.Services
             return baseUrl;
         }
 
-        // TODO
-        // As owner remove someone from group
-        public async Task<GameInstance> RemoveParticipantFromGame(int personToRemoveId)
+        /// <summary>
+        /// Handles users on disconnect for different stages of a game or app.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<GameInstance> PersonDisconnected()
         {
             using var db = contextFactory.CreateDbContext();
 
             var userId = httpContextAccessor.GetCurrentUserId();
-            var gameInstance = await db.GameInstance
-                .Include(x => x.Participants)
-                .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
-            return null;
-        }
-
-        public async Task<GameInstance> RemoveCurrentPerson()
-        {
-            using var db = contextFactory.CreateDbContext();
-
-            var userId = httpContextAccessor.GetCurrentUserId();
-            var gameInstance = await db.GameInstance
+            
+            // Get game instances that are "active" for this person
+            var activeGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
                 .Where(x => x.Participants
-                    .Any(x => x.PlayerId == userId) && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
+                    .Any(x => x.PlayerId == userId) && (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS))
+                .ToListAsync();
 
-            if (gameInstance == null)
-                throw new ArgumentException("You aren't the owner of any games that are currently in lobby");
+            // Person wasn't in any active games
+            if (activeGames.Count() == 0)
+                return null;
 
-            var removePerson = gameInstance.Participants
-                .Where(x => x.PlayerId == userId)
-                .FirstOrDefault();
-
-            if (removePerson == null)
-                throw new ArgumentException("This person isn't in your game lobby.");
-
-            // On creator disconnect or lobby kill.
-            if(userId == gameInstance.GameCreatorId)
+            // If the person participates in more than 1 lobby it's a bug. Kill all lobbies with that person.
+            if (activeGames.Count() > 1)
             {
-                gameInstance.GameState = GameState.CANCELED;
-                var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
-                db.RemoveRange(removeAll);
-            }
-            else
-            {
-                db.Remove(removePerson);
-            }
-            await db.SaveChangesAsync();
-
-            return gameInstance;
-        }
-
-        public async Task<GameInstance> StartGame()
-        {
-            using var a = contextFactory.CreateDbContext();
-            var userId = httpContextAccessor.GetCurrentUserId();
-
-
-
-            var gameInstance = await a.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
-
-            if (gameInstance == null) 
-                throw new ArgumentException("Game instance is null or has completed already");
-
-            var allPlayers = gameInstance.Participants.ToList();
-
-            if (allPlayers.Count != RequiredPlayers) 
-                throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
-
-            // Make sure no player is in another game
-            foreach(var user in allPlayers)
-            {
-                if (user.Player.IsInGame) 
-                    throw new ArgumentException($"Can't start game. `{user.Player.Username}` is in another game currently.");
+                activeGames.ForEach(x => x.GameState = GameState.CANCELED);
+                db.Update(activeGames);
+                await db.SaveChangesAsync();
+                throw new GameException("There shouldn't be more than 1 active game for a given player at any time");
             }
 
 
-            // Get default map id
-            var mapId = await a.Maps.Where(x => x.Name == DefaultMap).Select(x => x.Id).FirstAsync();
+            // Only single instance
+            var gameInstance = activeGames[0];
 
-            // Create the game territories from the map territory templates
-            var gameTerritories = await CreateGameTerritories(a, mapId, gameInstance.Id);
+            var thisUser = gameInstance.Participants.First(x => x.PlayerId == userId);
 
-            // Includes capitals
-            var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
-            
-            // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
-            var initialRounding = await CreateNeutralAttackRounding(mapId, allPlayers);
-
-            // Assign all object territories & rounds and change gamestate
-            gameInstance.GameState = GameState.IN_PROGRESS;
-            gameInstance.ObjectTerritory = gameTerritories;
-            gameInstance.Rounds = initialRounding;
-            gameInstance.GameRoundNumber = 1;
-
-            a.Update(gameInstance);
-            await a.SaveChangesAsync();
-
-            return gameInstance;
-        }
-
-        public async Task<Rounds[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers)
-        {
-
-            var order = await GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), mapId);
-
-            // Create default rounds
-            var finalRounds = new List<Rounds>();
-
-            // Stores game round number for each round
-            var gameRoundNumber = 1;
-            
-            // Full rounds
-            for (var i = 0; i < order.UserRoundAttackOrders.Count(); i++)
+            switch (activeGames[0].GameState)
             {
-                // Inner round
-                foreach (var roundAttackerId in order.UserRoundAttackOrders[i])
-                {
-                    finalRounds.Add(new Rounds
+                case GameState.IN_LOBBY:
+
+                    // On creator disconnect or lobby kill.
+                    if (userId == gameInstance.GameCreatorId)
                     {
-                        GameRoundNumber = gameRoundNumber++,
-                        AttackerId = roundAttackerId,
-                        DefenderId = null,
-                        Description = $"Fixed question. Attacker vs NEUTRAL territory",
-                        RoundStage = RoundStage.NOT_STARTED,
-                    });
-                }
-            }
-
-            // Question territories
-            for(var questionTer = 0; questionTer < order.LeftTerritories; questionTer++)
-            {
-                finalRounds.Add(new Rounds
-                {
-                    GameRoundNumber = gameRoundNumber++,
-                    AttackerId = null,
-                    DefenderId = null,
-                    IsLastUntakenTerritories = true,
-                    Description = $"Number question. Attacker vs NEUTRAL territory",
-                    RoundStage = RoundStage.NOT_STARTED,
-                });
-            }
-
-            // +1 because of the way we add to the local variable
-            // -3 because we remove the capitals which are already given
-            if (gameRoundNumber != order.TotalTerritories + 1 - RequiredPlayers)
-                throw new ArgumentException("Total game round numbers generated weren't equal to the total territories on the map");
-
-            return finalRounds.ToArray();
-        }
-
-
-        public async Task<ObjectTerritory[]> CreateGameTerritories(DefaultContext a, int mapId, int gameInstanceId)
-        {
-            var originTerritories = await a.MapTerritory.Where(x => x.MapId == mapId).ToListAsync();
-
-            var gameTer = new List<ObjectTerritory>();
-            foreach (var ter in originTerritories)
-            {
-                gameTer.Add(new ObjectTerritory()
-                {
-                    MapTerritoryId = ter.Id,
-                    GameInstanceId = gameInstanceId,
-                });
-            }
-            return gameTer.ToArray();
-        }
-
-        public async Task<ObjectTerritory[]> ChooseCapitals(DefaultContext a, ObjectTerritory[] allTerritories, Participants[] participants)
-        {
-            var capitals = new List<ObjectTerritory>();
-
-            // Get 3 capitals
-            while(capitals.Count() < RequiredPlayers)
-            {
-                var randomTerritory = allTerritories[r.Next(0, allTerritories.Count())];
-
-                // Capital already here
-                if (capitals.Contains(randomTerritory)) continue;
-
-                var borders = await mapGeneratorService.GetBorders(randomTerritory.MapTerritoryId);
-                
-                var borderWithOtherCapitals = capitals.Where(x => borders.Any(y => y.Id == x.MapTerritoryId)).FirstOrDefault();
-
-                if (borderWithOtherCapitals != null) continue;
-                
-                capitals.Add(randomTerritory);
-            }
-
-            // Give each capital to a random player
-            while(capitals.Where(x => x.TakenBy != null).ToList().Count() < RequiredPlayers)
-            {
-                var randomPlayer = participants[r.Next(0, RequiredPlayers)];
-                if (capitals.Any(x => x.TakenBy == randomPlayer.PlayerId)) continue;
-
-                capitals.First(x => x.TakenBy == null).TakenBy = randomPlayer.PlayerId;
-            }
-
-            // TEST IF ALLTERRITORIES CHANGES OR NOT BASED ON REFERENCE !!!!
-
-            return allTerritories;
-        }
-
-        class UserAttackOrder
-        {
-            /// <summary>
-            /// Goes like this:
-            /// First 3 rounds are stored in a list
-            /// Each person gets random attack order in them: 2, 3, 1
-            /// Then that gets stored in a list itself
-            /// 1 {1, 3, 2}   2 {2, 3, 1}  3{3, 1, 2} etc.
-            /// </summary>
-            public List<List<int>> UserRoundAttackOrders { get; set; }
-            public int TotalTerritories { get; set; }
-            public int LeftTerritories { get; set; }
-
-            public UserAttackOrder(List<List<int>> userRoundAttackOrders, int totalTerritories, int leftTerritories)
-            {
-                this.UserRoundAttackOrders = userRoundAttackOrders;
-                this.TotalTerritories = totalTerritories;
-                this.LeftTerritories = leftTerritories;
-            }
-        }
-
-        private async Task<UserAttackOrder> GenerateAttackOrder(List<int> userIds, int mapId)
-        {
-            if (userIds.Count != RequiredPlayers) throw new ArgumentException("There must be a total of 3 people in a game!");
-
-            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(mapId);
-
-            // 1 3 2   3 2 1
-
-            // Removing the capital territories;
-            var emptyTerritories = totalTerritories - RequiredPlayers;
-
-            if (emptyTerritories < RequiredPlayers) throw new ArgumentException("There are less than 3 territories left except the capital. Abort the game.");
-
-            // Store 
-            var attackOrder = new List<List<int>>();
-            while (emptyTerritories >= RequiredPlayers)
-            {
-                var fullRound = new List<int>();
-
-                while (fullRound.Count < RequiredPlayers)
-                {
-                    var person = userIds[r.Next(0, RequiredPlayers)];
-                    if (!fullRound.Contains(person))
-                    {
-                        fullRound.Add(person);
+                        gameInstance.GameState = GameState.CANCELED;
+                        //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
+                        //db.RemoveRange(removeAll);
                     }
-                }
-                attackOrder.Add(fullRound);
-                emptyTerritories -= fullRound.Count();
-            }
+                    else
+                    {
+                        db.Remove(thisUser);
+                    }
 
-            return new UserAttackOrder(attackOrder, totalTerritories, emptyTerritories);
+                    await db.SaveChangesAsync();
+                    return gameInstance;
+
+                case GameState.IN_PROGRESS:
+                    // TODO
+                    // MAKE USER AS A BOT
+                    // UNTIL HE COMES BACK
+
+                    thisUser.IsBot = true;
+
+                    // If more than 1 person left automatically close the lobby because you'd be playing vs 2 bots
+                    if (gameInstance.Participants.Where(x => x.IsBot).ToList().Count() > 1)
+                    {
+                        gameInstance.GameState = GameState.CANCELED;
+                        //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
+
+                        db.Update(gameInstance);
+                    }
+                    else
+                    {
+                        db.Update(thisUser);
+                    }
+                    await db.SaveChangesAsync();
+
+                    return gameInstance;
+
+                default:
+                    throw new GameException("Unknown error. Please contact an administrator.");
+            }
         }
     }
 }

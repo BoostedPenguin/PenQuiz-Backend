@@ -182,6 +182,8 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.PlayerId).HasColumnName("playerId");
 
+                entity.Property(e => e.IsBot).HasColumnName("isBot").HasDefaultValue(false);
+
                 entity.Property(e => e.Score).HasColumnName("score");
 
                 entity.Property(e => e.AvatarName)
