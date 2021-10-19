@@ -19,16 +19,19 @@ namespace net_core_backend.Hubs
         Task PersonLeft();
         Task GameException(string message);
         Task NavigateToLobby();
+        Task TESTING(string message);
     }
     [Authorize]
     public class GameHub : Hub<IGameHub>
     {
+        private readonly IGameTimer timer;
         private readonly IGameService gameService;
         private readonly IGameLobbyService gameLobbyService;
         private readonly IHttpContextAccessor httpContext;
 
-        public GameHub(IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService)
+        public GameHub(IGameTimer timer, IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService)
         {
+            this.timer = timer;
             this.gameService = gameService;
             this.httpContext = httpContext;
             this.gameLobbyService = gameLobbyService;
@@ -38,6 +41,7 @@ namespace net_core_backend.Hubs
         {
             try
             {
+                timer.TimerStart();
                 var gameInstance = await gameService.OnPlayerLoginConnection();
 
                 // If there aren't any IN PROGRESS game instances for this player, don't send him anything

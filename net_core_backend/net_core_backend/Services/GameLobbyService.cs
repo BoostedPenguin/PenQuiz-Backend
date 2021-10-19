@@ -427,9 +427,9 @@ namespace net_core_backend.Services
 
         public string[] Avatars = new string[3]
         {
-            "penguinAvatar.svg",
-            "penguinAvatar2.svg",
-            "penguinAvatar3.svg",
+            "penguinAvatar",
+            "penguinAvatar2",
+            "penguinAvatar3",
         };
         private string GetRandomAvatar(GameInstance game)
         {
