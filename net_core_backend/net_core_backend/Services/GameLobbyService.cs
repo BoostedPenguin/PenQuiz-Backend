@@ -359,7 +359,9 @@ namespace net_core_backend.Services
                 var randomPlayer = participants[r.Next(0, RequiredPlayers)];
                 if (capitals.Any(x => x.TakenBy == randomPlayer.PlayerId)) continue;
 
-                capitals.First(x => x.TakenBy == null).TakenBy = randomPlayer.PlayerId;
+                var chosen = capitals.First(x => x.TakenBy == null);
+                chosen.TakenBy = randomPlayer.PlayerId;
+                chosen.IsCapital = true;
             }
 
             // TEST IF ALLTERRITORIES CHANGES OR NOT BASED ON REFERENCE !!!!

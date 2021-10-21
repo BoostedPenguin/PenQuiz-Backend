@@ -158,6 +158,10 @@ namespace net_core_backend.Context
 
                 entity.Property(e => e.AttackedBy).HasColumnName("attackedBy");
 
+                entity.Property(e => e.IsCapital).HasColumnName("isCapital").HasDefaultValue(false);
+                
+                entity.Property(e => e.TerritoryScore).HasColumnName("territoryScore").HasDefaultValue(0);
+
                 entity.HasOne(d => d.GameInstance)
                     .WithMany(p => p.ObjectTerritory)
                     .HasForeignKey(d => d.GameInstanceId)
