@@ -79,31 +79,31 @@ namespace net_core_backend.Services
 
         public async Task<AuthenticateResponse> RefreshToken(string token, string ipaddress)
         {
-            using(var a = contextFactory.CreateDbContext())
-            {
-                var user = a.Users.Include(x => x.RefreshToken).SingleOrDefault(x => x.RefreshToken.Any(y => y.Token == token));
+            using var a = contextFactory.CreateDbContext();
+            var user = await a.Users.Include(x => x.RefreshToken).Take(1500).ToListAsync();
 
-                // No user found with token
-                if (user == null) return null;
+            a.Dispose();
+            return null;
+            //// No user found with token
+            //if (user == null) return null;
 
-                var refreshToken = user.RefreshToken.Single(x => x.Token == token);
-                // No active refresh tokens
-                if (!refreshToken.IsActive) return null;
+            //var refreshToken = user.RefreshToken.Single(x => x.Token == token);
+            //// No active refresh tokens
+            //if (!refreshToken.IsActive) return null;
 
-                var newRefreshToken = generateRefreshToken(ipaddress);
-                refreshToken.Revoked = DateTime.UtcNow;
-                refreshToken.RevokedByIp = ipaddress;
-                refreshToken.ReplacedByToken = newRefreshToken.Token;
-                user.RefreshToken.Add(newRefreshToken);
+            //var newRefreshToken = generateRefreshToken(ipaddress);
+            //refreshToken.Revoked = DateTime.UtcNow;
+            //refreshToken.RevokedByIp = ipaddress;
+            //refreshToken.ReplacedByToken = newRefreshToken.Token;
+            //user.RefreshToken.Add(newRefreshToken);
 
-                a.Update(user);
-                await a.SaveChangesAsync();
+            //a.Update(user);
+            //await a.SaveChangesAsync();
 
 
-                var jwtToken = generateJwtToken(user);
+            //var jwtToken = generateJwtToken(user);
 
-                return new AuthenticateResponse(user, jwtToken, newRefreshToken.Token);
-            }
+            //return new AuthenticateResponse(user, jwtToken, newRefreshToken.Token);
         }
 
         public async Task<bool> RevokeToken(string token, string ipAddress)

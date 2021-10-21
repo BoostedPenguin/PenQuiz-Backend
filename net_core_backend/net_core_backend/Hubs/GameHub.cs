@@ -41,7 +41,7 @@ namespace net_core_backend.Hubs
         {
             try
             {
-                timer.TimerStart();
+                //timer.TimerStart();
                 var gameInstance = await gameService.OnPlayerLoginConnection();
 
                 // If there aren't any IN PROGRESS game instances for this player, don't send him anything

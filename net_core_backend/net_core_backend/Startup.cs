@@ -43,13 +43,6 @@ namespace net_core_backend
 
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-
-            services.AddDbContext<DefaultContext>(options =>
-            {
-                options.UseSqlServer(Configuration.GetConnectionString("SQLCONNSTR_Database"));
-            });
-
-
             //Comment this when you've setup a database connection string
             //services.AddSingleton<IContextFactory>(new ContextFactoryTesting(Configuration.GetConnectionString("Testing_SQLCONNSTR_Database")));
             

@@ -33,6 +33,7 @@ namespace net_core_backend.Services
 
         public void TimerStart()
         {
+            return;
             if(!GameTimers.ContainsKey("SomeKey"))
             {
                 //GameTimers.TryGetValue("wawd", out Timer tryGet);
