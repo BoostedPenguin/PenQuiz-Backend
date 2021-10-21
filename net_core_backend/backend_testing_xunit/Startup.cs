@@ -1,10 +1,8 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using net_core_backend.Context;
 using net_core_backend.Models;
-using net_core_backend.Profiles;
 using net_core_backend.Services;
 using net_core_backend.Services.Interfaces;
 using System;
@@ -34,7 +32,6 @@ namespace backend_testing_xunit
 
             services.AddHttpClient();
 
-            services.AddAutoMapper(c => c.AddProfile<AutoMapping>(), typeof(Startup));
         }
     }
 }

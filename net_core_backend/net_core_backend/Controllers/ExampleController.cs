@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using net_core_backend.Services;
 using net_core_backend.ViewModel;
-using AutoMapper;
 using net_core_backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 

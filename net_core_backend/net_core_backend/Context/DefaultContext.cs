@@ -7,14 +7,13 @@ namespace net_core_backend.Context
 {
     public partial class DefaultContext : DbContext
     {
-        public DefaultContext()
-        {
-        }
-
         public DefaultContext(DbContextOptions<DefaultContext> options)
             : base(options)
         {
+        }
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
         }
 
         public virtual DbSet<Answers> Answers { get; set; }
