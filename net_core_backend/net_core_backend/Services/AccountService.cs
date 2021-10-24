@@ -49,6 +49,15 @@ namespace net_core_backend.Services
                 var jwtToken = generateJwtToken(user);
                 var refreshToken = generateRefreshToken(ipAddress);
 
+                // On login, remove all active refresh tokens except the new one 
+                var activeRF = await a.RefreshToken.Where(x => x.UsersId == user.Id && x.Revoked == null).ToListAsync();
+                activeRF.ForEach(x =>
+                {
+                    x.Revoked = DateTime.UtcNow;
+                    x.RevokedByIp = ipAddress;
+                    x.ReplacedByToken = refreshToken.Token;
+                });
+
                 user.RefreshToken.Add(refreshToken);
                 a.Update(user);
                 await a.SaveChangesAsync();
@@ -102,27 +111,23 @@ namespace net_core_backend.Services
 
         public async Task<bool> RevokeToken(string token, string ipAddress)
         {
-            using (var a = contextFactory.CreateDbContext())
-            {
+            using var a = contextFactory.CreateDbContext();
 
-                var user = a.Users.SingleOrDefault(u => u.RefreshToken.Any(t => t.Token == token));
+            var rfToken = await a.RefreshToken.FirstOrDefaultAsync(x => x.Token == token);
 
-                // return false if no user found with token
-                if (user == null) return false;
+            // return false if no user found with token
+            if (rfToken == null) return false;
 
-                var refreshToken = user.RefreshToken.Single(x => x.Token == token);
+            // return false if token is not active
+            if (!rfToken.IsActive) return false;
 
-                // return false if token is not active
-                if (!refreshToken.IsActive) return false;
+            // revoke token and save
+            rfToken.Revoked = DateTime.UtcNow;
+            rfToken.RevokedByIp = ipAddress;
+            a.Update(rfToken);
+            await a.SaveChangesAsync();
 
-                // revoke token and save
-                refreshToken.Revoked = DateTime.UtcNow;
-                refreshToken.RevokedByIp = ipAddress;
-                a.Update(user);
-                await a.SaveChangesAsync();
-
-                return true;
-            }
+            return true;
         }
 
         public async Task<Users> GetById(int id)
