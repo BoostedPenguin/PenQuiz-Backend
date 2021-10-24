@@ -335,3 +335,4 @@ ASALocalRun/
 net_core_backend/backend_testing_xunit/appsettings.test.json
 net_core_backend/net_core_backend/appsettings.json
 net_core_backend/net_core_backend/.config/dotnet-tools.json
+conquiz_backend/conquiz_backend/appsettings.json

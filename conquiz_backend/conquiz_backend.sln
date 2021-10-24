@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "backend_testing_xunit", "backend_testing_xunit\backend_testing_xunit.csproj", "{7F895163-90F5-4AEC-819C-A02DF67C842D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "conquiz_backend", "conquiz_backend\conquiz_backend.csproj", "{817E8692-0E70-4243-A546-0E39075CCAA6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7F895163-90F5-4AEC-819C-A02DF67C842D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F895163-90F5-4AEC-819C-A02DF67C842D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F895163-90F5-4AEC-819C-A02DF67C842D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F895163-90F5-4AEC-819C-A02DF67C842D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{817E8692-0E70-4243-A546-0E39075CCAA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{817E8692-0E70-4243-A546-0E39075CCAA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{817E8692-0E70-4243-A546-0E39075CCAA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{817E8692-0E70-4243-A546-0E39075CCAA6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0995FA8A-32F0-4FB6-9E24-0868923FFE93}
+	EndGlobalSection
+EndGlobal
