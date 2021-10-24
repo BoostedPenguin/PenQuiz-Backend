@@ -22,6 +22,8 @@ namespace net_core_backend.Services
         private readonly IContextFactory contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
+        
+        // GroupID<Game> | CurrentTimer 
         public static ConcurrentDictionary<string, Timer> GameTimers = new ConcurrentDictionary<string, Timer>();
 
         public GameTimer(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext) : base(_contextFactory)

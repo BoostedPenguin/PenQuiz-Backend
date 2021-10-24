@@ -18,7 +18,6 @@ namespace net_core_backend.Services
         Task AddQuestions(Questions questions);
         Task<Questions> AnswerQuestion(int selectedAnswer, int questionId);
         void DeleteQuestion(int questionId);
-        void GenerateQuestion();
     }
 
     public class QuestionService : DataService<DefaultModel>, IQuestionService
@@ -95,7 +94,12 @@ namespace net_core_backend.Services
             await a.SaveChangesAsync();
         }
 
-        public void GenerateQuestion()
+        public void GenerateMultipleChoiceQuestion()
+        {
+            using var a = contextFactory.CreateDbContext();
+        }
+
+        public void GenerateNumberQuestion()
         {
 
         }
