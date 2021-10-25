@@ -11,14 +11,22 @@ using System.Threading.Tasks;
 
 namespace conquiz_backend.Services
 {
-    public class OpenDBService : DataService<DefaultModel>
+    public interface IOpenDBService
+    {
+        Task<List<Questions>> GetMultipleChoiceQuestion(int gameInstanceId);
+    }
+
+    public class OpenDBService : DataService<DefaultModel>, IOpenDBService
     {
         private readonly IContextFactory contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHttpClientFactory clientFactory;
 
-        Dictionary<GameInstance, string> sessionTokens = new Dictionary<GameInstance, string>();
-        
+        /// <summary>
+        /// Game instance id | sessionToken
+        /// </summary>
+        Dictionary<int, string> sessionTokens = new Dictionary<int, string>();
+
         public OpenDBService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IHttpClientFactory clientFactory) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
@@ -26,13 +34,13 @@ namespace conquiz_backend.Services
             this.clientFactory = clientFactory;
         }
 
-        public class QuestionResponse
+        class QuestionResponse
         {
             public int Response_Code { get; set; }
 
-            public List<Questions> Results { get; set; } = new List<Questions>();
+            public List<OpenTDBQuestion> Results { get; set; } = new List<OpenTDBQuestion>();
         }
-        public class Questions
+        class OpenTDBQuestion
         {
             public string Category { get; set; }
             public string Type { get; set; }
@@ -42,18 +50,18 @@ namespace conquiz_backend.Services
             public List<string> Incorrect_Answers { get; set; } = new List<string>();
         }
 
-        public class SessionTokenResponse
+        class SessionTokenResponse
         {
             public int Response_Code { get; set; }
             public string Response_Message { get; set; }
             public string Token { get; set; }
         }
 
-        public async Task<List<Questions>> GetMultipleChoiceQuestion(GameInstance instance)
+        public async Task<List<Questions>> GetMultipleChoiceQuestion(int gameInstanceId)
         {
             var client = clientFactory.CreateClient();
 
-            var sessionToken = await GenerateSessionToken(client, instance);
+            var sessionToken = await GenerateSessionToken(client, gameInstanceId);
 
             using var response = await client.GetAsync($"https://opentdb.com/api.php?amount=1&type=multiple&token={sessionToken}");
 
@@ -63,18 +71,48 @@ namespace conquiz_backend.Services
 
             var convertedResponse = JsonConvert.DeserializeObject<QuestionResponse>(str);
 
-            return convertedResponse.Results;
-        }
 
-        public async Task<string> GenerateSessionToken(HttpClient client, GameInstance gameInstance)
-        {
-            // If there is an existing token return it without making a new one
-            if(sessionTokens.ContainsKey(gameInstance))
+            var questions = new List<Questions>();
+            foreach(var a in convertedResponse.Results)
             {
-                return sessionTokens[gameInstance];
+                var que = new Questions
+                {
+                    Question = a.Question,
+                    IsNumberQuestion = false
+                };
+
+                // Add the correct answer
+                que.Answers.Add(new Answers()
+                {
+                    Answer = a.Correct_Answer,
+                    Correct = true,
+                });
+
+                // Add the wrong answers
+                foreach(var incAns in a.Incorrect_Answers)
+                {
+                    que.Answers.Add(new Answers()
+                    {
+                        Answer = incAns,
+                        Correct = false,
+                    });
+                }
+
+                questions.Add(que);
             }
 
-            using var response = 
+            return questions;
+        }
+
+        public async Task<string> GenerateSessionToken(HttpClient client, int gameInstanceId)
+        {
+            // If there is an existing token return it without making a new one
+            if (sessionTokens.ContainsKey(gameInstanceId))
+            {
+                return sessionTokens[gameInstanceId];
+            }
+
+            using var response =
                 await client.GetAsync("https://opentdb.com/api_token.php?command=request");
 
             response.EnsureSuccessStatusCode();
@@ -83,7 +121,7 @@ namespace conquiz_backend.Services
 
             var convertedResponse = JsonConvert.DeserializeObject<SessionTokenResponse>(str);
 
-            sessionTokens.Add(gameInstance, convertedResponse.Token);
+            sessionTokens.Add(gameInstanceId, convertedResponse.Token);
 
             return convertedResponse.Token;
         }

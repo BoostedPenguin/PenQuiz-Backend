@@ -46,6 +46,9 @@ namespace conquiz_backend.Services
         }
     }
 
+    /// <summary>
+    /// Handles people's connection to the games and canceling existing games
+    /// </summary>
     public class GameService : DataService<DefaultModel>, IGameService
     {
         private readonly IContextFactory contextFactory;

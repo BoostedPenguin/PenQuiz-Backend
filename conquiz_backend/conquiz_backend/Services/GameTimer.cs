@@ -16,6 +16,10 @@ namespace conquiz_backend.Services
     {
         void TimerStart();
     }
+
+    /// <summary>
+    /// Handles all game instance timers and callbacks the appropriate GameControlService functions
+    /// </summary>
     public class GameTimer : DataService<DefaultModel>, IGameTimer
     {
         

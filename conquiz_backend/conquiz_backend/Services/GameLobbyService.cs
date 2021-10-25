@@ -17,6 +17,9 @@ namespace conquiz_backend.Services
         Task<GameInstance> StartGame();
     }
 
+    /// <summary>
+    /// Handles the lobby state of the game and starting a gameinstance
+    /// </summary>
     public class GameLobbyService : DataService<DefaultModel>, IGameLobbyService
     {
         private readonly IContextFactory contextFactory;
