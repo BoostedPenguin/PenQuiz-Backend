@@ -1,6 +1,5 @@
-using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
+using AccountService.Context;
+using AccountService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -9,15 +8,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
-using conquiz_backend.Context;
-using conquiz_backend.Services;
-using conquiz_backend.Services.Interfaces;
 using Microsoft.OpenApi.Models;
-using conquiz_backend.Helpers;
-using conquiz_backend.Hubs;
+using System;
 using System.Text;
 
-namespace conquiz_backend
+namespace AccountService
 {
     public class Startup
     {
@@ -31,33 +26,7 @@ namespace conquiz_backend
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
-
-            services.AddSingleton<IContextFactory>(new ContextFactory(Configuration.GetConnectionString("SQLCONNSTR_Database")));
-
-            services.AddSingleton<IExampleService, ExampleService>();
-            
-            services.AddSingleton<IAccountService, AccountService>();
-
-            services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
-
-            services.AddSingleton<IQuestionService, QuestionService>();
-
-            services.AddSingleton<IGameService, GameService>();
-
-            services.AddSingleton<IGameLobbyService, GameLobbyService>();
-
-            services.AddSingleton<IGameTimer, GameTimer>();
-
-            services.AddHttpContextAccessor();
-
-            services.AddHttpClient();
-
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
-            });
 
             services.AddCors(options =>
             {
@@ -94,34 +63,23 @@ namespace conquiz_backend
                     ValidAudience = Configuration.GetSection("AppSettings").GetValue<string>("Issuer"),
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings").GetValue<string>("Secret"))),
                 };
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = context =>
-                    {
-                        var accessToken = context.Request.Query["access_token"];
-
-                        // If the request is for our hub...
-                        var path = context.HttpContext.Request.Path;
-                        if (!string.IsNullOrEmpty(accessToken) &&
-                            (path.StartsWithSegments("/chathubs") || path.StartsWithSegments("/gamehubs")))
-                        {
-                            // Read the token out of the query string
-                            context.Token = accessToken;
-                        }
-                        return Task.CompletedTask;
-                    }
-                };
             });
 
-            services.AddSignalR().AddNewtonsoftJsonProtocol(x =>
+            services.AddDbContextFactory<AppDbContext>(options =>
             {
-                x.PayloadSerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
             });
-            
-            services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
-            services.AddHostedService<BackgroundTaskService>();
+            services.AddSingleton<IAccountService, Services.AccountService>();
+
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "AccountService", Version = "v1" });
+            });
+
+            services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -131,32 +89,26 @@ namespace conquiz_backend
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                });
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AccountService v1"));
             }
+
 
             app.UseRouting();
 
-            //app.UseApiResponseAndExceptionWrapper();
-
-            app.UseCors();
-
             app.UseHttpsRedirection();
+            
+            app.UseCors();
 
             app.UseAuthentication();
 
             app.UseAuthorization();
 
-            //app.UseMiddleware<JwtMiddleware>();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<ChatHub>("/chathubs");
-                endpoints.MapHub<GameHub>("/gamehubs");
             });
+
+            PrepDb.PrepMigration(app);
         }
     }
 }

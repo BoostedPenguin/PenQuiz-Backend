@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "backend_testing_xunit", "ba
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "conquiz_backend", "conquiz_backend\conquiz_backend.csproj", "{817E8692-0E70-4243-A546-0E39075CCAA6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccountService", "AccountService\AccountService.csproj", "{D8159D2F-6ECF-4A46-9EC3-EE05AF44408A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{817E8692-0E70-4243-A546-0E39075CCAA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{817E8692-0E70-4243-A546-0E39075CCAA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{817E8692-0E70-4243-A546-0E39075CCAA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8159D2F-6ECF-4A46-9EC3-EE05AF44408A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8159D2F-6ECF-4A46-9EC3-EE05AF44408A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8159D2F-6ECF-4A46-9EC3-EE05AF44408A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8159D2F-6ECF-4A46-9EC3-EE05AF44408A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
