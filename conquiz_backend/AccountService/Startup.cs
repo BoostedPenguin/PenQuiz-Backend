@@ -1,4 +1,5 @@
 using AccountService.Context;
+using AccountService.MessageBus;
 using AccountService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -71,6 +72,8 @@ namespace AccountService
             });
 
             services.AddSingleton<IAccountService, Services.AccountService>();
+
+            services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

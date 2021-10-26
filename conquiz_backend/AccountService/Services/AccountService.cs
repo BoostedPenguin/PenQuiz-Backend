@@ -14,6 +14,9 @@ using System.Security.Cryptography;
 using AccountService.Models.Requests;
 using AccountService.Models;
 using AccountService.Context;
+using AccountService.MessageBus;
+using AutoMapper;
+using AccountService.Dtos;
 
 namespace AccountService.Services
 {
@@ -29,45 +32,59 @@ namespace AccountService.Services
     public class AccountService : IAccountService
     {
         private readonly IDbContextFactory<AppDbContext> contextFactory;
+        private readonly IMessageBusClient messageBusClient;
+        private readonly IMapper mapper;
         private readonly AppSettings appSettings;
-        public AccountService(IDbContextFactory<AppDbContext> _contextFactory, IOptions<AppSettings> appSettings)
+        public AccountService(IDbContextFactory<AppDbContext> _contextFactory, IOptions<AppSettings> appSettings, IMessageBusClient messageBusClient, IMapper mapper)
         {
             contextFactory = _contextFactory;
+            this.messageBusClient = messageBusClient;
+            this.mapper = mapper;
             this.appSettings = appSettings.Value;
         }
 
         public async Task<AuthenticateResponse> Authenticate(Payload payload, string ipAddress)
         {
-            using (var a = contextFactory.CreateDbContext())
+            using var a = contextFactory.CreateDbContext();
+            
+            var user = await a.Users.Include(x => x.RefreshToken).FirstOrDefaultAsync(x => x.Email == payload.Email);
+
+            if (user == null)
             {
-                var user = await a.Users.Include(x => x.RefreshToken).FirstOrDefaultAsync(x => x.Email == payload.Email);
+                user = new Users() { Email = payload.Email, Username = payload.Name };
 
-                if (user == null)
-                {
-                    user = new Users() { Email = payload.Email, Username = payload.Name };
-
-                    await a.AddAsync(user);
-                    await a.SaveChangesAsync();
-                }
-
-                var jwtToken = generateJwtToken(user);
-                var refreshToken = generateRefreshToken(ipAddress);
-
-                // On login, remove all active refresh tokens except the new one 
-                var activeRF = await a.RefreshToken.Where(x => x.UsersId == user.Id && x.Revoked == null).ToListAsync();
-                activeRF.ForEach(x =>
-                {
-                    x.Revoked = DateTime.UtcNow;
-                    x.RevokedByIp = ipAddress;
-                    x.ReplacedByToken = refreshToken.Token;
-                });
-
-                user.RefreshToken.Add(refreshToken);
-                a.Update(user);
+                await a.AddAsync(user);
                 await a.SaveChangesAsync();
 
-                return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
+                try
+                {
+                    var userPublishedDto = mapper.Map<UserCreatedDto>(user);
+                    userPublishedDto.Event = "User_Published";
+                    messageBusClient.PublishNewUser(userPublishedDto);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"--> Could not send DTO to bus: {ex.Message}");
+                }
             }
+
+            var jwtToken = generateJwtToken(user);
+            var refreshToken = generateRefreshToken(ipAddress);
+
+            // On login, remove all active refresh tokens except the new one 
+            var activeRF = await a.RefreshToken.Where(x => x.UsersId == user.Id && x.Revoked == null).ToListAsync();
+            activeRF.ForEach(x =>
+            {
+                x.Revoked = DateTime.UtcNow;
+                x.RevokedByIp = ipAddress;
+                x.ReplacedByToken = refreshToken.Token;
+            });
+
+            user.RefreshToken.Add(refreshToken);
+            a.Update(user);
+            await a.SaveChangesAsync();
+
+            return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
         }
 
         public async Task<bool> RevokeCookie(string token, string ipAddress)
@@ -138,10 +155,8 @@ namespace AccountService.Services
 
         public async Task<List<Users>> GetUsers()
         {
-            using (var a = contextFactory.CreateDbContext())
-            {
-                return await a.Users.ToListAsync();
-            }
+            using var a = contextFactory.CreateDbContext();
+            return await a.Users.ToListAsync();
         }
 
         private string generateJwtToken(Users user)
@@ -168,18 +183,16 @@ namespace AccountService.Services
 
         private RefreshToken generateRefreshToken(string ipAddress)
         {
-            using (var rngCryptoServiceProvider = new RNGCryptoServiceProvider())
+            using var rngCryptoServiceProvider = new RNGCryptoServiceProvider();
+            var randomBytes = new byte[64];
+            rngCryptoServiceProvider.GetBytes(randomBytes);
+            return new RefreshToken
             {
-                var randomBytes = new byte[64];
-                rngCryptoServiceProvider.GetBytes(randomBytes);
-                return new RefreshToken
-                {
-                    Token = Convert.ToBase64String(randomBytes),
-                    Expires = DateTime.UtcNow.AddDays(7),
-                    Created = DateTime.UtcNow,
-                    CreatedByIp = ipAddress
-                };
-            }
+                Token = Convert.ToBase64String(randomBytes),
+                Expires = DateTime.UtcNow.AddDays(7),
+                Created = DateTime.UtcNow,
+                CreatedByIp = ipAddress
+            };
         }
     }
 }
