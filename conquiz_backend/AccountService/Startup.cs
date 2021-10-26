@@ -67,7 +67,7 @@ namespace AccountService
 
             services.AddDbContextFactory<AppDbContext>(options =>
             {
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"));
+                options.UseSqlServer(Configuration.GetConnectionString("AccountDbConnection"));
             });
 
             services.AddSingleton<IAccountService, Services.AccountService>();

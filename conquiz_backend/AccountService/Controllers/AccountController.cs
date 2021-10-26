@@ -41,9 +41,8 @@ namespace AccountService.Controllers
             }
             catch (Exception ex)
             {
-                BadRequest(ex.Message);
+                return BadRequest(ex.Message);
             }
-            return BadRequest();
         }
 
         [AllowAnonymous]
@@ -75,15 +74,26 @@ namespace AccountService.Controllers
             try
             {
                 var refreshToken = Request.Cookies["refreshToken"];
-                await accountService.RevokeCookie(refreshToken, ipAddress());
+                if(refreshToken == null)
+                {
+                    return BadRequest(new { message = "There wasn't a refresh token cookie in the request" });
+                }
 
-                return Ok();
+                var status = await accountService.RevokeCookie(refreshToken, ipAddress());
+
+                if(status)
+                {
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest(new { message = "The cookie is already inactive" });
+                }
             }
             catch (Exception ex)
             {
-                BadRequest(ex.Message);
+                return BadRequest(ex.Message);
             }
-            return BadRequest();
         }
 
 
@@ -102,15 +112,6 @@ namespace AccountService.Controllers
                 return NotFound(new { message = "Token not found" });
 
             return Ok(new { message = "Token revoked" });
-        }
-
-        [HttpGet("{id}/refresh-tokens")]
-        public async Task<IActionResult> GetRefreshTokens(int id)
-        {
-            var user = await accountService.GetById(id);
-            if (user == null) return NotFound();
-
-            return Ok(user.RefreshToken);
         }
 
         private void setTokenCookie(string token)

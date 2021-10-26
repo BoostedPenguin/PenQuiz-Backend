@@ -20,10 +20,9 @@ namespace AccountService.Services
     public interface IAccountService
     {
         Task<AuthenticateResponse> Authenticate(Payload payload, string ipAddress);
-        Task<Users> GetById(int id);
         Task<List<Users>> GetUsers();
         Task<AuthenticateResponse> RefreshToken(string token, string ipaddress);
-        Task RevokeCookie(string token, string ipAddress);
+        Task<bool> RevokeCookie(string token, string ipAddress);
         Task<bool> RevokeToken(string token, string ipAddress);
     }
 
@@ -71,17 +70,17 @@ namespace AccountService.Services
             }
         }
 
-        public async Task RevokeCookie(string token, string ipAddress)
+        public async Task<bool> RevokeCookie(string token, string ipAddress)
         {
             using var a = contextFactory.CreateDbContext();
             var user = a.Users.Include(x => x.RefreshToken).SingleOrDefault(x => x.RefreshToken.Any(y => y.Token == token));
 
             // No user found with token
-            if (user == null) return;
+            if (user == null) return false;
 
             var refreshToken = user.RefreshToken.Single(x => x.Token == token);
             // No active refresh tokens
-            if (!refreshToken.IsActive) return;
+            if (!refreshToken.IsActive) return false;
 
             refreshToken.Revoked = DateTime.UtcNow;
             refreshToken.RevokedByIp = ipAddress;
@@ -89,6 +88,8 @@ namespace AccountService.Services
 
             a.Update(user);
             await a.SaveChangesAsync();
+
+            return true;
         }
 
         public async Task<AuthenticateResponse> RefreshToken(string token, string ipaddress)
@@ -133,14 +134,6 @@ namespace AccountService.Services
             await a.SaveChangesAsync();
 
             return true;
-        }
-
-        public async Task<Users> GetById(int id)
-        {
-            using (var a = contextFactory.CreateDbContext())
-            {
-                return await a.Users.FindAsync(id);
-            }
         }
 
         public async Task<List<Users>> GetUsers()
