@@ -44,7 +44,7 @@ namespace GameService
                 services.AddDbContextFactory<DefaultContext>(options =>
                 {
                     Console.WriteLine("--> Using production sql database");
-                    options.UseSqlServer(Configuration.GetConnectionString("AccountsConn"));
+                    options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
                 });
             }
             else
@@ -142,7 +142,7 @@ namespace GameService
             
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
-            services.AddHostedService<BackgroundTaskService>();
+            //services.AddHostedService<BackgroundTaskService>();
 
             services.AddHostedService<MessageBusSubscriber>();
         }
@@ -180,6 +180,8 @@ namespace GameService
                 endpoints.MapHub<ChatHub>("/chathubs");
                 endpoints.MapHub<GameHub>("/gamehubs");
             });
+            
+            PrepDb.PrepMigration(app, env.IsProduction());
         }
     }
 }

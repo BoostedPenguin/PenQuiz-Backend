@@ -127,8 +127,10 @@ namespace AccountService
             {
                 endpoints.MapControllers();
             });
-
-            PrepDb.PrepMigration(app);
+            if(env.IsProduction())
+            {
+                PrepDb.PrepMigration(app);
+            }
         }
     }
 }

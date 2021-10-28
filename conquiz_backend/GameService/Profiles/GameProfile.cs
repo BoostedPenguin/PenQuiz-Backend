@@ -13,7 +13,8 @@ namespace GameService.Profiles
         public GameProfile()
         {
             CreateMap<UserPublishedDto, Users>()
-                .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.Id));
+                .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.Id))
+                .ForMember(dest => dest.Id, opt => opt.Ignore());
         }
     }
 }
