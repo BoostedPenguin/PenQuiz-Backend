@@ -36,7 +36,7 @@ namespace GameService.Controllers
         [HttpGet("contact")]
         public async Task<IActionResult> ContactAccount()
         {
-            var url = "http://localhost:30956/api/account";
+            var url = "http://accounts-clusterip-srv:80/api/account";
 
             var client = clientFactory.CreateClient();
 

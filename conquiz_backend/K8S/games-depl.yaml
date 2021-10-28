@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: games-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gameservice
+  template:
+    metadata:
+      labels:
+        app: gameservice
+    spec:
+      containers:
+        - name: gameservice
+          image: boostedpenguin/gameservice:latest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: games-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: gameservice
+  ports:
+  - name: gameservice
+    protocol: TCP
+    port: 80
+    targetPort: 80
