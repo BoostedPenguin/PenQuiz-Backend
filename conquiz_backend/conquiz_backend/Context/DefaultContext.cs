@@ -24,7 +24,6 @@ namespace conquiz_backend.Context
         public virtual DbSet<ObjectTerritory> ObjectTerritory { get; set; }
         public virtual DbSet<Participants> Participants { get; set; }
         public virtual DbSet<Questions> Questions { get; set; }
-        public virtual DbSet<RefreshToken> RefreshToken { get; set; }
         public virtual DbSet<RoundQuestion> RoundQuestion { get; set; }
         public virtual DbSet<Rounds> Rounds { get; set; }
         public virtual DbSet<Users> Users { get; set; }
@@ -218,17 +217,6 @@ namespace conquiz_backend.Context
                     .HasMaxLength(255);
             });
 
-            modelBuilder.Entity<RefreshToken>(entity =>
-            {
-                entity.HasKey(e => new { e.UsersId, e.Id });
-
-                entity.Property(e => e.Id).ValueGeneratedOnAdd();
-
-                entity.HasOne(d => d.Users)
-                    .WithMany(p => p.RefreshToken)
-                    .HasForeignKey(d => d.UsersId);
-            });
-
             modelBuilder.Entity<RoundQuestion>(entity =>
             {
                 entity.HasIndex(e => e.QuestionId);
@@ -294,15 +282,7 @@ namespace conquiz_backend.Context
                     .HasColumnName("email")
                     .HasMaxLength(100);
 
-                entity.Property(e => e.Role).HasColumnName("role").IsRequired().HasDefaultValue("user");
-
-                entity.Property(e => e.IsBanned).HasColumnName("isBanned");
-
                 entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
-
-                entity.Property(e => e.IsOnline).HasColumnName("isOnline");
-
-                entity.Property(e => e.Provider).HasColumnName("provider");
 
                 entity.Property(e => e.Username)
                     .IsRequired()

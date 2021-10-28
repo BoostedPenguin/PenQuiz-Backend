@@ -68,7 +68,7 @@ namespace AccountService
 
             services.AddDbContextFactory<AppDbContext>(options =>
             {
-                options.UseSqlServer(Configuration.GetConnectionString("AccountDbConnection"));
+                options.UseInMemoryDatabase("SomeDb");
             });
 
             services.AddSingleton<IAccountService, Services.AccountService>();

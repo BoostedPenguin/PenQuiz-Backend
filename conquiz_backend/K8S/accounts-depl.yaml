@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: accountservice
+  template:
+    metadata:
+      labels:
+        app: accountservice
+    spec:
+      containers:
+        - name: accountservice
+          image: boostedpenguin/accountservice:latest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounts-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: accountservice
+  ports:
+  - name: accountservice
+    protocol: TCP
+    port: 80
+    targetPort: 80

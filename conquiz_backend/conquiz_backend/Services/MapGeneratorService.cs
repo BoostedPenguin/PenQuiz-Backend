@@ -222,7 +222,9 @@ namespace conquiz_backend.Services
 
             if (antarctica == null)
             {
+                Console.WriteLine($"`{defaultMapFile}` doesn't exist. Attempting to re-create.");
                 await GenerateDefaultMap();
+                Console.WriteLine($"`{defaultMapFile}` successfully re-created.");
                 return;
             }
 

@@ -19,7 +19,7 @@ namespace conquiz_backend.Context
 
 
             var options = new DbContextOptionsBuilder<DefaultContext>();
-            options.UseSqlServer(connectionString);
+            options.UseInMemoryDatabase(connectionString ?? "DefaultDb");
         }
 
         public ContextFactory()
@@ -39,7 +39,7 @@ namespace conquiz_backend.Context
         public DefaultContext CreateDbContext(string[] args = null)
         {
             var options = new DbContextOptionsBuilder<DefaultContext>();
-            options.UseSqlServer(connectionString);
+            options.UseInMemoryDatabase(connectionString ?? "DefaultDb");
 
             return new DefaultContext(options.Options);
         }

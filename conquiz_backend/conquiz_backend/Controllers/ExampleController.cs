@@ -12,6 +12,7 @@ using conquiz_backend.Services;
 using conquiz_backend.ViewModel;
 using conquiz_backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Net.Http;
 
 namespace conquiz_backend.Controllers
 {
@@ -24,14 +25,34 @@ namespace conquiz_backend.Controllers
     public class ExampleController : ControllerBase
     {
         private readonly IExampleService context;
+        private readonly IHttpClientFactory clientFactory;
 
-        public ExampleController(IExampleService _context)
+        public ExampleController(IExampleService _context, IHttpClientFactory clientFactory)
         {
             context = _context;
+            this.clientFactory = clientFactory;
         }
 
-        [HttpGet("{word}")]
-        public async Task<IActionResult> AddSomething([FromRoute] string word)
+        [HttpGet("contact")]
+        public async Task<IActionResult> ContactAccount()
+        {
+            var url = "http://localhost:30956/api/account";
+
+            var client = clientFactory.CreateClient();
+
+            try
+            {
+                using var response = await client.GetAsync(url);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> DoSomething()
         {
             try
             {

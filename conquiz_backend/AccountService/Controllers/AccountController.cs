@@ -24,6 +24,20 @@ namespace AccountService.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet]
+        public IActionResult ExamplePing()
+        {
+            try
+            {
+                return Ok("Successfully contacted me");
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [AllowAnonymous]
         [HttpPost("authenticate")]
         public async Task<IActionResult> Authenticate([FromBody] UserView userView)
         {

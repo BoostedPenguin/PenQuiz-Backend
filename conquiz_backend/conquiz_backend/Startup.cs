@@ -38,8 +38,6 @@ namespace conquiz_backend
 
             services.AddSingleton<IExampleService, ExampleService>();
             
-            services.AddSingleton<IAccountService, AccountService>();
-
             services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
 
             services.AddSingleton<IQuestionService, QuestionService>();
