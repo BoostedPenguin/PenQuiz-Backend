@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\conquiz_backend\conquiz_backend.csproj" />
+    <ProjectReference Include="..\GameService\GameService.csproj" />
   </ItemGroup>
 
 </Project>

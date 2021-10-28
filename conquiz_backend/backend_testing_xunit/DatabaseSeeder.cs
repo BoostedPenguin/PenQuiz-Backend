@@ -1,5 +1,5 @@
-﻿using conquiz_backend.Models;
-using conquiz_backend.Context;
+﻿using GameService.Models;
+using GameService.Context;
 using Newtonsoft.Json;
 using System.Security.Principal;
 using System.Security.Claims;

@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Moq;
 using Moq.Protected;
-using conquiz_backend.Context;
-using conquiz_backend.Services;
+using GameService.Context;
+using GameService.Services;
 using System;
 using System.Collections.Generic;
 using System.Net;

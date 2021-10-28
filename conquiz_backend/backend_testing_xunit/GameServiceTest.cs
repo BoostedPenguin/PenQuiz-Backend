@@ -2,8 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Moq;
-using conquiz_backend.Context;
-using conquiz_backend.Services;
+using GameService.Context;
+using GameService.Services;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;

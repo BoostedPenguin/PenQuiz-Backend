@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using conquiz_backend.Context;
-using conquiz_backend.Models;
-using conquiz_backend.Services;
-using conquiz_backend.Services.Interfaces;
+using GameService.Context;
+using GameService.Models;
+using GameService.Services;
+using GameService.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
