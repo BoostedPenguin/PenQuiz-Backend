@@ -28,7 +28,7 @@ namespace backend_testing_xunit
     {
         TestingContextFactory mockContextFactory;
         Mock<IHttpContextAccessor> mockHttpContextAccessor;
-        GameService gameService;
+        GameService.Services.GameService gameService;
         GameLobbyService gameLobby;
         public GameServiceTest()
         {
@@ -51,7 +51,7 @@ namespace backend_testing_xunit
             var b = new MapGeneratorService(mockContextFactory, mockHttpContextAccessor.Object);
 
 
-            gameService = new GameService(mockContextFactory, mockHttpContextAccessor.Object);
+            gameService = new GameService.Services.GameService(mockContextFactory, mockHttpContextAccessor.Object);
             gameLobby = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, b);
         }
 
