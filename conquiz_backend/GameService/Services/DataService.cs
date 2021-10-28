@@ -16,10 +16,10 @@ namespace GameService.Services
     /// <typeparam name="T"></typeparam>
     public class DataService<T> : IDataService<T> where T : DefaultModel
     {
-        private readonly IContextFactory _contextFactory;
+        private readonly IDbContextFactory<DefaultContext> _contextFactory;
 
 
-        public DataService(IContextFactory _contextFactory)
+        public DataService(IDbContextFactory<DefaultContext> _contextFactory)
         {
             this._contextFactory = _contextFactory;
         }

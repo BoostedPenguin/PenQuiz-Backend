@@ -277,10 +277,7 @@ namespace GameService.Context
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.Email)
-                    .IsRequired()
-                    .HasColumnName("email")
-                    .HasMaxLength(100);
+                entity.Property(e => e.ExternalId).HasColumnName("externalId");
 
                 entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
 

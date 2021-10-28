@@ -16,17 +16,22 @@ using Microsoft.OpenApi.Models;
 using GameService.Helpers;
 using GameService.Hubs;
 using System.Text;
+using GameService.EventProcessing;
+using GameService.MessageBus;
 
 namespace GameService
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private readonly IWebHostEnvironment env;
+        public IConfiguration Configuration { get; }
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
+            this.env = env;
         }
 
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -34,10 +39,26 @@ namespace GameService
 
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            services.AddSingleton<IContextFactory>(new ContextFactory(Configuration.GetConnectionString("SQLCONNSTR_Database")));
-
+            if (env.IsProduction())
+            {
+                services.AddDbContextFactory<DefaultContext>(options =>
+                {
+                    Console.WriteLine("--> Using production sql database");
+                    options.UseSqlServer(Configuration.GetConnectionString("AccountsConn"));
+                });
+            }
+            else
+            {
+                Console.WriteLine("--> Using in memory database");
+                services.AddDbContextFactory<DefaultContext>(options =>
+                {
+                    options.UseInMemoryDatabase("InMemoryTest");
+                });
+            }
             services.AddSingleton<IExampleService, ExampleService>();
-            
+
+            services.AddSingleton<IEventProcessor, EventProcessor>();
+
             services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
 
             services.AddSingleton<IQuestionService, QuestionService>();
@@ -51,6 +72,8 @@ namespace GameService
             services.AddHttpContextAccessor();
 
             services.AddHttpClient();
+
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             services.AddSwaggerGen(c =>
             {
@@ -120,6 +143,8 @@ namespace GameService
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
             services.AddHostedService<BackgroundTaskService>();
+
+            services.AddHostedService<MessageBusSubscriber>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

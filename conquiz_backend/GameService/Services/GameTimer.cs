@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameService.Services
 {
@@ -23,14 +24,14 @@ namespace GameService.Services
     public class GameTimer : DataService<DefaultModel>, IGameTimer
     {
         
-        private readonly IContextFactory contextFactory;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         
         // GroupID<Game> | CurrentTimer 
         public static ConcurrentDictionary<string, Timer> GameTimers = new ConcurrentDictionary<string, Timer>();
 
-        public GameTimer(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext) : base(_contextFactory)
+        public GameTimer(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;

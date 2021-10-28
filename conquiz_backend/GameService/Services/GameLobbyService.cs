@@ -22,7 +22,7 @@ namespace GameService.Services
     /// </summary>
     public class GameLobbyService : DataService<DefaultModel>, IGameLobbyService
     {
-        private readonly IContextFactory contextFactory;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IMapGeneratorService mapGeneratorService;
         private readonly Random r = new Random();
@@ -31,7 +31,7 @@ namespace GameService.Services
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
 
-        public GameLobbyService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        public GameLobbyService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;

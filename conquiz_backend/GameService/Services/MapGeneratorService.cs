@@ -28,11 +28,11 @@ namespace GameService.Services
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
     {
-        private readonly IContextFactory contextFactory;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private const string defaultMapFile = "Antarctica";
 
-        public MapGeneratorService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
+        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace GameService.Services
 {
@@ -18,7 +19,6 @@ namespace GameService.Services
 
     public class OpenDBService : DataService<DefaultModel>, IOpenDBService
     {
-        private readonly IContextFactory contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHttpClientFactory clientFactory;
 
@@ -27,9 +27,8 @@ namespace GameService.Services
         /// </summary>
         Dictionary<int, string> sessionTokens = new Dictionary<int, string>();
 
-        public OpenDBService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor, IHttpClientFactory clientFactory) : base(_contextFactory)
+        public OpenDBService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHttpClientFactory clientFactory) : base(_contextFactory)
         {
-            contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.clientFactory = clientFactory;
         }

@@ -16,11 +16,9 @@ namespace GameService.Services
 {
     public class ExampleService : DataService<DefaultModel>, IExampleService
     {
-        private readonly IContextFactory contextFactory;
 
-        public ExampleService(IContextFactory _contextFactory) : base(_contextFactory)
+        public ExampleService(IDbContextFactory<DefaultContext> _contextFactory) : base(_contextFactory)
         {
-            contextFactory = _contextFactory;
         }
 
         public async Task<bool> DoSomething()

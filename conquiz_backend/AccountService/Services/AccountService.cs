@@ -51,7 +51,7 @@ namespace AccountService.Services
 
             if (user == null)
             {
-                user = new Users() { Email = payload.Email, Username = payload.Name };
+                user = new Users() { Email = payload.Email, Username = payload.Name, Role = "user" };
 
                 await a.AddAsync(user);
                 await a.SaveChangesAsync();

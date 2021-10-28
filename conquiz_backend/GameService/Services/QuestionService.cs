@@ -22,11 +22,11 @@ namespace GameService.Services
 
     public class QuestionService : DataService<DefaultModel>, IQuestionService
     {
-        private readonly IContextFactory contextFactory;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         const string defaultQuestionsFile = "questions";
 
-        public QuestionService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
+        public QuestionService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;

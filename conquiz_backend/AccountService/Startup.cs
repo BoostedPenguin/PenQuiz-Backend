@@ -17,12 +17,13 @@ namespace AccountService
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public IConfiguration Configuration { get; }
+        private readonly IWebHostEnvironment environment;
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
+            environment = env;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -53,6 +54,8 @@ namespace AccountService
                 options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
 
+                var b = Configuration.GetSection("AppSettings").GetValue<string>("Issuer");
+                var z = Configuration.GetSection("AppSettings").GetValue<string>("Secret");
                 options.TokenValidationParameters = new TokenValidationParameters()
                 {
                     ValidateIssuer = true,
@@ -66,10 +69,24 @@ namespace AccountService
                 };
             });
 
-            services.AddDbContextFactory<AppDbContext>(options =>
+            if (environment.IsProduction())
             {
-                options.UseInMemoryDatabase("SomeDb");
-            });
+                services.AddDbContextFactory<AppDbContext>(options =>
+                {
+                    Console.WriteLine("--> Using production sql database");
+                    options.UseSqlServer(Configuration.GetConnectionString("AccountsConn"));
+                });
+            }
+            else
+            {
+                Console.WriteLine("--> Using in memory database");
+                services.AddDbContextFactory<AppDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase("InMemoryTest");
+                });
+            }
+
+
 
             services.AddSingleton<IAccountService, Services.AccountService>();
 
@@ -99,7 +116,7 @@ namespace AccountService
             app.UseRouting();
 
             app.UseHttpsRedirection();
-            
+
             app.UseCors();
 
             app.UseAuthentication();

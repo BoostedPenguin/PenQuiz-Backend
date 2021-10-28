@@ -51,14 +51,14 @@ namespace GameService.Services
     /// </summary>
     public class GameService : DataService<DefaultModel>, IGameService
     {
-        private readonly IContextFactory contextFactory;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         public const string DefaultMap = "Antarctica";
 
         public const int RequiredPlayers = 3;
         public const int InvitationCodeLength = 4;
 
-        public GameService(IContextFactory _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
+        public GameService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
