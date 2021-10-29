@@ -1,9 +1,11 @@
 using AccountService.Context;
+using AccountService.Grpc;
 using AccountService.MessageBus;
 using AccountService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System;
+using System.IO;
 using System.Text;
 
 namespace AccountService
@@ -92,6 +95,8 @@ namespace AccountService
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
+            services.AddGrpc();
+
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             services.AddSwaggerGen(c =>
@@ -126,7 +131,14 @@ namespace AccountService
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapGrpcService<GrpcAccountService>();
+
+                endpoints.MapGet("/protos/accounts.proto", async context =>
+                {
+                    await context.Response.WriteAsync(File.ReadAllText("Protos/accounts.proto"));
+                });
             });
+
             if(env.IsProduction())
             {
                 PrepDb.PrepMigration(app);

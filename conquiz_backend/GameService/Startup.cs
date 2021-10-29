@@ -18,6 +18,7 @@ using GameService.Hubs;
 using System.Text;
 using GameService.EventProcessing;
 using GameService.MessageBus;
+using GameService.Grpc;
 
 namespace GameService
 {
@@ -68,6 +69,8 @@ namespace GameService
             services.AddSingleton<IGameLobbyService, GameLobbyService>();
 
             services.AddSingleton<IGameTimer, GameTimer>();
+
+            services.AddScoped<IAccountDataClient, AccountDataClient>();
 
             services.AddHttpContextAccessor();
 

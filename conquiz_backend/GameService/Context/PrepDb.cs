@@ -1,4 +1,6 @@
-﻿using GameService.Services;
+﻿using GameService.Grpc;
+using GameService.Models;
+using GameService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,9 +17,11 @@ namespace GameService.Context
         {
             using var serviceScope = app.ApplicationServices.CreateScope();
 
-            if(isProd)
+            var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
+            
+            if (isProd)
             {
-                ApplyMigrations(serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>());
+                ApplyMigrations(contextFactory);
             }
 
             ValidateResources(
@@ -26,6 +30,29 @@ namespace GameService.Context
                 serviceScope.ServiceProvider.GetService<IQuestionService>());
 
             Console.WriteLine("--> Database prepared!");
+
+            var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
+
+            var users = grpcClient.ReturnAllAccounts();
+
+            if (users == null) return;
+            FetchAccounts(contextFactory, users);
+        }
+
+        private static void FetchAccounts(IDbContextFactory<DefaultContext> contextFactory, IEnumerable<Users> users)
+        {
+            Console.WriteLine("Applying missing users...");
+
+            using var db = contextFactory.CreateDbContext();
+
+            foreach(var user in users)
+            {
+                if(db.Users.FirstOrDefault(x => x.ExternalId == user.ExternalId) == null)
+                {
+                    db.Users.Add(user);
+                }
+            }
+            db.SaveChanges();
         }
 
         private static void ApplyMigrations(IDbContextFactory<DefaultContext> contextFactory)

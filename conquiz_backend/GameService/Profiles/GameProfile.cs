@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using AccountService;
+using AutoMapper;
 using GameService.Dtos;
 using GameService.Models;
 using System;
@@ -14,6 +15,10 @@ namespace GameService.Profiles
         {
             CreateMap<UserPublishedDto, Users>()
                 .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.Id))
+                .ForMember(dest => dest.Id, opt => opt.Ignore());
+            CreateMap<GrpcAccountModel, Users>()
+                .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.AccountId))
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(x => x.Username))
                 .ForMember(dest => dest.Id, opt => opt.Ignore());
         }
     }
