@@ -66,6 +66,9 @@ namespace AccountService.Controllers
             try
             {
                 var refreshToken = Request.Cookies["refreshToken"];
+
+                if (refreshToken == null)
+                    return Unauthorized(new { message = "No refresh cookie received" });
                 var response = await accountService.RefreshToken(refreshToken, ipAddress());
 
                 if (response == null)
