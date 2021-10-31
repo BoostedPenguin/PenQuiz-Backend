@@ -15,6 +15,11 @@ This repository contains all the backend logic and kubernetes configuration file
 * Kubernetes
 * SignalR
 
+## Communication between Microservices
+Embracing eventual consistency pattern, we use the RabbitMQ message bus to send messages between the microservices and we "pull" for any missing data whenever a microservice starts.
+
+<img src="https://i.imgur.com/kO8WVuO.png" />
+
 
 # Run local production cluster
 If you want to run ConQuiz locally with Kubernetes you need the following pre-requisites:
