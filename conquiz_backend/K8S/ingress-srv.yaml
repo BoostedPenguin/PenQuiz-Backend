@@ -16,7 +16,14 @@ spec:
                 name: accounts-clusterip-srv
                 port:
                   number: 80
-          - path: /api/example
+          - path: /api/game
+            pathType: Prefix
+            backend:
+              service:
+                name: games-clusterip-srv
+                port:
+                  number: 80
+          - path: /gamehubs
             pathType: Prefix
             backend:
               service:

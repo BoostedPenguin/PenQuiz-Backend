@@ -22,12 +22,12 @@ namespace GameService.Controllers
     /// 
     [ApiController]
     [Route("api/[controller]")]
-    public class ExampleController : ControllerBase
+    public class GameController : ControllerBase
     {
         private readonly IExampleService context;
         private readonly IHttpClientFactory clientFactory;
 
-        public ExampleController(IExampleService _context, IHttpClientFactory clientFactory)
+        public GameController(IExampleService _context, IHttpClientFactory clientFactory)
         {
             context = _context;
             this.clientFactory = clientFactory;
