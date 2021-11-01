@@ -14,6 +14,7 @@ namespace GameService.Hubs
 {
     public interface IGameHub
     {
+        Task GameStarting();
         Task GetGameInstance(GameInstance instance);
         Task LobbyCanceled(string message = "");
         Task PersonLeft();
@@ -147,6 +148,8 @@ namespace GameService.Hubs
                 var gameInstance = await gameLobbyService.StartGame();
 
                 await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
+
+                await Clients.Group(gameInstance.InvitationLink).GameStarting();
             }
             catch(Exception ex)
             {
