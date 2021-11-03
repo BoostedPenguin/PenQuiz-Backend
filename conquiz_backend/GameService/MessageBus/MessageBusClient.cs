@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.Options;
-using QuestionService.Dtos;
+﻿using GameService.Dtos;
+using GameService.Helpers;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
@@ -8,11 +9,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace QuestionService.MessageBus
+namespace GameService.MessageBus
 {
     public interface IMessageBusClient
     {
-        void PublishRequestedQuestions(QResponse questionResponseDto);
+        void RequestQuestions(RequestQuestionsDto requestQuestionsDto);
     }
 
     public class MessageBusClient : IMessageBusClient
@@ -31,7 +32,6 @@ namespace QuestionService.MessageBus
             try
             {
                 connection = factory.CreateConnection();
-
                 channel = connection.CreateModel();
 
                 channel.ExchangeDeclare(exchange: "question_events", type: ExchangeType.Direct);
@@ -51,14 +51,14 @@ namespace QuestionService.MessageBus
             Console.WriteLine("--> RabbitMQ Connection Shutdown");
         }
 
-        public void PublishRequestedQuestions(QResponse questionResponseDto)
+        public void RequestQuestions(RequestQuestionsDto requestQuestionsDto)
         {
-            var message = JsonSerializer.Serialize(questionResponseDto);
+            var message = JsonSerializer.Serialize(requestQuestionsDto);
 
             if (connection.IsOpen)
             {
                 Console.WriteLine("--> RabbitMQ Connection Open, sending message...");
-                SendMessage(message, "question_response");
+                SendMessage(message, "question_request");
             }
             else
             {

@@ -19,6 +19,7 @@ namespace GameService.Hubs
         Task LobbyCanceled(string message = "");
         Task CallerLeftGame();
         Task PersonLeftGame(int userId);
+        Task PlayerRejoined(int userId);
         Task GameException(string message);
         Task NavigateToLobby();
         Task NavigateToGame();
@@ -44,6 +45,11 @@ namespace GameService.Hubs
         {
             try
             {
+                var userId = int.Parse(Context.User.Claims
+                    .Where(x => x.Type == ClaimTypes.NameIdentifier)
+                    .Select(x => x.Value)
+                    .FirstOrDefault());
+
                 //timer.TimerStart();
                 var gameInstance = await gameService.OnPlayerLoginConnection();
 
@@ -54,10 +60,12 @@ namespace GameService.Hubs
                     return;
                 }
 
-                await Groups.AddToGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
-                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
-
+                await Clients.Caller.GetGameInstance(gameInstance);
+                await Clients.Group(gameInstance.InvitationLink).PlayerRejoined(userId);
                 await Clients.Caller.NavigateToGame();
+                
+                await Groups.AddToGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
+
             }
             catch (Exception ex)
             {

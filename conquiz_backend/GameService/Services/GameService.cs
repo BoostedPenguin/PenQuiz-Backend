@@ -102,6 +102,9 @@ namespace GameService.Services
             var ongoingGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
+                .Include(x => x.ObjectTerritory)
+                .ThenInclude(x => x.MapTerritory)
+                .Include(x => x.Rounds)
                 .Where(x => x.GameState == GameState.IN_PROGRESS && x.Participants
                     .Any(y => y.PlayerId == userId))
                 .ToListAsync();

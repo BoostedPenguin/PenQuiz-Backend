@@ -210,7 +210,10 @@ namespace GameService.Context
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.IsNumberQuestion).HasColumnName("isNumberQuestion");
+                entity.Property(e => e.Type)
+                    .HasColumnName("type")
+                    .IsRequired()
+                    .HasMaxLength(255);
 
                 entity.Property(e => e.Question)
                     .HasColumnName("question")

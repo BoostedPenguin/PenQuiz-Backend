@@ -13,6 +13,8 @@ using GameService.ViewModel;
 using GameService.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Net.Http;
+using GameService.MessageBus;
+using GameService.Dtos;
 
 namespace GameService.Controllers
 {
@@ -26,11 +28,13 @@ namespace GameService.Controllers
     {
         private readonly IExampleService context;
         private readonly IHttpClientFactory clientFactory;
+        private readonly IMessageBusClient messageBus;
 
-        public GameController(IExampleService _context, IHttpClientFactory clientFactory)
+        public GameController(IExampleService _context, IHttpClientFactory clientFactory, IMessageBusClient messageBus)
         {
             context = _context;
             this.clientFactory = clientFactory;
+            this.messageBus = messageBus;
         }
 
         [HttpGet("contact")]
@@ -56,11 +60,13 @@ namespace GameService.Controllers
         {
             try
             {
-                var result = await context.DoSomething();
-                //await questionService.AddDefaultQuestions();
-                //await gameService.CreateGameLobby();
+                messageBus.RequestQuestions(new RequestQuestionsDto()
+                {
+                    Event = "Question_Request",
+                    GameInstanceId = 1,
+                });
 
-                return Ok($"Did scaffolding work: {result}");
+                return Ok($"Did scaffolding work: IDK");
             }
             catch (Exception ex)
             {

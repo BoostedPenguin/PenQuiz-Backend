@@ -12,7 +12,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuestionService.Context;
+using QuestionService.EventProcessing;
 using QuestionService.MessageBus;
+using QuestionService.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -96,12 +98,17 @@ namespace QuestionService
             }
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
+            
+            services.AddSingleton<IEventProcessor, EventProcessor>();
+
+            services.AddSingleton<IOpenDBService, OpenDBService>();
 
             services.AddHttpClient();
 
             services.AddGrpc();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 
             services.AddSwaggerGen(c =>
             {
@@ -134,7 +141,7 @@ namespace QuestionService
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapGrpcService<GrpcAccountService>();
+                //endpoints.MapGrpcService<GrpcAccountService>();
 
 
                 endpoints.MapGet("/protos/accounts.proto", async context =>

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using QuestionService.EventProcessing;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -39,7 +40,8 @@ namespace QuestionService.MessageBus
             channel.ExchangeDeclare(exchange: "question_events", type: ExchangeType.Direct);
             queue = channel.QueueDeclare().QueueName;
 
-            channel.QueueBind(queue, "question_events", "");
+            // List all "event types" that you're interested in to listen to
+            channel.QueueBind(queue, "question_events", "question_request");
 
             Console.WriteLine("--> Listening on the Message Bus..");
 

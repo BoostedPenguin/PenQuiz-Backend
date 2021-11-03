@@ -33,6 +33,8 @@ namespace GameService.EventProcessing
                 case EventType.UserPublished:
                     AddUser(message);
                     break;
+                case EventType.QuestionsReceived:
+                    break;
                 default:
                     break;
             }
@@ -73,6 +75,9 @@ namespace GameService.EventProcessing
 
             switch (eventType.Event)
             {
+                case "Questions_Response":
+                    Console.WriteLine("Question Response Event Detected");
+                    return EventType.QuestionsReceived;
                 case "User_Published":
                     Console.WriteLine("User Published Event Detected");
                     return EventType.UserPublished;
@@ -85,6 +90,7 @@ namespace GameService.EventProcessing
 
     enum EventType
     {
+        QuestionsReceived,
         UserPublished,
         Undetermined
     }

@@ -42,6 +42,7 @@ namespace GameService.MessageBus
             queue = channel.QueueDeclare().QueueName;
             
             channel.QueueBind(queue, "trigger", "");
+            channel.QueueBind(queue, "question_events", "question_response");
 
             Console.WriteLine("--> Listening on the Message Bus..");
 

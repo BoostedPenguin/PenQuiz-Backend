@@ -14,10 +14,7 @@ namespace GameService.Services
 {
     public interface IQuestionService
     {
-        Task AddDefaultQuestions();
-        Task AddQuestions(Questions questions);
         Task<Questions> AnswerQuestion(int selectedAnswer, int questionId);
-        void DeleteQuestion(int questionId);
     }
 
     public class QuestionService : DataService<DefaultModel>, IQuestionService
@@ -75,37 +72,6 @@ namespace GameService.Services
             // If you don't give him remove "attackedBy" from territory || make it neutral
             // Update his score
             return questionAnswers;
-        }
-
-        public async Task AddQuestions(Questions questions)
-        {
-            using var a = contextFactory.CreateDbContext();
-
-            if (questions.Answers == null || questions.Answers.Count() != 4) throw new ArgumentException("You haven't supplied 4 answers");
-
-            if (questions.Answers.Where(x => x.Correct).ToList().Count() != 0) throw new ArgumentException("You haven't supplied only 1 correct answer");
-
-            var searchForDuplicate = await a.Questions
-                .FirstOrDefaultAsync(x => x.Question.ToLower() == questions.Question.ToLower());
-
-            if (searchForDuplicate != null) throw new ArgumentException("There is already the same question in our database");
-
-            await a.Questions.AddAsync(questions);
-            await a.SaveChangesAsync();
-        }
-
-        public void GenerateMultipleChoiceQuestion()
-        {
-            using var a = contextFactory.CreateDbContext();
-        }
-
-        public void GenerateNumberQuestion()
-        {
-
-        }
-
-        public void DeleteQuestion(int questionId)
-        {
         }
     }
 }

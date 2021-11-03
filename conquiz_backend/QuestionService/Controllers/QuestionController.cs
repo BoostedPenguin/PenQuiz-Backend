@@ -23,7 +23,7 @@ namespace QuestionService.Controllers
         {
             try
             {
-
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -36,7 +36,7 @@ namespace QuestionService.Controllers
         {
             try
             {
-
+                return Ok();
             }
             catch (Exception ex)
             {

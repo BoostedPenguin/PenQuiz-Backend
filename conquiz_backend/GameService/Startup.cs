@@ -70,6 +70,8 @@ namespace GameService
 
             services.AddSingleton<IGameTimer, GameTimer>();
 
+            services.AddSingleton<IMessageBusClient, MessageBusClient>();
+
             services.AddScoped<IAccountDataClient, AccountDataClient>();
 
             services.AddHttpContextAccessor();

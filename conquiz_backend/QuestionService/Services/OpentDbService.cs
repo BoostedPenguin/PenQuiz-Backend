@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using QuestionService.Context;
+using QuestionService.Dtos;
+using QuestionService.MessageBus;
 using QuestionService.Models;
 using System;
 using System.Collections.Generic;
@@ -30,23 +32,25 @@ namespace QuestionService.Services
 
     public interface IOpenDBService
     {
-        Task<List<Questions>> GetMultipleChoiceQuestion(int gameInstanceId);
+        Task PublishMultipleChoiceQuestion(int gameInstanceId);
     }
 
     public class OpenDBService : IOpenDBService
     {
         private readonly IHttpClientFactory clientFactory;
         private readonly IMapper mapper;
+        private readonly IMessageBusClient messageBus;
 
         /// <summary>
         /// Game instance id | sessionToken
         /// </summary>
         Dictionary<int, string> sessionTokens = new Dictionary<int, string>();
 
-        public OpenDBService(IDbContextFactory<DefaultContext> _contextFactory, IHttpClientFactory clientFactory, IMapper mapper)
+        public OpenDBService(IDbContextFactory<DefaultContext> _contextFactory, IHttpClientFactory clientFactory, IMapper mapper, IMessageBusClient messageBus)
         {
             this.clientFactory = clientFactory;
             this.mapper = mapper;
+            this.messageBus = messageBus;
         }
 
 
@@ -58,13 +62,29 @@ namespace QuestionService.Services
             public string Token { get; set; }
         }
 
-        public async Task<List<Questions>> GetMultipleChoiceQuestion(int gameInstanceId)
+        public async Task PublishMultipleChoiceQuestion(int gameInstanceId)
+        {
+            try
+            {
+                var questions = await GetMultipleChoiceQuestion(gameInstanceId);
+                var mappedQuestions = mapper.Map<QuestionResponse[]>(questions);
+
+                var response = new QResponse() { QuestionResponses = mappedQuestions, Event = "Questions_Response" };
+                messageBus.PublishRequestedQuestions(response);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private async Task<Questions[]> GetMultipleChoiceQuestion(int gameInstanceId)
         {
             var client = clientFactory.CreateClient();
 
             var sessionToken = await GenerateSessionToken(client, gameInstanceId);
 
-            using var response = await client.GetAsync($"https://opentdb.com/api.php?amount=1&type=multiple&token={sessionToken}");
+            using var response = await client.GetAsync($"https://opentdb.com/api.php?amount=10&type=multiple&token={sessionToken}");
 
             response.EnsureSuccessStatusCode();
 
@@ -72,14 +92,15 @@ namespace QuestionService.Services
 
             var convertedResponse = JsonConvert.DeserializeObject<OpenTDBResponse>(str);
 
-
             var questions = new List<Questions>();
             foreach (var a in convertedResponse.Results)
             {
                 var que = new Questions
                 {
                     Question = a.Question,
-                    IsNumberQuestion = false
+                    Type = "multiple",
+                    Category = a.Category,
+                    Difficulty = a.Difficulty,
                 };
 
                 // Add the correct answer
@@ -102,7 +123,7 @@ namespace QuestionService.Services
                 questions.Add(que);
             }
 
-            return questions;
+            return questions.ToArray();
         }
 
         public async Task<string> GenerateSessionToken(HttpClient client, int gameInstanceId)
