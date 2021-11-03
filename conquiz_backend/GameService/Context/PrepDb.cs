@@ -84,7 +84,7 @@ namespace GameService.Context
                 gameService.CancelOngoingGames();
 
                 // Validate questions
-                questionService.AddDefaultQuestions();
+                //questionService.AddDefaultQuestions();
             }
             catch(Exception ex)
             {

@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using QuestionService.Context;
+using QuestionService.Dtos;
+using QuestionService.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace QuestionService.EventProcessing
@@ -17,11 +20,13 @@ namespace QuestionService.EventProcessing
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IMapper mapper;
+        private readonly IOpenDBService openDBService;
 
-        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper)
+        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, IOpenDBService openDBService)
         {
             this.contextFactory = contextFactory;
             this.mapper = mapper;
+            this.openDBService = openDBService;
         }
 
         public void ProcessEvent(string message)
@@ -30,38 +35,12 @@ namespace QuestionService.EventProcessing
 
             switch (eventType)
             {
-                case EventType.UserPublished:
-                    AddUser(message);
+                case EventType.QuestionRequest:
+                    var questionRequest = JsonSerializer.Deserialize<QuestionRequest>(message);
+                    openDBService.PublishMultipleChoiceQuestion(questionRequest.GameInstanceId);
                     break;
                 default:
                     break;
-            }
-        }
-
-        private void AddUser(string userPublishedMessage)
-        {
-            using var db = contextFactory.CreateDbContext();
-
-            var userPublishedDto = JsonSerializer.Deserialize<UserPublishedDto>(userPublishedMessage);
-
-            try
-            {
-                var user = mapper.Map<Users>(userPublishedDto);
-                if (db.Users.FirstOrDefault(x => x.ExternalId == user.ExternalId) == null)
-                {
-                    db.Users.Add(user);
-                    db.SaveChanges();
-                    Console.WriteLine("--> User added to GameService database.");
-
-                }
-                else
-                {
-                    Console.WriteLine("--> User already exists. Not adding to db.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not add User to DB: {ex.Message}");
             }
         }
 
@@ -73,9 +52,9 @@ namespace QuestionService.EventProcessing
 
             switch (eventType.Event)
             {
-                case "User_Published":
-                    Console.WriteLine("User Published Event Detected");
-                    return EventType.UserPublished;
+                case "Question_Request":
+                    Console.WriteLine("Question Request Event Detected");
+                    return EventType.QuestionRequest;
                 default:
                     Console.WriteLine("--> Could not determine the event type");
                     return EventType.Undetermined;
@@ -85,7 +64,7 @@ namespace QuestionService.EventProcessing
 
     enum EventType
     {
-        QuestionResponse,
+        QuestionRequest,
         Undetermined
     }
 }

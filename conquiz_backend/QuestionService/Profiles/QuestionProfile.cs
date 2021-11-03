@@ -15,8 +15,7 @@ namespace QuestionService.Profiles
         {
             // Org -> Dest
             CreateMap<Questions, QuestionResponse>();
-            CreateMap<OpenTDBQuestion, Questions>()
-                .Include
+            CreateMap<Answers, AnswerResponse>();
         }
     }
 }

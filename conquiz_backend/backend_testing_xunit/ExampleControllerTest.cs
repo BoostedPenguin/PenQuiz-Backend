@@ -17,47 +17,47 @@ using Xunit;
 
 namespace backend_testing_xunit
 {
-    public class ExampleControllerTest : IDisposable
-    {
-        DefaultContext context;
-        Mock<IContextFactory> mockContextFactory;
-        public ExampleControllerTest()
-        {
-            mockContextFactory = new Mock<IContextFactory>();
+    //public class ExampleControllerTest : IDisposable
+    //{
+    //    DefaultContext context;
+    //    Mock<IContextFactory> mockContextFactory;
+    //    public ExampleControllerTest()
+    //    {
+    //        mockContextFactory = new Mock<IContextFactory>();
 
-            context = CreateDbContext();
-            mockContextFactory.Setup(x => x.CreateDbContext(null)).Returns(context);
-        }
-
-
-        private DefaultContext CreateDbContext()
-        {
-            var options = new DbContextOptionsBuilder<DefaultContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-            var dbContext = new DefaultContext(options);
-
-            dbContext.Add(new Questions() { Question = "Wtf" });
-            dbContext.SaveChanges();
-            return dbContext;
-        }
+    //        context = CreateDbContext();
+    //        mockContextFactory.Setup(x => x.CreateDbContext(null)).Returns(context);
+    //    }
 
 
+    //    private DefaultContext CreateDbContext()
+    //    {
+    //        var options = new DbContextOptionsBuilder<DefaultContext>()
+    //        .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+    //        .Options;
+    //        var dbContext = new DefaultContext(options);
 
-        [Fact]
-        public async Task ExampleTest()
-        {
+    //        dbContext.Add(new Questions() { Question = "Wtf" });
+    //        dbContext.SaveChanges();
+    //        return dbContext;
+    //    }
 
-            var service = new ExampleService(mockContextFactory.Object);
 
-            var result = await service.DoSomething();
 
-            Assert.True(result);
-        }
+    //    [Fact]
+    //    public async Task ExampleTest()
+    //    {
 
-        public void Dispose()
-        {
-            context.Dispose();
-        }
-    }
+    //        var service = new ExampleService(mockContextFactory.Object);
+
+    //        var result = await service.DoSomething();
+
+    //        Assert.True(result);
+    //    }
+
+    //    public void Dispose()
+    //    {
+    //        context.Dispose();
+    //    }
+    //}
 }

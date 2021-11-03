@@ -14,74 +14,74 @@ using Xunit;
 
 namespace backend_testing_xunit
 {
-    public class TestingContextFactory : IDesignTimeDbContextFactory<DefaultContext>, IContextFactory
-    {
-        public DefaultContext CreateDbContext(string[] args = null)
-        {
-            var options = new DbContextOptionsBuilder<DefaultContext>();
-            options.UseInMemoryDatabase("TestingDb");
+    //public class TestingContextFactory : IDesignTimeDbContextFactory<DefaultContext>, IContextFactory
+    //{
+    //    public DefaultContext CreateDbContext(string[] args = null)
+    //    {
+    //        var options = new DbContextOptionsBuilder<DefaultContext>();
+    //        options.UseInMemoryDatabase("TestingDb");
 
-            return new DefaultContext(options.Options);
-        }
-    }
-    public class GameServiceTest
-    {
-        TestingContextFactory mockContextFactory;
-        Mock<IHttpContextAccessor> mockHttpContextAccessor;
-        GameService.Services.GameService gameService;
-        GameLobbyService gameLobby;
-        public GameServiceTest()
-        {
-            var context = new ContextFactory();
+    //        return new DefaultContext(options.Options);
+    //    }
+    //}
+    //public class GameServiceTest
+    //{
+    //    TestingContextFactory mockContextFactory;
+    //    Mock<IHttpContextAccessor> mockHttpContextAccessor;
+    //    GameService.Services.GameService gameService;
+    //    GameLobbyService gameLobby;
+    //    public GameServiceTest()
+    //    {
+    //        var context = new ContextFactory();
 
-            mockContextFactory = new TestingContextFactory();
+    //        mockContextFactory = new TestingContextFactory();
 
-            //Mock IHttpContextAccessor
-            mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
-            var httpContext = new DefaultHttpContext();
-            httpContext.Request.Headers["Host"] = "localhost:5000";
+    //        //Mock IHttpContextAccessor
+    //        mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+    //        var httpContext = new DefaultHttpContext();
+    //        httpContext.Request.Headers["Host"] = "localhost:5000";
 
-            var identity = new GenericIdentity("name", "test");
-            identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, "123"));
-            var contextUser = new ClaimsPrincipal(identity);
+    //        var identity = new GenericIdentity("name", "test");
+    //        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, "123"));
+    //        var contextUser = new ClaimsPrincipal(identity);
 
-            httpContext.User = contextUser;
+    //        httpContext.User = contextUser;
 
-            mockHttpContextAccessor.Setup(_ => _.HttpContext).Returns(httpContext);
-            var b = new MapGeneratorService(mockContextFactory, mockHttpContextAccessor.Object);
-
-
-            gameService = new GameService.Services.GameService(mockContextFactory, mockHttpContextAccessor.Object);
-            gameLobby = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, b);
-        }
+    //        mockHttpContextAccessor.Setup(_ => _.HttpContext).Returns(httpContext);
+    //        var b = new MapGeneratorService(mockContextFactory, mockHttpContextAccessor.Object);
 
 
-        [Fact]
-        public async Task TestInvitationLinkFormat()
-        {
-            var result = gameService.CreateInvitiationUrl();
+    //        gameService = new GameService.Services.GameService(mockContextFactory, mockHttpContextAccessor.Object);
+    //        gameLobby = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, b);
+    //    }
 
-            var wellFormatted = Uri.IsWellFormedUriString(result, UriKind.Absolute);
 
-            Assert.True(wellFormatted);
-        }
+    //    [Fact]
+    //    public async Task TestInvitationLinkFormat()
+    //    {
+    //        var result = gameService.CreateInvitiationUrl();
 
-        [Fact]
-        public async Task TestCreateGameLobby()
-        {
-            var result = await gameLobby.CreateGameLobby();
+    //        var wellFormatted = Uri.IsWellFormedUriString(result, UriKind.Absolute);
 
-            Assert.NotNull(result);
-        }
+    //        Assert.True(wellFormatted);
+    //    }
 
-        [Fact]
-        public async Task TestJoinGameLobby()
-        {
-            var prepare = await gameLobby.CreateGameLobby();
+    //    [Fact]
+    //    public async Task TestCreateGameLobby()
+    //    {
+    //        var result = await gameLobby.CreateGameLobby();
 
-            var result = await gameLobby.JoinGameLobby(prepare.InvitationLink);
+    //        Assert.NotNull(result);
+    //    }
 
-            Assert.NotNull(result);
-        }
-    }
+    //    [Fact]
+    //    public async Task TestJoinGameLobby()
+    //    {
+    //        var prepare = await gameLobby.CreateGameLobby();
+
+    //        var result = await gameLobby.JoinGameLobby(prepare.InvitationLink);
+
+    //        Assert.NotNull(result);
+    //    }
+    //}
 }
