@@ -11,11 +11,27 @@ using System.Threading.Tasks;
 
 namespace GameService.Services
 {
+
+    public class PersonDisconnectedGameResult
+    {
+        public PersonDisconnectedGameResult(string invitationLink, int disconnectedUserId, GameState gameState, int gameBotCount)
+        {
+            InvitationLink = invitationLink;
+            DisconnectedUserId = disconnectedUserId;
+            GameState = gameState;
+            GameBotCount = gameBotCount;
+        }
+        public string InvitationLink { get; set; }
+        public int GameBotCount { get; set; }
+        public int DisconnectedUserId { get; set; }
+        public GameState GameState { get; set; }
+    }
+
     public interface IGameService
     {
         Task CancelOngoingGames();
         Task<GameInstance> OnPlayerLoginConnection();
-        Task<GameInstance> PersonDisconnected();
+        Task<PersonDisconnectedGameResult> PersonDisconnected();
     }
 
     [Serializable]
@@ -125,11 +141,12 @@ namespace GameService.Services
             return baseUrl;
         }
 
+
         /// <summary>
         /// Handles users on disconnect for different stages of a game or app.
         /// </summary>
         /// <returns></returns>
-        public async Task<GameInstance> PersonDisconnected()
+        public async Task<PersonDisconnectedGameResult> PersonDisconnected()
         {
             using var db = contextFactory.CreateDbContext();
 
@@ -178,8 +195,7 @@ namespace GameService.Services
                         db.Remove(thisUser);
                     }
 
-                    await db.SaveChangesAsync();
-                    return gameInstance;
+                    break;
 
                 case GameState.IN_PROGRESS:
                     // TODO
@@ -200,13 +216,19 @@ namespace GameService.Services
                     {
                         db.Update(thisUser);
                     }
-                    await db.SaveChangesAsync();
-
-                    return gameInstance;
+                    break;
 
                 default:
                     throw new GameException("Unknown error. Please contact an administrator.");
             }
+
+            await db.SaveChangesAsync();
+
+            return new PersonDisconnectedGameResult(
+                gameInstance.InvitationLink,
+                userId,
+                gameInstance.GameState,
+                gameInstance.Participants.Count(x => x.IsBot));
         }
     }
 }

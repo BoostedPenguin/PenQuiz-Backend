@@ -17,9 +17,11 @@ namespace GameService.Hubs
         Task GameStarting();
         Task GetGameInstance(GameInstance instance);
         Task LobbyCanceled(string message = "");
-        Task PersonLeft();
+        Task CallerLeftGame();
+        Task PersonLeftGame(int userId);
         Task GameException(string message);
         Task NavigateToLobby();
+        Task NavigateToGame();
         Task TESTING(string message);
     }
     [Authorize]
@@ -54,7 +56,8 @@ namespace GameService.Hubs
 
                 await Groups.AddToGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
                 await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
-                
+
+                await Clients.Caller.NavigateToGame();
             }
             catch (Exception ex)
             {
@@ -81,31 +84,32 @@ namespace GameService.Hubs
 
         private async Task RemoveCurrentPersonFromGame()
         {
-            var gameInstance = await gameService.PersonDisconnected();
+            var personDisconnectedResult = await gameService.PersonDisconnected();
 
             // Person wasn't in a game or lobby. Safely remove him.
-            if(gameInstance == null)
+            if(personDisconnectedResult == null)
             {
                 return;
             }
 
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
-            await Clients.Caller.PersonLeft();
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, personDisconnectedResult.InvitationLink);
+            await Clients.Caller.CallerLeftGame();
             
             // User was the owner of the lobby. Cancel the lobby for all people
-            if (gameInstance.GameState == GameState.CANCELED)
+            if (personDisconnectedResult.GameState == GameState.CANCELED)
             {
-                string message = "";
-                if (gameInstance.Participants.Where(x => x.IsBot).Count() > 1)
+                string message;
+                if (personDisconnectedResult.GameBotCount > 1)
                     message = "Two players left the game. Game canceled.";
                 else
                     message = "The owner canceled the lobby.";
 
-                await Clients.Group(gameInstance.InvitationLink).LobbyCanceled(message);
+                await Clients.Group(personDisconnectedResult.InvitationLink).LobbyCanceled(message);
             }
             else
             {
-                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
+                // If person left and game is still in progress because he was replaced by bot
+                await Clients.Group(personDisconnectedResult.InvitationLink).PersonLeftGame(personDisconnectedResult.DisconnectedUserId);
             }
         }
 
