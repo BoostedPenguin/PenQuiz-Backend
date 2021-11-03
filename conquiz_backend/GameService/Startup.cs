@@ -40,16 +40,22 @@ namespace GameService
 
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            services.AddDbContext<DefaultContext>(options =>
+            if (env.IsProduction())
             {
-                Console.WriteLine("--> Using production sql database");
-                options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
-            });
-            services.AddDbContextFactory<DefaultContext>(options =>
+                services.AddDbContextFactory<DefaultContext>(options =>
+                {
+                    Console.WriteLine("--> Using production sql database");
+                    options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
+                });
+            }
+            else
             {
-                Console.WriteLine("--> Using production sql database");
-                options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
-            });
+                Console.WriteLine("--> Using in memory database");
+                services.AddDbContextFactory<DefaultContext>(options =>
+                {
+                    options.UseInMemoryDatabase("InMemoryTest");
+                });
+            }
             services.AddSingleton<IExampleService, ExampleService>();
 
             services.AddSingleton<IEventProcessor, EventProcessor>();
