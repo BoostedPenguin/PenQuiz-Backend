@@ -3,7 +3,7 @@ Trivia PvP game set in Antarctica. Core concept of the game is to capture territ
 
 # Architecture
 This repository contains all the backend logic and kubernetes configuration files for the ConQuiz project. The front-end React Native repository is located <a href="https://github.com/BoostedPenguin/ConQuiz-Frontend">here</a>.
-<img src="https://i.imgur.com/xivVBZU.png" />
+<img src="https://i.imgur.com/kaaqNMW.png" />
 
 # Backend stack:
 * NET Core 3.1
