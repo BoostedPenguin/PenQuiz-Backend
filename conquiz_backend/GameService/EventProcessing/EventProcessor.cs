@@ -34,6 +34,8 @@ namespace GameService.EventProcessing
                     AddUser(message);
                     break;
                 case EventType.QuestionsReceived:
+                    var result = JsonSerializer.Deserialize<QResponse>(message);
+                    var mapped = mapper.Map<Questions[]>(result.QuestionResponses);
                     break;
                 default:
                     break;

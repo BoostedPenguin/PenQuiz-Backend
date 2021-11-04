@@ -8,5 +8,7 @@ namespace QuestionService.Dtos
     public class QuestionRequest
     {
         public int GameInstanceId { get; set; }
+        public int NumberQuestionsAmount { get; set; }
+        public int MultipleChoiceQuestionsAmount { get; set; }
     }
 }

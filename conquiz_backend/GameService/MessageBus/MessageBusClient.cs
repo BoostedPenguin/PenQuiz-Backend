@@ -16,7 +16,7 @@ namespace GameService.MessageBus
         void RequestQuestions(RequestQuestionsDto requestQuestionsDto);
     }
 
-    public class MessageBusClient : IMessageBusClient
+    public class MessageBusClient : IMessageBusClient, IDisposable
     {
         private readonly IConnection connection;
         private readonly IModel channel;

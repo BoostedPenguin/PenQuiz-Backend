@@ -15,9 +15,15 @@ namespace QuestionService.Models
 
     public partial class GameInstance
     {
+        public GameInstance()
+        {
+            GameSessionQuestions = new HashSet<GameSessionQuestions>();
+        }
+
         public int Id { get; set; }
-        public GameState GameState { get; set; }
         public string OpentDbSessionToken { get; set; }
         public int ExternalId { get; set; }
+
+        public virtual ICollection<GameSessionQuestions> GameSessionQuestions { get; set; }
     }
 }

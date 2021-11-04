@@ -103,6 +103,8 @@ namespace QuestionService
 
             services.AddSingleton<IOpenDBService, OpenDBService>();
 
+            services.AddSingleton<INumberQuestionsService, NumberQuestionsService>();
+
             services.AddHttpClient();
 
             services.AddGrpc();
@@ -150,10 +152,7 @@ namespace QuestionService
                 });
             });
 
-            if (env.IsProduction())
-            {
-                PrepDb.PrepMigration(app);
-            }
+            PrepDb.PrepMigration(app, env.IsProduction());
         }
     }
 }

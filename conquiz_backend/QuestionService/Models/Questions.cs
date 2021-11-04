@@ -8,6 +8,22 @@ namespace QuestionService.Models
         public Questions()
         {
             Answers = new HashSet<Answers>();
+            GameSessionQuestions = new HashSet<GameSessionQuestions>();
+        }
+
+        // For number questions
+        public Questions(string question, string answer)
+        {
+            Answers = new HashSet<Answers>();
+            GameSessionQuestions = new HashSet<GameSessionQuestions>();
+
+            Type = "number";
+            Question = question;
+            Answers.Add(new Answers()
+            {
+                Answer = answer,
+                Correct = true,
+            });
         }
 
         public int Id { get; set; }
@@ -16,6 +32,7 @@ namespace QuestionService.Models
         public string Difficulty { get; set; }
         public string Category { get; set; }
 
+        public virtual ICollection<GameSessionQuestions> GameSessionQuestions { get; set; }
         public virtual ICollection<Answers> Answers { get; set; }
     }
 }

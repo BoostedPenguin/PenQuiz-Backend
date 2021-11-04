@@ -32,7 +32,7 @@ namespace QuestionService.Services
 
     public interface IOpenDBService
     {
-        Task PublishMultipleChoiceQuestion(int gameInstanceId);
+        Task PublishRequestedQuestions(QuestionRequest gameInstanceId);
     }
 
     public class OpenDBService : IOpenDBService
@@ -40,17 +40,19 @@ namespace QuestionService.Services
         private readonly IHttpClientFactory clientFactory;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
+        private readonly INumberQuestionsService numberQuestionsService;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
+        const int MaxOpenDbQuestions = 10;
 
-        /// <summary>
-        /// Game instance id | sessionToken
-        /// </summary>
-        Dictionary<int, string> sessionTokens = new Dictionary<int, string>();
 
-        public OpenDBService(IDbContextFactory<DefaultContext> _contextFactory, IHttpClientFactory clientFactory, IMapper mapper, IMessageBusClient messageBus)
+        public OpenDBService(IHttpClientFactory clientFactory, IMapper mapper, IMessageBusClient messageBus, INumberQuestionsService numberQuestionsService, IDbContextFactory<DefaultContext> contextFactory)
         {
+
             this.clientFactory = clientFactory;
             this.mapper = mapper;
             this.messageBus = messageBus;
+            this.numberQuestionsService = numberQuestionsService;
+            this.contextFactory = contextFactory;
         }
 
 
@@ -62,14 +64,33 @@ namespace QuestionService.Services
             public string Token { get; set; }
         }
 
-        public async Task PublishMultipleChoiceQuestion(int gameInstanceId)
+        public async Task PublishRequestedQuestions(QuestionRequest questionRequest)
         {
             try
             {
-                var questions = await GetMultipleChoiceQuestion(gameInstanceId);
-                var mappedQuestions = mapper.Map<QuestionResponse[]>(questions);
+                var client = clientFactory.CreateClient();
 
-                var response = new QResponse() { QuestionResponses = mappedQuestions, Event = "Questions_Response" };
+                var sessionToken = await GenerateSessionToken(client, questionRequest.GameInstanceId);
+                
+                var multipleChoiceQuestions = await GetMultipleChoiceQuestion(
+                    sessionToken, 
+                    questionRequest.MultipleChoiceQuestionsAmount
+                    );
+
+
+                var numberQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsAmount, sessionToken, questionRequest.GameInstanceId);
+
+                // Add both questions
+                multipleChoiceQuestions.AddRange(numberQuestions);
+
+                var mappedQuestions = mapper.Map<QuestionResponse[]>(multipleChoiceQuestions);
+                
+                var response = new QResponse()
+                {
+                    QuestionResponses = mappedQuestions,
+                    Event = "Questions_Response",
+                };
+
                 messageBus.PublishRequestedQuestions(response);
             }
             catch(Exception ex)
@@ -78,74 +99,99 @@ namespace QuestionService.Services
             }
         }
 
-        private async Task<Questions[]> GetMultipleChoiceQuestion(int gameInstanceId)
+        private async Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, int multipleChoiceQuestions)
         {
             var client = clientFactory.CreateClient();
 
-            var sessionToken = await GenerateSessionToken(client, gameInstanceId);
-
-            using var response = await client.GetAsync($"https://opentdb.com/api.php?amount=10&type=multiple&token={sessionToken}");
-
-            response.EnsureSuccessStatusCode();
-
-            var str = await response.Content.ReadAsStringAsync();
-
-            var convertedResponse = JsonConvert.DeserializeObject<OpenTDBResponse>(str);
-
             var questions = new List<Questions>();
-            foreach (var a in convertedResponse.Results)
+
+            while (multipleChoiceQuestions > 0)
             {
-                var que = new Questions
+                int currentIteration;
+                if (multipleChoiceQuestions > MaxOpenDbQuestions)
                 {
-                    Question = a.Question,
-                    Type = "multiple",
-                    Category = a.Category,
-                    Difficulty = a.Difficulty,
-                };
-
-                // Add the correct answer
-                que.Answers.Add(new Answers()
+                    currentIteration = MaxOpenDbQuestions;
+                    multipleChoiceQuestions -= MaxOpenDbQuestions;
+                }
+                else
                 {
-                    Answer = a.Correct_Answer,
-                    Correct = true,
-                });
-
-                // Add the wrong answers
-                foreach (var incAns in a.Incorrect_Answers)
-                {
-                    que.Answers.Add(new Answers()
-                    {
-                        Answer = incAns,
-                        Correct = false,
-                    });
+                    currentIteration = multipleChoiceQuestions;
+                    multipleChoiceQuestions = 0;
                 }
 
-                questions.Add(que);
+                using var response = await client.GetAsync($"https://opentdb.com/api.php?amount={currentIteration}&type=multiple&token={sessionToken}");
+
+                response.EnsureSuccessStatusCode();
+
+                var str = await response.Content.ReadAsStringAsync();
+
+                var convertedResponse = JsonConvert.DeserializeObject<OpenTDBResponse>(str);
+
+                foreach (var a in convertedResponse.Results)
+                {
+                    var que = new Questions
+                    {
+                        Question = a.Question,
+                        Type = "multiple",
+                        Category = a.Category,
+                        Difficulty = a.Difficulty,
+                    };
+
+                    // Add the correct answer
+                    que.Answers.Add(new Answers()
+                    {
+                        Answer = a.Correct_Answer,
+                        Correct = true,
+                    });
+
+                    // Add the wrong answers
+                    foreach (var incAns in a.Incorrect_Answers)
+                    {
+                        que.Answers.Add(new Answers()
+                        {
+                            Answer = incAns,
+                            Correct = false,
+                        });
+                    }
+
+                    questions.Add(que);
+                }
             }
 
-            return questions.ToArray();
+            return questions;
         }
 
         public async Task<string> GenerateSessionToken(HttpClient client, int gameInstanceId)
         {
             // If there is an existing token return it without making a new one
-            if (sessionTokens.ContainsKey(gameInstanceId))
+
+            using var db = contextFactory.CreateDbContext();
+            
+            var gm = await db.GameInstances.FirstOrDefaultAsync(x => x.ExternalId == gameInstanceId);
+            
+            // Hasn't been added to db yet
+            if(gm == null)
             {
-                return sessionTokens[gameInstanceId];
+                using var response =
+                    await client.GetAsync("https://opentdb.com/api_token.php?command=request");
+
+                response.EnsureSuccessStatusCode();
+
+                var str = await response.Content.ReadAsStringAsync();
+
+                var convertedResponse = JsonConvert.DeserializeObject<SessionTokenResponse>(str);
+
+                gm = new GameInstance()
+                {
+                    ExternalId = gameInstanceId,
+                    OpentDbSessionToken = convertedResponse.Token,
+                };
+
+                await db.AddAsync(gm);
+                await db.SaveChangesAsync();
             }
 
-            using var response =
-                await client.GetAsync("https://opentdb.com/api_token.php?command=request");
-
-            response.EnsureSuccessStatusCode();
-
-            var str = await response.Content.ReadAsStringAsync();
-
-            var convertedResponse = JsonConvert.DeserializeObject<SessionTokenResponse>(str);
-
-            sessionTokens.Add(gameInstanceId, convertedResponse.Token);
-
-            return convertedResponse.Token;
+            return gm.OpentDbSessionToken;
         }
     }
 }

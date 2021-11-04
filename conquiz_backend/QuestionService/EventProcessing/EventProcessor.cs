@@ -37,7 +37,7 @@ namespace QuestionService.EventProcessing
             {
                 case EventType.QuestionRequest:
                     var questionRequest = JsonSerializer.Deserialize<QuestionRequest>(message);
-                    openDBService.PublishMultipleChoiceQuestion(questionRequest.GameInstanceId);
+                    openDBService.PublishRequestedQuestions(questionRequest);
                     break;
                 default:
                     break;

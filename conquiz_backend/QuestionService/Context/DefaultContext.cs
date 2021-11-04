@@ -23,6 +23,7 @@ namespace QuestionService.Context
         public virtual DbSet<Answers> Answers { get; set; }
         public virtual DbSet<Questions> Questions { get; set; }
         public virtual DbSet<GameInstance> GameInstances { get; set; }
+        public virtual DbSet<GameInstance> GameSessionQuestions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,12 +79,34 @@ namespace QuestionService.Context
 
                 entity.Property(e => e.ExternalId).IsRequired().HasColumnName("externalId");
 
-                entity.Property(e => e.GameState).HasConversion<string>();
-
                 entity.Property(e => e.OpentDbSessionToken)
                     .IsRequired()
                     .HasColumnName("opentDbSessionToken")
                     .HasMaxLength(255);
+            });
+
+
+            modelBuilder.Entity<GameSessionQuestions>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.HasIndex(e => e.QuestionId);
+
+                entity.HasIndex(e => e.GameInstanceId);
+
+                entity.Property(e => e.QuestionId).HasColumnName("questionId");
+
+                entity.Property(e => e.GameInstanceId).HasColumnName("gameInstanceId");
+
+                entity.HasOne(d => d.Question)
+                    .WithMany(p => p.GameSessionQuestions)
+                    .HasForeignKey(d => d.QuestionId)
+                    .HasConstraintName("FK__GameSessQues__quest__5FB337D6");
+
+                entity.HasOne(d => d.GameInstance)
+                    .WithMany(p => p.GameSessionQuestions)
+                    .HasForeignKey(d => d.GameInstanceId)
+                    .HasConstraintName("FK__GameSessQues__game__5EBF139D");
             });
         }
     }
