@@ -20,8 +20,12 @@ namespace GameService.Profiles
                 .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.AccountId))
                 .ForMember(dest => dest.Username, opt => opt.MapFrom(x => x.Username))
                 .ForMember(dest => dest.Id, opt => opt.Ignore());
-            CreateMap<AnswerResponse, Answers>();
-            CreateMap<QuestionResponse, Questions>();
+            CreateMap<AnswerResponse, Answers>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.QuestionId, opt => opt.Ignore());
+            CreateMap<QuestionResponse, Questions>()
+                .ForMember(dest => dest.RoundsId, org => org.MapFrom(x => x.RoundId))
+                .ForMember(dest => dest.Id, org => org.Ignore());
         }
     }
 }

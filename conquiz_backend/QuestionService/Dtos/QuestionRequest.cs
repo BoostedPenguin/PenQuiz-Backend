@@ -8,7 +8,12 @@ namespace QuestionService.Dtos
     public class QuestionRequest
     {
         public int GameInstanceId { get; set; }
-        public int NumberQuestionsAmount { get; set; }
-        public int MultipleChoiceQuestionsAmount { get; set; }
+
+        public List<int> MultipleChoiceQuestionsRoundId { get; set; } = new List<int>();
+
+        // Total Count of number questions .count()
+        // Each value represents a RoundId
+        public List<int> NumberQuestionsRoundId { get; set; } = new List<int>();
+        public string Event { get; set; }
     }
 }

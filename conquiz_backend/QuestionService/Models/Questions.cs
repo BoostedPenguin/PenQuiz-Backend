@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuestionService.Models
 {
@@ -32,6 +33,8 @@ namespace QuestionService.Models
         public string Difficulty { get; set; }
         public string Category { get; set; }
 
+        [NotMapped]
+        public int RoundId { get; set; }
         public virtual ICollection<GameSessionQuestions> GameSessionQuestions { get; set; }
         public virtual ICollection<Answers> Answers { get; set; }
     }

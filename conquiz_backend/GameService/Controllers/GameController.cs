@@ -64,8 +64,14 @@ namespace GameService.Controllers
                 {
                     Event = "Question_Request",
                     GameInstanceId = 1,
-                    MultipleChoiceQuestionsAmount = 5,
-                    NumberQuestionsAmount = 1,
+                    MultipleChoiceQuestionsRoundId = new List<int>()
+                    {
+                        1,2,5
+                    },
+                    NumberQuestionsRoundId = new List<int>()
+                    {
+                        2,3
+                    }
                 });
 
                 return Ok($"Did scaffolding work: IDK");

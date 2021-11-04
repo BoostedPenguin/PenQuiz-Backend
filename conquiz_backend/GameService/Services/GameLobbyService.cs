@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GameService.MessageBus;
+using GameService.Dtos;
 
 namespace GameService.Services
 {
@@ -25,17 +27,19 @@ namespace GameService.Services
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IMapGeneratorService mapGeneratorService;
+        private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
 
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
 
-        public GameLobbyService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        public GameLobbyService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService, IMessageBusClient messageBus) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.mapGeneratorService = mapGeneratorService;
+            this.messageBus = messageBus;
         }
 
 
@@ -254,7 +258,7 @@ namespace GameService.Services
             var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
 
             // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
-            var initialRounding = await CreateNeutralAttackRounding(mapId, allPlayers);
+            var initialRounding = await CreateNeutralAttackRounding(mapId, allPlayers, gameInstance.Id);
 
             // Assign all object territories & rounds and change gamestate
             gameInstance.GameState = GameState.IN_PROGRESS;
@@ -265,13 +269,35 @@ namespace GameService.Services
             a.Update(gameInstance);
             await a.SaveChangesAsync();
 
+            // Send request to question service to generate questions in the background
+            RequestQuestions(gameInstance.Id, initialRounding);
+
+
             return gameInstance;
         }
 
-        public async Task<Rounds[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers)
+        private void RequestQuestions(int gameInstanceId, Rounds[] rounds)
+        {
+            messageBus.RequestQuestions(new RequestQuestionsDto()
+            {
+                Event = "Question_Request",
+                GameInstanceId = gameInstanceId,
+                MultipleChoiceQuestionsRoundId = rounds
+                    .Where(x => !x.IsLastUntakenTerritories)
+                    .Select(x => x.Id)
+                    .ToList(),
+                NumberQuestionsRoundId = rounds
+                    .Where(x => x.IsLastUntakenTerritories)
+                    .Select(x => x.Id)
+                    .ToList(),
+            });
+        }
+
+        public async Task<Rounds[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers, int gameInstanceId)
         {
 
             var order = await GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), mapId);
+
 
             // Create default rounds
             var finalRounds = new List<Rounds>();
@@ -315,7 +341,9 @@ namespace GameService.Services
             if (gameRoundNumber != order.TotalTerritories + 1 - RequiredPlayers)
                 throw new ArgumentException("Total game round numbers generated weren't equal to the total territories on the map");
 
-            return finalRounds.ToArray();
+            var result = finalRounds.ToArray();
+
+            return result;
         }
 
 

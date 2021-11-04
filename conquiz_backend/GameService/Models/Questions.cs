@@ -8,14 +8,14 @@ namespace GameService.Models
         public Questions()
         {
             Answers = new HashSet<Answers>();
-            RoundQuestion = new HashSet<RoundQuestion>();
         }
 
         public int Id { get; set; }
         public string Question { get; set; }
+        public int RoundsId { get; set; }
         public string Type { get; set; }
 
         public virtual ICollection<Answers> Answers { get; set; }
-        public virtual ICollection<RoundQuestion> RoundQuestion { get; set; }
+        public virtual Rounds Rounds { get; set; }
     }
 }

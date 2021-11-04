@@ -13,7 +13,6 @@ namespace GameService.Models
     {
         public Rounds()
         {
-            RoundQuestion = new HashSet<RoundQuestion>();
         }
 
         public int Id { get; set; }
@@ -38,7 +37,7 @@ namespace GameService.Models
         public string Description { get; set; }
         public int? RoundWinnerId { get; set; }
 
+        public virtual Questions Question { get; set; }
         public virtual GameInstance GameInstance { get; set; }
-        public virtual ICollection<RoundQuestion> RoundQuestion { get; set; }
     }
 }

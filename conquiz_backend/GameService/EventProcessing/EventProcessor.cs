@@ -35,11 +35,44 @@ namespace GameService.EventProcessing
                     break;
                 case EventType.QuestionsReceived:
                     var result = JsonSerializer.Deserialize<QResponse>(message);
-                    var mapped = mapper.Map<Questions[]>(result.QuestionResponses);
+                    AddGameQuestions(result);
                     break;
                 default:
                     break;
             }
+        }
+
+        private void AddGameQuestions(QResponse questionsResponse)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var gm = db.GameInstance
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.Question)
+                .Where(x => x.Id == questionsResponse.GameInstanceId)
+                .FirstOrDefault();
+
+            if(gm == null)
+            {
+                Console.WriteLine("--> Game instance doesn't exist");
+                return;
+            }
+
+            var mapped = mapper.Map<Questions[]>(questionsResponse.QuestionResponses);
+            foreach(var receivedQuestion in mapped)
+            {
+                var gameRound = gm.Rounds.Where(x => x.Id == receivedQuestion.RoundsId).FirstOrDefault();
+
+                if(gameRound == null)
+                {
+                    Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundsId}. Doesn't exist.");
+                    continue;
+                }
+                gameRound.Question = receivedQuestion;
+                db.Update(gameRound);
+            }
+
+            db.SaveChanges();
         }
 
         private void AddUser(string userPublishedMessage)

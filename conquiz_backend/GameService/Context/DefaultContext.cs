@@ -24,7 +24,6 @@ namespace GameService.Context
         public virtual DbSet<ObjectTerritory> ObjectTerritory { get; set; }
         public virtual DbSet<Participants> Participants { get; set; }
         public virtual DbSet<Questions> Questions { get; set; }
-        public virtual DbSet<RoundQuestion> RoundQuestion { get; set; }
         public virtual DbSet<Rounds> Rounds { get; set; }
         public virtual DbSet<Users> Users { get; set; }
 
@@ -220,29 +219,6 @@ namespace GameService.Context
                     .HasMaxLength(255);
             });
 
-            modelBuilder.Entity<RoundQuestion>(entity =>
-            {
-                entity.HasIndex(e => e.QuestionId);
-
-                entity.HasIndex(e => e.RoundId);
-
-                entity.Property(e => e.Id).HasColumnName("id");
-
-                entity.Property(e => e.QuestionId).HasColumnName("questionId");
-
-                entity.Property(e => e.RoundId).HasColumnName("roundId");
-
-                entity.HasOne(d => d.Question)
-                    .WithMany(p => p.RoundQuestion)
-                    .HasForeignKey(d => d.QuestionId)
-                    .HasConstraintName("FK__RoundQues__quest__5FB337D6");
-
-                entity.HasOne(d => d.Round)
-                    .WithMany(p => p.RoundQuestion)
-                    .HasForeignKey(d => d.RoundId)
-                    .HasConstraintName("FK__RoundQues__round__5EBF139D");
-            });
-
             modelBuilder.Entity<Rounds>(entity =>
             {
                 entity.Property(e => e.Id).HasColumnName("id");
@@ -269,6 +245,10 @@ namespace GameService.Context
                 entity.Property(e => e.GameInstanceId).HasColumnName("gameInstanceId");
 
                 entity.Property(e => e.RoundWinnerId).HasColumnName("roundWinnerId");
+
+                entity.HasOne(x => x.Question)
+                    .WithOne(x => x.Rounds)
+                    .HasForeignKey<Questions>(x => x.RoundsId);
 
                 entity.HasOne(d => d.GameInstance)
                     .WithMany(p => p.Rounds)

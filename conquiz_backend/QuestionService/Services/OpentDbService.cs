@@ -74,11 +74,11 @@ namespace QuestionService.Services
                 
                 var multipleChoiceQuestions = await GetMultipleChoiceQuestion(
                     sessionToken, 
-                    questionRequest.MultipleChoiceQuestionsAmount
+                    questionRequest.MultipleChoiceQuestionsRoundId
                     );
 
 
-                var numberQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsAmount, sessionToken, questionRequest.GameInstanceId);
+                var numberQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsRoundId, sessionToken, questionRequest.GameInstanceId);
 
                 // Add both questions
                 multipleChoiceQuestions.AddRange(numberQuestions);
@@ -87,6 +87,7 @@ namespace QuestionService.Services
                 
                 var response = new QResponse()
                 {
+                    GameInstanceId = questionRequest.GameInstanceId,
                     QuestionResponses = mappedQuestions,
                     Event = "Questions_Response",
                 };
@@ -99,24 +100,27 @@ namespace QuestionService.Services
             }
         }
 
-        private async Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, int multipleChoiceQuestions)
+        private async Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions)
         {
             var client = clientFactory.CreateClient();
 
             var questions = new List<Questions>();
 
-            while (multipleChoiceQuestions > 0)
+            var mcQuestionCount = multipleChoiceQuestions.Count();
+            var currentRoundIndex = 0;
+
+            while (mcQuestionCount > 0)
             {
                 int currentIteration;
-                if (multipleChoiceQuestions > MaxOpenDbQuestions)
+                if (mcQuestionCount > MaxOpenDbQuestions)
                 {
                     currentIteration = MaxOpenDbQuestions;
-                    multipleChoiceQuestions -= MaxOpenDbQuestions;
+                    mcQuestionCount -= MaxOpenDbQuestions;
                 }
                 else
                 {
-                    currentIteration = multipleChoiceQuestions;
-                    multipleChoiceQuestions = 0;
+                    currentIteration = mcQuestionCount;
+                    mcQuestionCount = 0;
                 }
 
                 using var response = await client.GetAsync($"https://opentdb.com/api.php?amount={currentIteration}&type=multiple&token={sessionToken}");
@@ -135,6 +139,7 @@ namespace QuestionService.Services
                         Type = "multiple",
                         Category = a.Category,
                         Difficulty = a.Difficulty,
+                        RoundId = multipleChoiceQuestions[currentRoundIndex++]
                     };
 
                     // Add the correct answer

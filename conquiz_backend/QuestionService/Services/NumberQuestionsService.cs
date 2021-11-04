@@ -10,7 +10,7 @@ namespace QuestionService.Services
 {
     public interface INumberQuestionsService
     {
-        Task<List<Questions>> GetNumberQuestions(int amount, string sessionId, int gameInstanceId);
+        Task<List<Questions>> GetNumberQuestions(List<int> amountRoundId, string sessionId, int gameInstanceId);
     }
 
     public class NumberQuestionsService : INumberQuestionsService
@@ -22,7 +22,7 @@ namespace QuestionService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task<List<Questions>> GetNumberQuestions(int amount, string sessionId, int gameInstanceId)
+        public async Task<List<Questions>> GetNumberQuestions(List<int> amountRoundId, string sessionId, int gameInstanceId)
         {
             using var db = contextFactory.CreateDbContext();
 
@@ -35,7 +35,7 @@ namespace QuestionService.Services
                 .ToListAsync();
 
             // If questions have been exchausted for this game session, repeat previous ones
-            if (questions.Count() < amount)
+            if (questions.Count() < amountRoundId.Count())
             {
                 questions = await db.Questions
                     .Include(x => x.Answers)
@@ -46,21 +46,23 @@ namespace QuestionService.Services
 
             var response = new List<Questions>();
 
-
+            var currentRoundIndex = 0;
             // If questions in db will be enough
-            if(questions.Count() <= amount)
+            if(questions.Count() <= amountRoundId.Count())
             {
+                questions.ForEach(x => x.RoundId = amountRoundId[currentRoundIndex++]);
                 response.AddRange(questions);
             }
             else
             {
                 // Get randomized random questions
-                while (response.Count() < amount)
+                while (response.Count() < amountRoundId.Count())
                 {
                     var index = random.Next(0, questions.Count());
 
                     if (response.Contains(questions[index])) continue;
 
+                    questions[index].RoundId = amountRoundId[currentRoundIndex++];
                     response.Add(questions[index]);
                 }
             }
