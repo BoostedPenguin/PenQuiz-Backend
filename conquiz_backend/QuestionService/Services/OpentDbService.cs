@@ -73,12 +73,12 @@ namespace QuestionService.Services
                 var sessionToken = await GenerateSessionToken(client, questionRequest.GameInstanceId);
                 
                 var multipleChoiceQuestions = await GetMultipleChoiceQuestion(
-                    sessionToken, 
+                    sessionToken.Token, 
                     questionRequest.MultipleChoiceQuestionsRoundId
                     );
 
 
-                var numberQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsRoundId, sessionToken, questionRequest.GameInstanceId);
+                var numberQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);
 
                 // Add both questions
                 multipleChoiceQuestions.AddRange(numberQuestions);
@@ -166,7 +166,13 @@ namespace QuestionService.Services
             return questions;
         }
 
-        public async Task<string> GenerateSessionToken(HttpClient client, int gameInstanceId)
+        public class SessionTokenRequest
+        {
+            public string Token { get; set; }
+            public int InternalGameInstanceId { get; set; }
+        }
+
+        public async Task<SessionTokenRequest> GenerateSessionToken(HttpClient client, int gameInstanceId)
         {
             // If there is an existing token return it without making a new one
 
@@ -196,7 +202,11 @@ namespace QuestionService.Services
                 await db.SaveChangesAsync();
             }
 
-            return gm.OpentDbSessionToken;
+            return new SessionTokenRequest()
+            {
+                Token = gm.OpentDbSessionToken,
+                InternalGameInstanceId = gm.Id,
+            };
         }
     }
 }

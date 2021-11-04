@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: questions-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: questionservice
+  template:
+    metadata:
+      labels:
+        app: questionservice
+    spec:
+      containers:
+        - name: questionservice
+          image: boostedpenguin/questionservice:latest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: questions-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: questionservice
+  ports:
+  - name: questionservice
+    protocol: TCP
+    port: 80
+    targetPort: 80

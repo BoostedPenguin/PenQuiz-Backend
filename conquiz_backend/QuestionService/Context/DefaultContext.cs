@@ -23,7 +23,7 @@ namespace QuestionService.Context
         public virtual DbSet<Answers> Answers { get; set; }
         public virtual DbSet<Questions> Questions { get; set; }
         public virtual DbSet<GameInstance> GameInstances { get; set; }
-        public virtual DbSet<GameInstance> GameSessionQuestions { get; set; }
+        public virtual DbSet<GameSessionQuestions> GameSessionQuestions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
