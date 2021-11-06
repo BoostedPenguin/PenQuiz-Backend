@@ -32,7 +32,8 @@ namespace QuestionService.Services
 
     public interface IOpenDBService
     {
-        Task PublishRequestedQuestions(QuestionRequest gameInstanceId);
+        Task<OpenDBService.SessionTokenRequest> GenerateSessionToken(int gameInstanceId);
+        Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions);
     }
 
     public class OpenDBService : IOpenDBService
@@ -64,43 +65,7 @@ namespace QuestionService.Services
             public string Token { get; set; }
         }
 
-        public async Task PublishRequestedQuestions(QuestionRequest questionRequest)
-        {
-            try
-            {
-                var client = clientFactory.CreateClient();
-
-                var sessionToken = await GenerateSessionToken(client, questionRequest.GameInstanceId);
-                
-                var multipleChoiceQuestions = await GetMultipleChoiceQuestion(
-                    sessionToken.Token, 
-                    questionRequest.MultipleChoiceQuestionsRoundId
-                    );
-
-
-                var numberQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);
-
-                // Add both questions
-                multipleChoiceQuestions.AddRange(numberQuestions);
-
-                var mappedQuestions = mapper.Map<QuestionResponse[]>(multipleChoiceQuestions);
-                
-                var response = new QResponse()
-                {
-                    GameInstanceId = questionRequest.GameInstanceId,
-                    QuestionResponses = mappedQuestions,
-                    Event = "Questions_Response",
-                };
-
-                messageBus.PublishRequestedQuestions(response);
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
-
-        private async Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions)
+        public async Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions)
         {
             var client = clientFactory.CreateClient();
 
@@ -172,12 +137,14 @@ namespace QuestionService.Services
             public int InternalGameInstanceId { get; set; }
         }
 
-        public async Task<SessionTokenRequest> GenerateSessionToken(HttpClient client, int gameInstanceId)
+        public async Task<SessionTokenRequest> GenerateSessionToken(int gameInstanceId)
         {
             // If there is an existing token return it without making a new one
 
             using var db = contextFactory.CreateDbContext();
-            
+
+            var client = clientFactory.CreateClient();
+
             var gm = await db.GameInstances.FirstOrDefaultAsync(x => x.ExternalId == gameInstanceId);
             
             // Hasn't been added to db yet

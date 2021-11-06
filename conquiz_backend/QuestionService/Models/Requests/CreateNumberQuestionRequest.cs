@@ -11,6 +11,6 @@ namespace QuestionService.Models.Requests
         [Required]
         public string Question { get; set; }
         [Required]
-        public int Answer { get; set; }
+        public string Answer { get; set; }
     }
 }

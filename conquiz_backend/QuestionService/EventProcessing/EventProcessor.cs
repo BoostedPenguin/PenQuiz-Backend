@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using QuestionService.Context;
 using QuestionService.Dtos;
+using QuestionService.MessageBus;
 using QuestionService.Services;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace QuestionService.EventProcessing
 {
     public interface IEventProcessor
     {
-        void ProcessEvent(string message);
+        Task ProcessEvent(string message);
     }
 
     public class EventProcessor : IEventProcessor
@@ -21,15 +22,19 @@ namespace QuestionService.EventProcessing
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IMapper mapper;
         private readonly IOpenDBService openDBService;
+        private readonly INumberQuestionsService numberQuestionsService;
+        private readonly IMessageBusClient messageBus;
 
-        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, IOpenDBService openDBService)
+        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, IOpenDBService openDBService, INumberQuestionsService numberQuestionsService, IMessageBusClient messageBus)
         {
             this.contextFactory = contextFactory;
             this.mapper = mapper;
             this.openDBService = openDBService;
+            this.numberQuestionsService = numberQuestionsService;
+            this.messageBus = messageBus;
         }
 
-        public void ProcessEvent(string message)
+        public async Task ProcessEvent(string message)
         {
             var eventType = DetermineEvent(message);
 
@@ -37,7 +42,30 @@ namespace QuestionService.EventProcessing
             {
                 case EventType.QuestionRequest:
                     var questionRequest = JsonSerializer.Deserialize<QuestionRequest>(message);
-                    openDBService.PublishRequestedQuestions(questionRequest);
+
+                    var sessionToken = 
+                        await openDBService.GenerateSessionToken(questionRequest.GameInstanceId);
+                    
+                    var mulChoiceQuestions = await 
+                        openDBService.GetMultipleChoiceQuestion(sessionToken.Token, questionRequest.MultipleChoiceQuestionsRoundId);
+
+                    var numberQuestions = 
+                        await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);
+
+                    // Add both questions
+                    mulChoiceQuestions.AddRange(numberQuestions);
+
+                    var mappedQuestions = mapper.Map<QuestionResponse[]>(mulChoiceQuestions);
+
+                    var response = new QResponse()
+                    {
+                        GameInstanceId = questionRequest.GameInstanceId,
+                        QuestionResponses = mappedQuestions,
+                        Event = "Questions_Response",
+                    };
+
+                    messageBus.PublishRequestedQuestions(response);
+
                     break;
                 default:
                     break;

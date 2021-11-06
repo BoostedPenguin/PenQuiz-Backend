@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuestionService.Models.Requests;
+using QuestionService.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,13 @@ namespace QuestionService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
     public class QuestionController : ControllerBase
     {
-        public QuestionController()
-        {
+        private readonly INumberQuestionsService numberQuestionsService;
 
+        public QuestionController(INumberQuestionsService numberQuestionsService)
+        {
+            this.numberQuestionsService = numberQuestionsService;
         }
 
         [HttpPost("number")]
@@ -23,6 +25,7 @@ namespace QuestionService.Controllers
         {
             try
             {
+                await numberQuestionsService.AddNumberQuestion(request.Question, request.Answer);
                 return Ok();
             }
             catch (Exception ex)
