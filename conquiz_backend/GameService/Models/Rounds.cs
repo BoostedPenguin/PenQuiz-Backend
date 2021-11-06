@@ -11,10 +11,6 @@ namespace GameService.Models
     }
     public partial class Rounds
     {
-        public Rounds()
-        {
-        }
-
         public int Id { get; set; }
         
         /// <summary>
@@ -36,8 +32,12 @@ namespace GameService.Models
         public int GameInstanceId { get; set; }
         public string Description { get; set; }
         public int? RoundWinnerId { get; set; }
+        public bool IsVotingOpen { get; set; }
+        public int AttackingTerritoryId { get; set; }
 
-        public virtual Questions Question { get; set; }
+        public virtual ObjectTerritory AttackedTerritory { get; set; }
+        public virtual ICollection<RoundAnswers> RoundAnswers { get; set; }
+        public virtual ICollection<Questions> Questions { get; set; }
         public virtual GameInstance GameInstance { get; set; }
     }
 }

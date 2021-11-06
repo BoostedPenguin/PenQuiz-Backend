@@ -23,6 +23,12 @@ namespace GameService.Hubs
         Task GameException(string message);
         Task NavigateToLobby();
         Task NavigateToGame();
+        Task PlayerAnsweredMCQuestion();
+
+
+        Task GetRoundQuestion(Questions question);
+        Task CanPerformActions();
+
         Task TESTING(string message);
     }
     [Authorize]
@@ -31,14 +37,16 @@ namespace GameService.Hubs
         private readonly IGameTimer timer;
         private readonly IGameService gameService;
         private readonly IGameLobbyService gameLobbyService;
+        private readonly IGameControlService gameControlService;
         private readonly IHttpContextAccessor httpContext;
 
-        public GameHub(IGameTimer timer, IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService)
+        public GameHub(IGameTimer timer, IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService, IGameControlService gameControlService)
         {
             this.timer = timer;
             this.gameService = gameService;
             this.httpContext = httpContext;
             this.gameLobbyService = gameLobbyService;
+            this.gameControlService = gameControlService;
         }
 
         public override async Task OnConnectedAsync()
@@ -126,6 +134,20 @@ namespace GameService.Hubs
             try
             {
                 await RemoveCurrentPersonFromGame();
+            }
+            catch(Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+        public async Task AnswerMultipleChoiceQuestion(int answerId)
+        {
+            try
+            {
+                await gameControlService.AnswerMultipleChoiceQuestion(answerId);
+
+                await Clients.Caller.PlayerAnsweredMCQuestion();
             }
             catch(Exception ex)
             {

@@ -10,6 +10,7 @@ namespace GameService.Models
         public string Answer { get; set; }
         public bool Correct { get; set; }
 
+        public virtual ICollection<RoundAnswers> RoundAnswers { get; set; }
         public virtual Questions Question { get; set; }
     }
 }

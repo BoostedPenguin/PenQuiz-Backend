@@ -19,6 +19,7 @@ namespace GameService.Context
         public virtual DbSet<Answers> Answers { get; set; }
         public virtual DbSet<Borders> Borders { get; set; }
         public virtual DbSet<GameInstance> GameInstance { get; set; }
+        public virtual DbSet<RoundAnswers> RoundAnswers { get; set; }
         public virtual DbSet<MapTerritory> MapTerritory { get; set; }
         public virtual DbSet<Maps> Maps { get; set; }
         public virtual DbSet<ObjectTerritory> ObjectTerritory { get; set; }
@@ -154,8 +155,6 @@ namespace GameService.Context
 
                 entity.Property(e => e.TakenBy).HasColumnName("takenBy");
 
-                entity.Property(e => e.AttackedBy).HasColumnName("attackedBy");
-
                 entity.Property(e => e.IsCapital).HasColumnName("isCapital").HasDefaultValue(false);
                 
                 entity.Property(e => e.TerritoryScore).HasColumnName("territoryScore").HasDefaultValue(0);
@@ -214,9 +213,48 @@ namespace GameService.Context
                     .IsRequired()
                     .HasMaxLength(255);
 
+                entity.Property(e => e.PrimaryQuestion)
+                    .HasColumnName("primaryQuestion")
+                    .HasDefaultValue(true);
+
+                entity.HasOne(d => d.Rounds)
+                    .WithMany(p => p.Questions)
+                    .HasForeignKey(d => d.RoundsId)
+                    .HasConstraintName("FK__Questions__rounds__51231D5");
+
                 entity.Property(e => e.Question)
                     .HasColumnName("question")
                     .HasMaxLength(255);
+            });
+
+            modelBuilder.Entity<RoundAnswers>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.HasIndex(e => e.RoundId);
+
+                entity.HasIndex(e => e.AnswerId);
+
+                entity.Property(e => e.RoundId).HasColumnName("roundId");
+
+                entity.Property(e => e.AnswerId).HasColumnName("answerId");
+
+                entity.Property(e => e.AnsweredAt)
+                    .HasColumnName("answeredAt")
+                    .HasColumnType("datetime");
+
+
+                entity.HasOne(d => d.Round)
+                    .WithMany(e => e.RoundAnswers)
+                    .HasForeignKey(d => d.RoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_RoundAn_round_912388B");
+
+                entity.HasOne(d => d.Answer)
+                    .WithMany(e => e.RoundAnswers)
+                    .HasForeignKey(d => d.RoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_RoundAn_Answ_123Xf8B");
             });
 
             modelBuilder.Entity<Rounds>(entity =>
@@ -246,9 +284,16 @@ namespace GameService.Context
 
                 entity.Property(e => e.RoundWinnerId).HasColumnName("roundWinnerId");
 
-                entity.HasOne(x => x.Question)
-                    .WithOne(x => x.Rounds)
-                    .HasForeignKey<Questions>(x => x.RoundsId);
+                entity.Property(e => e.AttackingTerritoryId).HasColumnName("attackingTerritoryId");
+
+                entity.Property(e => e.IsVotingOpen)
+                    .HasColumnName("isVotingOpen")
+                    .HasDefaultValue(false);
+
+                entity.HasOne(d => d.AttackedTerritory)
+                    .WithMany(p => p.Rounds)
+                    .HasForeignKey(d => d.AttackingTerritoryId)
+                    .HasConstraintName("FK__RoundsHis__objTerr__AWDJIK3S");
 
                 entity.HasOne(d => d.GameInstance)
                     .WithMany(p => p.Rounds)

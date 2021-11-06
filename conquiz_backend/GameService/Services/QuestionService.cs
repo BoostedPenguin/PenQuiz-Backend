@@ -21,36 +21,11 @@ namespace GameService.Services
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
-        const string defaultQuestionsFile = "questions";
 
         public QuestionService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
-        }
-
-        public async Task AddDefaultQuestions()
-        {
-            using var a = contextFactory.CreateDbContext();
-            using StreamReader r = new StreamReader($"{defaultQuestionsFile}.json");
-
-            string json = r.ReadToEnd();
-            var defaultQuestions = JsonConvert.DeserializeObject<List<Questions>>(json);
-
-            var questions = await a.Questions.Include(x => x.Answers).ToListAsync();
-
-            var defaultQuestionsMissing = defaultQuestions
-                .Select(x => x.Question)
-                .Except(questions.Select(x => x.Question))
-                .ToList();
-
-            if (defaultQuestionsMissing.Count > 0)
-            {
-                await a.AddRangeAsync(defaultQuestions.Where(x => defaultQuestionsMissing.Contains(x.Question)).ToList());
-                await a.SaveChangesAsync();
-            }
-
-            Console.WriteLine("Default questions validated.");
         }
 
         public async Task<Questions> AnswerQuestion(int selectedAnswer, int questionId)

@@ -17,6 +17,7 @@ namespace GameService.Services.Extensions
         /// </summary>
         /// <param name="httpContext"></param>
         /// <returns></returns>
+        [Obsolete("use GetCurrentUserId", true)]
         public static string GetCurrentAuth(this IHttpContextAccessor httpContext)
         {
             // Check nameidentifier claim first -> then name claim

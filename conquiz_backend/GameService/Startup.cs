@@ -72,6 +72,8 @@ namespace GameService
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
+            services.AddSingleton<IGameControlService, GameControlService>();
+
             services.AddScoped<IAccountDataClient, AccountDataClient>();
 
             services.AddHttpContextAccessor();

@@ -48,7 +48,7 @@ namespace GameService.EventProcessing
 
             var gm = db.GameInstance
                 .Include(x => x.Rounds)
-                .ThenInclude(x => x.Question)
+                .ThenInclude(x => x.Questions)
                 .Where(x => x.Id == questionsResponse.GameInstanceId)
                 .FirstOrDefault();
 
@@ -68,7 +68,7 @@ namespace GameService.EventProcessing
                     Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundsId}. Doesn't exist.");
                     continue;
                 }
-                gameRound.Question = receivedQuestion;
+                gameRound.Questions.Add(receivedQuestion);
                 db.Update(gameRound);
             }
 

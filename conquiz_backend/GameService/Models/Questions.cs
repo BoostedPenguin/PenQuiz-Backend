@@ -12,6 +12,7 @@ namespace GameService.Models
 
         public int Id { get; set; }
         public string Question { get; set; }
+        public bool PrimaryQuestion { get; set; }
         public int RoundsId { get; set; }
         public string Type { get; set; }
 

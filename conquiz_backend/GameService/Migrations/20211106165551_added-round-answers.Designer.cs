@@ -4,14 +4,16 @@ using GameService.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace GameService.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20211106165551_added-round-answers")]
+    partial class addedroundanswers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -177,6 +179,10 @@ namespace GameService.Migrations
                         .HasColumnName("id")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<int?>("AttackedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("attackedBy");
+
                     b.Property<int>("GameInstanceId")
                         .HasColumnType("int")
                         .HasColumnName("gameInstanceId");
@@ -295,10 +301,6 @@ namespace GameService.Migrations
                         .HasColumnType("int")
                         .HasColumnName("answerId");
 
-                    b.Property<DateTime>("AnsweredAt")
-                        .HasColumnType("datetime")
-                        .HasColumnName("answeredAt");
-
                     b.Property<int>("RoundId")
                         .HasColumnType("int")
                         .HasColumnName("roundId");
@@ -326,10 +328,6 @@ namespace GameService.Migrations
                     b.Property<int?>("AttackerId")
                         .HasColumnType("int")
                         .HasColumnName("attackerId");
-
-                    b.Property<int>("AttackingTerritoryId")
-                        .HasColumnType("int")
-                        .HasColumnName("attackingTerritoryId");
 
                     b.Property<int?>("DefenderId")
                         .HasColumnType("int")
@@ -371,8 +369,6 @@ namespace GameService.Migrations
                         .HasColumnName("roundWinnerId");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AttackingTerritoryId");
 
                     b.HasIndex("GameInstanceId");
 
@@ -536,21 +532,12 @@ namespace GameService.Migrations
 
             modelBuilder.Entity("GameService.Models.Rounds", b =>
                 {
-                    b.HasOne("GameService.Models.ObjectTerritory", "AttackedTerritory")
-                        .WithMany("Rounds")
-                        .HasForeignKey("AttackingTerritoryId")
-                        .HasConstraintName("FK__RoundsHis__objTerr__AWDJIK3S")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("GameService.Models.GameInstance", "GameInstance")
                         .WithMany("Rounds")
                         .HasForeignKey("GameInstanceId")
                         .HasConstraintName("FK__RoundsHis__gameI__5CD6CB2B")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("AttackedTerritory");
 
                     b.Navigation("GameInstance");
                 });
@@ -583,11 +570,6 @@ namespace GameService.Migrations
                     b.Navigation("GameInstance");
 
                     b.Navigation("MapTerritory");
-                });
-
-            modelBuilder.Entity("GameService.Models.ObjectTerritory", b =>
-                {
-                    b.Navigation("Rounds");
                 });
 
             modelBuilder.Entity("GameService.Models.Questions", b =>
