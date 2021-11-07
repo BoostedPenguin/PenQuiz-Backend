@@ -11,7 +11,7 @@ namespace GameService.Dtos.SignalR_Responses
         public string Question { get; set; }
         public string Type { get; set; }
         public int WinnerId { get; set; }
-        public List<AnswerClientResponse> Answers { get; set; }
+        public List<AnswerResultResponse> Answers { get; set; }
     }
 
     public class AnswerResultResponse

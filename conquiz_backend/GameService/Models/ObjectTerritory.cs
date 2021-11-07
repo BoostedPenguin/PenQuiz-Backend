@@ -11,8 +11,10 @@ namespace GameService.Models
         public bool IsCapital { get; set; }
         public int TerritoryScore { get; set; }
         public int? TakenBy { get; set; }
+        public bool IsAttacked { get; set; }
 
-        public ICollection<Rounds> Rounds { get; set; }
+        public ICollection<AttackingNeutralTerritory> NeutralRoundsAttacks { get; set; }
+        public ICollection<PvpRound> PvpRounds { get; set; }
         public virtual GameInstance GameInstance { get; set; }
         public virtual MapTerritory MapTerritory { get; set; }
     }

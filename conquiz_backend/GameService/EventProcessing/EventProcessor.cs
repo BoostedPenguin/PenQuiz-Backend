@@ -48,9 +48,10 @@ namespace GameService.EventProcessing
 
             var gm = db.GameInstance
                 .Include(x => x.Rounds)
-                .ThenInclude(x => x.Questions)
+                .ThenInclude(x => x.Question)
                 .Where(x => x.Id == questionsResponse.GameInstanceId)
                 .FirstOrDefault();
+
 
             if(gm == null)
             {
@@ -68,8 +69,7 @@ namespace GameService.EventProcessing
                     Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundsId}. Doesn't exist.");
                     continue;
                 }
-                
-                gameRound.Questions.Add(receivedQuestion);
+                gameRound.Question = receivedQuestion;
                 db.Update(gameRound);
             }
 
@@ -111,7 +111,7 @@ namespace GameService.EventProcessing
 
             switch (eventType.Event)
             {
-                case "Questions_Response":
+                case "Questions_MultipleChoice_Neutral_Response":
                     Console.WriteLine("Question Response Event Detected");
                     return EventType.QuestionsReceived;
                 case "User_Published":

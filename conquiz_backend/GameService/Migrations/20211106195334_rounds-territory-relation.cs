@@ -36,7 +36,7 @@ namespace GameService.Migrations
                 column: "attackingTerritoryId",
                 principalTable: "ObjectTerritory",
                 principalColumn: "id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.NoAction);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

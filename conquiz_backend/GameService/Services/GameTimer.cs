@@ -31,16 +31,18 @@ namespace GameService.Services
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IMapper mapper;
+        private readonly IMapGeneratorService mapGeneratorService;
 
         // GameId<Game> | CurrentTimer 
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
         
-        public GameTimer(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper) : base(_contextFactory)
+        public GameTimer(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.hubContext = hubContext;
             this.mapper = mapper;
+            this.mapGeneratorService = mapGeneratorService;
         }
         public enum NumberQuestionActions
         {
@@ -147,7 +149,40 @@ namespace GameService.Services
             }
         }
 
-        private async Task Show_MultipleChoice_Screen(TimerWrapper timerWrapper)
+        private async Task Close_MultipleChoice_Natural_Territory_Selecting(TimerWrapper timerWrapper)
+        {
+            var data = timerWrapper.Data;
+            using var db = contextFactory.CreateDbContext();
+
+            var currentRound = await db.Round
+                .Include(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
+                .FirstOrDefaultAsync();
+
+            currentRound.IsTerritoryVotingOpen = false;
+
+            var notAnswered = currentRound.NeutralRound.TerritoryAttackers
+                    .Where(x => x.AttackedTerritoryId == null).ToList();
+
+            // Assign random territories to people who didn't choose anything.
+            foreach (var userAttack in notAnswered)
+            {
+                var randomTerritory = await mapGeneratorService
+                    .GetRandomMCTerritoryNeutral(userAttack.AttackerId, data.GameInstanceId);
+                
+                // Set this territory as being attacked from this person
+                userAttack.AttackedTerritoryId = randomTerritory.Id;
+
+                // Set the ObjectTerritory as being attacked currently
+                userAttack.AttackedTerritory.IsAttacked = true;
+            }
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+        }
+
+        private async Task Show_MultipleChoice_Screen(TimerWrapper timerWrapper, bool isNeutral)
         {
             // Stop timer until we calculate the next action and client event
             timerWrapper.Stop();
@@ -155,24 +190,108 @@ namespace GameService.Services
             // Get the question and show it to the clients
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
-            
-            // Show the primary question to the user
+
+            // Show the question to the user
             var question = await db.Questions
                 .Include(x => x.Answers)
-                .Include(x => x.Rounds)
-                .Where(x => x.Type == "multiple" && x.Rounds.GameRoundNumber == data.CurrentGameRoundNumber 
-                    && x.Rounds.GameInstanceId == data.GameInstanceId)
+                .Include(x => x.Round)
+                .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber
+                    && x.Round.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefaultAsync();
 
+
             // Open this question for voting
-            question.Rounds.IsVotingOpen = true;
-            db.Update(question.Rounds);
+            question.Round.IsQuestionVotingOpen = true;
+            db.Update(question.Round);
             await db.SaveChangesAsync();
 
-            await SendQuestionHub(data.GameLink, question);
+            //await SendQuestionHub(data.GameLink, question);
+
+            var response = mapper.Map<QuestionClientResponse>(question);
+
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
+
+            // If the round is a neutral one, then everyone can attack
+            if(isNeutral)
+            {
+                await hubContext.Clients.Group(data.GameLink).CanPerformActions();
+            }
+            else
+            {
+                var participants = await db.PvpRounds
+                    .Include(x => x.Round)
+                    .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
+                        x.Round.GameInstanceId == data.GameInstanceId)
+                    .Select(x => new
+                    {
+                        x.AttackerId,
+                        x.DefenderId
+                    })
+                    .FirstOrDefaultAsync();
+
+                await hubContext.Clients.User(participants.AttackerId.ToString()).CanPerformActions();
+                await hubContext.Clients.User(participants.DefenderId.ToString()).CanPerformActions();
+            }
         }
 
-        private async Task Close_MultipleChoice_Voting(TimerWrapper timerWrapper)
+        private async Task Close_MultipleChoice_Neutral_Voting(TimerWrapper timerWrapper)
+        {
+            // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
+            timerWrapper.Stop();
+            var data = timerWrapper.Data;
+            var db = contextFactory.CreateDbContext();
+
+            var currentRound =
+                await db.Round
+                .Include(x => x.Question)
+                .ThenInclude(x => x.Answers)
+                .Include(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
+                    && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            currentRound.IsQuestionVotingOpen = false;
+
+            var playerCorrect = new Dictionary<int, bool>();
+
+            foreach (var p in currentRound.NeutralRound.TerritoryAttackers)
+            {
+                var isThisPlayerAnswerCorrect =
+                    currentRound.Question.Answers.FirstOrDefault(x => x.Id == p.AttackerMChoiceQAnswerId);
+
+                // Player hasn't answered anything for this question, he loses
+                if (isThisPlayerAnswerCorrect == null)
+                {
+                    p.AttackerWon = false;
+                    p.AttackedTerritory.IsAttacked = false;
+                    p.AttackedTerritory.TakenBy = null;
+                    continue;
+                }
+
+                if (isThisPlayerAnswerCorrect.Correct)
+                {
+                    playerCorrect.Add(
+                        p.AttackerId,
+                        isThisPlayerAnswerCorrect.Correct
+                    );
+
+                    // Player answered correctly, he gets the territory
+                    p.AttackerWon = true;
+                    p.AttackedTerritory.IsAttacked = false;
+                    p.AttackedTerritory.TakenBy = p.AttackerId;
+                }
+                else
+                {
+                    // Player answered incorrecly, release isattacked lock on objterritory
+                    p.AttackerWon = false;
+                    p.AttackedTerritory.IsAttacked = false;
+                    p.AttackedTerritory.TakenBy = null;
+                }
+            }
+        }
+
+        private async Task Close_MultipleChoice_Pvp_Voting(TimerWrapper timerWrapper)
         {
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
             timerWrapper.Stop();
@@ -180,65 +299,84 @@ namespace GameService.Services
             var db = contextFactory.CreateDbContext();
 
             var currentRound = 
-                await db.Rounds
-                .Include(x => x.RoundAnswers)
-                .ThenInclude(x => x.Answer)
-                .ThenInclude(x => x.Question)
-                .FirstOrDefaultAsync(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
-                    && x.GameInstanceId == data.GameInstanceId);
-            
-            currentRound.IsVotingOpen = false;
+                await db.Round
+                .Include(x => x.Question)
+                .ThenInclude(x => x.Answers)
+                .Include(x => x.PvpRound)
+                .ThenInclude(x => x.PvpRoundAnswers)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
+                    && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            currentRound.IsQuestionVotingOpen = false;
 
             var playerCorrect = new Dictionary<int, bool>();
 
-            // Get the primary question answers
-            foreach(var pAnswer in currentRound.RoundAnswers.Where(x => x.Answer.Question.Type == "multiple"))
+            // If attacker didn't win, we don't care what the outcome is
+            var attackerAnswer = currentRound
+                .PvpRound
+                .PvpRoundAnswers
+                .First(x => x.UserId == currentRound.PvpRound.AttackerId);
+
+
+            // Attacker didn't answer, automatically loses
+            if(attackerAnswer.MChoiceQAnswerId == null)
             {
-                playerCorrect[pAnswer.UserId] = pAnswer.Answer.Correct;
+                // Player answered incorrecly, release isattacked lock on objterritory
+                currentRound.PvpRound.WinnerId = currentRound.PvpRound.DefenderId;
+                currentRound.PvpRound.AttackedTerritory.IsAttacked = false;
             }
-
-            // Both players answered correctly
-            switch(playerCorrect.Values.Count(x => x))
+            else
             {
-                // No one answered correctly
-                case 0:
-                    currentRound.RoundWinnerId = currentRound.DefenderId;
-                    break;
 
-                // One person answered correctly
-                case 1:
-                    var b = playerCorrect.First(x => x.Value == true);
-                    
-                    // Attacker won
-                    if(b.Key == currentRound.AttackerId)
+                var didAttackerAnswerCorrectly = currentRound
+                    .Question
+                    .Answers
+                    .First(x => x.Id == attackerAnswer.MChoiceQAnswerId)
+                    .Correct;
+
+                if(!didAttackerAnswerCorrectly)
+                {
+                    // Player answered incorrecly, release isattacked lock on objterritory
+                    currentRound.PvpRound.WinnerId = currentRound.PvpRound.DefenderId;
+                    currentRound.PvpRound.AttackedTerritory.IsAttacked = false;
+                }
+                else
+                {
+                    var defenderAnswer = currentRound
+                        .PvpRound
+                        .PvpRoundAnswers
+                        .First(x => x.UserId == currentRound.PvpRound.DefenderId);
+
+                    // Defender didn't vote, he lost
+                    if(defenderAnswer.MChoiceQAnswerId == null)
                     {
-                        currentRound.AttackedTerritory.TakenBy = currentRound.AttackerId;
-                        currentRound.RoundWinnerId = currentRound.AttackerId;
+                        // Player answered incorrecly, release isattacked lock on objterritory
+                        currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
+                        currentRound.PvpRound.AttackedTerritory.IsAttacked = false;
+                        currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
                     }
-                    // Defender won automatically
                     else
                     {
-                        currentRound.RoundWinnerId = currentRound.DefenderId;
+                        // A new number question has to be shown
+                        throw new NotImplementedException("A new number question has to be shown");
                     }
-                    break;
-
-                // Two people answered correctly
-                // Happens only in PVP
-                case 2:
-                    // Switches to second question
-                    await Open_FromMultiple_NumberChoice_Voting(db, currentRound, timerWrapper);
-                    return;
-
-                default:
-                    throw new ArgumentException("Internal server error. Unknown result for voting.");
+                }
             }
 
             db.Update(currentRound);
             await db.SaveChangesAsync();
 
-            var result = mapper.Map<QuestionResultResponse>(currentRound.Questions.First(x => x.Type == "multiple"));
+            var qResult = new QuestionResultResponse()
+            {
+                Id = currentRound.Question.Id,
+                Answers = mapper.Map<List<AnswerResultResponse>>(currentRound.Question.Answers),
+                Question = currentRound.Question.Question,
+                Type = currentRound.Question.Type,
+                WinnerId = (int)currentRound.PvpRound.WinnerId,
+            };
 
-            await hubContext.Clients.Group(data.GameLink).PreviewResult(result);
+            await hubContext.Clients.Group(data.GameLink).PreviewResult(qResult);
 
             timerWrapper.Data.NextAction = States.CLOSE_SCREEN;
             timerWrapper.Interval = 3000;
@@ -271,41 +409,6 @@ namespace GameService.Services
             
             await hubContext.Clients.Group(data.GameLink).CloseQuestionScreen();
             await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
-        }
-
-
-        public async Task SendQuestionHub(string groupId, Questions question)
-        {
-            // Mask answers and etc.
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            await hubContext.Clients.Group(groupId).GetRoundQuestion(response);
-
-            // Decide who can vote
-            var attackerId = question.Rounds.AttackerId;
-            var defenderId = question.Rounds.DefenderId;
-
-            // If it's versus NEUTRAL territory, defenderId can be null
-            await hubContext.Clients.User(attackerId.ToString()).CanPerformActions();
-
-            if (defenderId != null)
-                await hubContext.Clients.User(defenderId.ToString()).CanPerformActions();
-        }
-
-        public async Task Open_FromMultiple_NumberChoice_Voting(DefaultContext db, Rounds currentRound, TimerWrapper timerWrapper)
-        {
-            var data = timerWrapper.Data;
-            currentRound.FollowUpNumberQuestion = true;
-            currentRound.IsVotingOpen = true;
-
-
-            // Open this question for voting
-            db.Update(currentRound);
-            await db.SaveChangesAsync();
-
-            var numberQuestion = currentRound.Questions.First(x => x.Type == "number");
-
-            await SendQuestionHub(data.GameLink, numberQuestion);
         }
     }
 }

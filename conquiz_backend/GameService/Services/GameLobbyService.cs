@@ -276,7 +276,7 @@ namespace GameService.Services
             return gameInstance;
         }
 
-        private void RequestQuestions(int gameInstanceId, Rounds[] rounds, bool isNeutralGeneration = false)
+        private void RequestQuestions(int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
         {
             // Request questions only for the initial multiple questions for neutral attacking order
             // After multiple choices are over, request a new batch for number questions for all untaken territories
@@ -293,14 +293,13 @@ namespace GameService.Services
             });
         }
 
-        public async Task<Rounds[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers, int gameInstanceId)
+        public async Task<Round[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers, int gameInstanceId)
         {
 
             var order = await GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), mapId);
 
-
             // Create default rounds
-            var finalRounds = new List<Rounds>();
+            var finalRounds = new List<Round>();
 
             // Stores game round number for each round
             var gameRoundNumber = 1;
@@ -308,41 +307,26 @@ namespace GameService.Services
             // Full rounds
             for (var i = 0; i < order.UserRoundAttackOrders.Count(); i++)
             {
-                // Inner round
-                // Multiple choice questions
-                foreach (var roundAttackerId in order.UserRoundAttackOrders[i])
+                var baseRound = new Round
                 {
-                    finalRounds.Add(new Rounds
+                    GameRoundNumber = gameRoundNumber++,
+                    AttackStage = AttackStage.MULTIPLE_NEUTRAL,
+                    Description = $"MultipleChoice question. Attacker vs NEUTRAL territory",
+                    RoundStage = RoundStage.NOT_STARTED,
+                    IsQuestionVotingOpen = false,
+                    IsTerritoryVotingOpen = false,
+                };
+
+                foreach(var roundAttackerId in order.UserRoundAttackOrders[i])
+                {
+                    baseRound.NeutralRound.TerritoryAttackers.Add(new AttackingNeutralTerritory()
                     {
-                        GameRoundNumber = gameRoundNumber++,
                         AttackerId = roundAttackerId,
-                        DefenderId = null,
-                        AttackStage = AttackStage.MULTIPLE_NEUTRAL,
-                        Description = $"Fixed question. Attacker vs NEUTRAL territory",
-                        RoundStage = RoundStage.NOT_STARTED,
                     });
                 }
+
+                finalRounds.Add(baseRound);
             }
-
-            // Question territories
-            // Number choice questions // render later
-            //for (var questionTer = 0; questionTer < order.LeftTerritories; questionTer++)
-            //{
-            //    finalRounds.Add(new Rounds
-            //    {
-            //        GameRoundNumber = gameRoundNumber++,
-            //        AttackerId = null,
-            //        DefenderId = null,
-            //        IsLastUntakenTerritories = true,
-            //        Description = $"Number question. Attacker vs NEUTRAL territory",
-            //        RoundStage = RoundStage.NOT_STARTED,
-            //    });
-            //}
-
-            // +1 because of the way we add to the local variable
-            // -3 because we remove the capitals which are already given
-            if (gameRoundNumber != order.UserRoundAttackOrders.Count() + 1 - RequiredPlayers)
-                throw new ArgumentException("Total game round numbers generated weren't equal to the total territories on the map");
 
             var result = finalRounds.ToArray();
 

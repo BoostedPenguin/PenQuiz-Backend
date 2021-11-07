@@ -148,7 +148,7 @@ namespace GameService.Hubs
         {
             try
             {
-                await gameControlService.AnswerQuestion(answerId);
+                await gameControlService.AnswerMCQuestion(answerId);
 
                 await Clients.Caller.PlayerAnsweredMCQuestion();
             }

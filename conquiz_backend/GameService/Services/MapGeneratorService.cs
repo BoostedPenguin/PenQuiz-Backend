@@ -24,6 +24,7 @@ namespace GameService.Services
         Task<MapTerritory[]> GetBorders(string territoryName, string mapName);
         Task<MapTerritory[]> GetBorders(int territoryId);
         Task<int> GetAmountOfTerritories(int mapId);
+        Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -31,7 +32,7 @@ namespace GameService.Services
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private const string defaultMapFile = "Antarctica";
-
+        private readonly Random r = new Random();
         public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
@@ -57,10 +58,44 @@ namespace GameService.Services
             // Do something
         }
 
-        public async Task ChooseStartedTerritories()
+        public async Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId)
         {
-            var territories = new List<MapTerritory>();
-            //TODO
+            using var db = contextFactory.CreateDbContext();
+
+            var userTerritories = await db.ObjectTerritory
+                .Include(x => x.MapTerritory)
+                .Where(x => x.GameInstanceId == gameInstanceId && x.TakenBy == userId)
+                .ToListAsync();
+
+
+            // There is a possibility where people get blocked off
+            // So in case all takenterritories don't border anything, you need a random select
+            var allPlayerBorders = await GetBorders(userTerritories.Select(x => x.MapTerritoryId).ToArray());
+
+            var untakenBorder = await db.ObjectTerritory
+                .Include(x => x.MapTerritory)
+                .Where(x => 
+                    x.GameInstanceId == gameInstanceId &&
+                    x.TakenBy == null && 
+                    !x.IsAttacked && 
+                    allPlayerBorders.Any(y => y.Id == x.MapTerritoryId))
+                .ToListAsync();
+
+            // In case no border territory is available,
+            // you have to attack a random available one even if u dont border it
+            if(untakenBorder.Count() == 0)
+            {
+                return untakenBorder[r.Next(0, untakenBorder.Count())];
+            }
+            else
+            {
+                var availableNonBorders = await db.ObjectTerritory
+                    .Include(x => x.MapTerritory)
+                    .Where(x => x.GameInstanceId == gameInstanceId && x.TakenBy == null && !x.IsAttacked)
+                    .ToListAsync();
+
+                return availableNonBorders[r.Next(0, untakenBorder.Count())];
+            }
         }
 
         private async Task<bool> AddBorderIfNotExistant(int territoryId, int territoryId2)
@@ -114,6 +149,21 @@ namespace GameService.Services
 
             return await GetBorders(territory.Id);
         }
+
+        public async Task<MapTerritory[]> GetBorders(int[] territoryIds)
+        {
+            using var a = contextFactory.CreateDbContext();
+
+            var nonRepeatingBorders = new List<MapTerritory>();
+            foreach(var territoryId in territoryIds)
+            {
+                var theseBorders = await GetBorders(territoryId);
+                nonRepeatingBorders.AddRange(theseBorders.Except(nonRepeatingBorders));
+            }
+
+            return nonRepeatingBorders.ToArray();
+        }
+
 
         public async Task<MapTerritory[]> GetBorders(int territoryId)
         {

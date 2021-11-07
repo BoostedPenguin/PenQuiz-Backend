@@ -69,7 +69,7 @@ namespace QuestionService.EventProcessing
                     {
                         GameInstanceId = questionRequest.GameInstanceId,
                         QuestionResponses = mappedQuestions,
-                        Event = "Questions_Response",
+                        Event = "Questions_MultipleChoice_Neutral_Response",
                     };
 
                     messageBus.PublishRequestedQuestions(response);

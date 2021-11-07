@@ -16,7 +16,7 @@ namespace GameService.Models
         {
             ObjectTerritory = new HashSet<ObjectTerritory>();
             Participants = new HashSet<Participants>();
-            Rounds = new HashSet<Rounds>();
+            Rounds = new HashSet<Round>();
         }
 
         public int Id { get; set; }
@@ -35,6 +35,6 @@ namespace GameService.Models
         public virtual Maps Map { get; set; }
         public virtual ICollection<ObjectTerritory> ObjectTerritory { get; set; }
         public virtual ICollection<Participants> Participants { get; set; }
-        public virtual ICollection<Rounds> Rounds { get; set; }
+        public virtual ICollection<Round> Rounds { get; set; }
     }
 }
