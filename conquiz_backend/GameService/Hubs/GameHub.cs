@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using GameService.Dtos;
+using GameService.Dtos.SignalR_Responses;
 
 namespace GameService.Hubs
 {
@@ -25,8 +27,9 @@ namespace GameService.Hubs
         Task NavigateToGame();
         Task PlayerAnsweredMCQuestion();
 
-
-        Task GetRoundQuestion(Questions question);
+        Task CloseQuestionScreen();
+        Task PreviewResult(QuestionResultResponse questions);
+        Task GetRoundQuestion(QuestionClientResponse question);
         Task CanPerformActions();
 
         Task TESTING(string message);
@@ -141,11 +144,11 @@ namespace GameService.Hubs
             }
         }
 
-        public async Task AnswerMultipleChoiceQuestion(int answerId)
+        public async Task AnswerMCQuestion(int answerId)
         {
             try
             {
-                await gameControlService.AnswerMultipleChoiceQuestion(answerId);
+                await gameControlService.AnswerQuestion(answerId);
 
                 await Clients.Caller.PlayerAnsweredMCQuestion();
             }
@@ -153,6 +156,11 @@ namespace GameService.Hubs
             {
                 await Clients.Caller.GameException(ex.Message);
             }
+        }
+
+        public async Task AnswerNumberQuestion(int number)
+        {
+
         }
 
         public async Task CreateGameLobby()

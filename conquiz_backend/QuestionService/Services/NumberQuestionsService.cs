@@ -44,6 +44,9 @@ namespace QuestionService.Services
 
         public async Task<List<Questions>> GetNumberQuestions(List<int> amountRoundId, string sessionId, int gameInstanceId)
         {
+            if (amountRoundId.Count() == 0)
+                return new List<Questions>();
+             
             using var db = contextFactory.CreateDbContext();
 
             var questions = await db.Questions

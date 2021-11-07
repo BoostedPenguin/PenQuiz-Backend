@@ -14,6 +14,7 @@ namespace QuestionService.Dtos
         // Total Count of number questions .count()
         // Each value represents a RoundId
         public List<int> NumberQuestionsRoundId { get; set; } = new List<int>();
+        public bool IsNeutralGeneration { get; set; }
         public string Event { get; set; }
     }
 }

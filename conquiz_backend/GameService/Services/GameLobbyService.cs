@@ -270,26 +270,26 @@ namespace GameService.Services
             await a.SaveChangesAsync();
 
             // Send request to question service to generate questions in the background
-            RequestQuestions(gameInstance.Id, initialRounding);
+            RequestQuestions(gameInstance.Id, initialRounding, true);
 
 
             return gameInstance;
         }
 
-        private void RequestQuestions(int gameInstanceId, Rounds[] rounds)
+        private void RequestQuestions(int gameInstanceId, Rounds[] rounds, bool isNeutralGeneration = false)
         {
+            // Request questions only for the initial multiple questions for neutral attacking order
+            // After multiple choices are over, request a new batch for number questions for all untaken territories
             messageBus.RequestQuestions(new RequestQuestionsDto()
             {
                 Event = "Question_Request",
                 GameInstanceId = gameInstanceId,
                 MultipleChoiceQuestionsRoundId = rounds
-                    .Where(x => !x.IsLastUntakenTerritories)
+                    .Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
                     .Select(x => x.Id)
                     .ToList(),
-                NumberQuestionsRoundId = rounds
-                    .Where(x => x.IsLastUntakenTerritories)
-                    .Select(x => x.Id)
-                    .ToList(),
+                NumberQuestionsRoundId = new List<int>(),
+                IsNeutralGeneration = isNeutralGeneration,
             });
         }
 
@@ -309,6 +309,7 @@ namespace GameService.Services
             for (var i = 0; i < order.UserRoundAttackOrders.Count(); i++)
             {
                 // Inner round
+                // Multiple choice questions
                 foreach (var roundAttackerId in order.UserRoundAttackOrders[i])
                 {
                     finalRounds.Add(new Rounds
@@ -316,6 +317,7 @@ namespace GameService.Services
                         GameRoundNumber = gameRoundNumber++,
                         AttackerId = roundAttackerId,
                         DefenderId = null,
+                        AttackStage = AttackStage.MULTIPLE_NEUTRAL,
                         Description = $"Fixed question. Attacker vs NEUTRAL territory",
                         RoundStage = RoundStage.NOT_STARTED,
                     });
@@ -323,22 +325,23 @@ namespace GameService.Services
             }
 
             // Question territories
-            for (var questionTer = 0; questionTer < order.LeftTerritories; questionTer++)
-            {
-                finalRounds.Add(new Rounds
-                {
-                    GameRoundNumber = gameRoundNumber++,
-                    AttackerId = null,
-                    DefenderId = null,
-                    IsLastUntakenTerritories = true,
-                    Description = $"Number question. Attacker vs NEUTRAL territory",
-                    RoundStage = RoundStage.NOT_STARTED,
-                });
-            }
+            // Number choice questions // render later
+            //for (var questionTer = 0; questionTer < order.LeftTerritories; questionTer++)
+            //{
+            //    finalRounds.Add(new Rounds
+            //    {
+            //        GameRoundNumber = gameRoundNumber++,
+            //        AttackerId = null,
+            //        DefenderId = null,
+            //        IsLastUntakenTerritories = true,
+            //        Description = $"Number question. Attacker vs NEUTRAL territory",
+            //        RoundStage = RoundStage.NOT_STARTED,
+            //    });
+            //}
 
             // +1 because of the way we add to the local variable
             // -3 because we remove the capitals which are already given
-            if (gameRoundNumber != order.TotalTerritories + 1 - RequiredPlayers)
+            if (gameRoundNumber != order.UserRoundAttackOrders.Count() + 1 - RequiredPlayers)
                 throw new ArgumentException("Total game round numbers generated weren't equal to the total territories on the map");
 
             var result = finalRounds.ToArray();

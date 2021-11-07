@@ -3,12 +3,8 @@ using System.Collections.Generic;
 
 namespace GameService.Models
 {
-    public enum RoundStage
-    {
-        NOT_STARTED,
-        CURRENT,
-        FINISHED,
-    }
+
+
     public partial class Rounds
     {
         public int Id { get; set; }
@@ -18,7 +14,6 @@ namespace GameService.Models
         /// For the attack mode
         /// </summary>
         public RoundStage RoundStage { get; set; }
-        public bool IsLastUntakenTerritories { get; set; }
 
         // For concurrency
         // Every round you add you give +1 number to this
@@ -34,6 +29,7 @@ namespace GameService.Models
         public int? RoundWinnerId { get; set; }
         public bool IsVotingOpen { get; set; }
         public int AttackingTerritoryId { get; set; }
+        public AttackStage AttackStage { get; set; }
 
         public virtual ObjectTerritory AttackedTerritory { get; set; }
         public virtual ICollection<RoundAnswers> RoundAnswers { get; set; }

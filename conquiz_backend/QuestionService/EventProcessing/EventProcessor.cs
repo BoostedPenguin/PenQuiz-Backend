@@ -55,6 +55,14 @@ namespace QuestionService.EventProcessing
                     // Add both questions
                     mulChoiceQuestions.AddRange(numberQuestions);
 
+                    // Generate backup number question for every number question in case both people answer correctly
+                    // Only for PVP, not needed for neutral territories
+                    if (!questionRequest.IsNeutralGeneration)
+                    {
+                        var secondaryNumQuestions = await numberQuestionsService.GetNumberQuestions(questionRequest.MultipleChoiceQuestionsRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);
+                        mulChoiceQuestions.AddRange(secondaryNumQuestions);
+                    }
+
                     var mappedQuestions = mapper.Map<QuestionResponse[]>(mulChoiceQuestions);
 
                     var response = new QResponse()

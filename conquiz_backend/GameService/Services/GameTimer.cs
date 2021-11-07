@@ -10,6 +10,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using GameService.Dtos;
+using GameService.Dtos.SignalR_Responses;
 
 namespace GameService.Services
 {
@@ -27,15 +30,17 @@ namespace GameService.Services
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
-        
+        private readonly IMapper mapper;
+
         // GameId<Game> | CurrentTimer 
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
         
-        public GameTimer(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext) : base(_contextFactory)
+        public GameTimer(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.hubContext = hubContext;
+            this.mapper = mapper;
         }
         public enum NumberQuestionActions
         {
@@ -68,9 +73,17 @@ namespace GameService.Services
 
         public enum States
         {
-            NUMBER_QUESTION,
-            MULTIPLE_CHOICE_QUESTION,
-            ATTACKING_NEUTRAL_TERRITORY,
+            //NUMBER_QUESTION,
+            //MULTIPLE_CHOICE_QUESTION,
+            //ATTACKING_NEUTRAL_TERRITORY,
+
+
+            SHOW_SCREEN,
+            START_VOTING,
+            END_VOTING,
+            SHOW_RESULTS,
+            PREVIEW_RESULTS,
+            CLOSE_SCREEN
         }
         public class TimerWrapper : Timer
         {
@@ -112,7 +125,8 @@ namespace GameService.Services
                 Interval = START_PREVIEW_TIME,
             };
 
-            actionTimer.Data.NextAction = States.ATTACKING_NEUTRAL_TERRITORY;
+            //TODO
+            actionTimer.Data.NextAction = States.CLOSE_SCREEN;
 
             GameTimers.Add(actionTimer);
 
@@ -121,17 +135,14 @@ namespace GameService.Services
             actionTimer.Start();
         }
 
+        //TODO
         private void ActionTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             var timer = (TimerWrapper)sender;
 
             switch (timer.Data.NextAction)
             {
-                case States.NUMBER_QUESTION:
-                    break;
-                case States.MULTIPLE_CHOICE_QUESTION:
-                    break;
-                case States.ATTACKING_NEUTRAL_TERRITORY:
+                case States.CLOSE_SCREEN:
                     break;
             }
         }
@@ -145,10 +156,11 @@ namespace GameService.Services
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
             
+            // Show the primary question to the user
             var question = await db.Questions
                 .Include(x => x.Answers)
                 .Include(x => x.Rounds)
-                .Where(x => x.Rounds.GameRoundNumber == data.CurrentGameRoundNumber 
+                .Where(x => x.Type == "multiple" && x.Rounds.GameRoundNumber == data.CurrentGameRoundNumber 
                     && x.Rounds.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefaultAsync();
 
@@ -157,19 +169,7 @@ namespace GameService.Services
             db.Update(question.Rounds);
             await db.SaveChangesAsync();
 
-
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(question);
-
-            // Decide who can vote
-            var attackerId = question.Rounds.AttackerId;
-            var defenderId = question.Rounds.DefenderId;
-            
-            // If it's versus NEUTRAL territory, defenderId can be null
-            await hubContext.Clients.User(attackerId.ToString()).CanPerformActions();
-
-            if(defenderId != null)
-                await hubContext.Clients.User(defenderId.ToString()).CanPerformActions();
-
+            await SendQuestionHub(data.GameLink, question);
         }
 
         private async Task Close_MultipleChoice_Voting(TimerWrapper timerWrapper)
@@ -191,7 +191,8 @@ namespace GameService.Services
 
             var playerCorrect = new Dictionary<int, bool>();
 
-            foreach(var pAnswer in currentRound.RoundAnswers)
+            // Get the primary question answers
+            foreach(var pAnswer in currentRound.RoundAnswers.Where(x => x.Answer.Question.Type == "multiple"))
             {
                 playerCorrect[pAnswer.UserId] = pAnswer.Answer.Correct;
             }
@@ -222,13 +223,89 @@ namespace GameService.Services
                     break;
 
                 // Two people answered correctly
-                // Happens only 
+                // Happens only in PVP
                 case 2:
-                    break;
+                    // Switches to second question
+                    await Open_FromMultiple_NumberChoice_Voting(db, currentRound, timerWrapper);
+                    return;
 
                 default:
                     throw new ArgumentException("Internal server error. Unknown result for voting.");
             }
+
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+
+            var result = mapper.Map<QuestionResultResponse>(currentRound.Questions.First(x => x.Type == "multiple"));
+
+            await hubContext.Clients.Group(data.GameLink).PreviewResult(result);
+
+            timerWrapper.Data.NextAction = States.CLOSE_SCREEN;
+            timerWrapper.Interval = 3000;
+            timerWrapper.Start();
+        }
+
+        private async Task Close_Screen(TimerWrapper timerWrapper)
+        {
+            // Previewing elapsed, move to next round
+            var data = timerWrapper.Data;
+            using var db = contextFactory.CreateDbContext();
+
+            var gm = await db.GameInstance
+                .Include(x => x.Rounds)
+                .Include(x => x.Participants)
+                .Include(x => x.ObjectTerritory)
+                .Include(x => x.Rounds)
+                .Where(x => x.Id == data.GameInstanceId && x.Rounds
+                    .Any(y => y.GameRoundNumber == data.CurrentGameRoundNumber || y.GameRoundNumber == data.CurrentGameRoundNumber + 1))
+                .FirstOrDefaultAsync();
+
+            // Move to next round
+            gm.GameRoundNumber++;
+
+            gm.Rounds.First(x => x.GameRoundNumber == data.CurrentGameRoundNumber).RoundStage = RoundStage.FINISHED;
+            gm.Rounds.First(x => x.GameRoundNumber == data.CurrentGameRoundNumber + 1).RoundStage = RoundStage.CURRENT;
+
+            db.Update(gm);
+            await db.SaveChangesAsync();
+            
+            await hubContext.Clients.Group(data.GameLink).CloseQuestionScreen();
+            await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
+        }
+
+
+        public async Task SendQuestionHub(string groupId, Questions question)
+        {
+            // Mask answers and etc.
+            var response = mapper.Map<QuestionClientResponse>(question);
+
+            await hubContext.Clients.Group(groupId).GetRoundQuestion(response);
+
+            // Decide who can vote
+            var attackerId = question.Rounds.AttackerId;
+            var defenderId = question.Rounds.DefenderId;
+
+            // If it's versus NEUTRAL territory, defenderId can be null
+            await hubContext.Clients.User(attackerId.ToString()).CanPerformActions();
+
+            if (defenderId != null)
+                await hubContext.Clients.User(defenderId.ToString()).CanPerformActions();
+        }
+
+        public async Task Open_FromMultiple_NumberChoice_Voting(DefaultContext db, Rounds currentRound, TimerWrapper timerWrapper)
+        {
+            var data = timerWrapper.Data;
+            currentRound.FollowUpNumberQuestion = true;
+            currentRound.IsVotingOpen = true;
+
+
+            // Open this question for voting
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+
+            var numberQuestion = currentRound.Questions.First(x => x.Type == "number");
+
+            await SendQuestionHub(data.GameLink, numberQuestion);
         }
     }
 }

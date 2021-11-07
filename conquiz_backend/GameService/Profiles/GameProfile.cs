@@ -1,6 +1,7 @@
 ﻿using AccountService;
 using AutoMapper;
 using GameService.Dtos;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Models;
 using System;
 using System.Collections.Generic;
@@ -26,6 +27,11 @@ namespace GameService.Profiles
             CreateMap<QuestionResponse, Questions>()
                 .ForMember(dest => dest.RoundsId, org => org.MapFrom(x => x.RoundId))
                 .ForMember(dest => dest.Id, org => org.Ignore());
+            CreateMap<Answers, AnswerClientResponse>();
+            CreateMap<Questions, QuestionClientResponse>();
+
+            CreateMap<Answers, AnswerResultResponse>();
+            CreateMap<Questions, QuestionResultResponse>();
         }
     }
 }

@@ -213,10 +213,6 @@ namespace GameService.Context
                     .IsRequired()
                     .HasMaxLength(255);
 
-                entity.Property(e => e.PrimaryQuestion)
-                    .HasColumnName("primaryQuestion")
-                    .HasDefaultValue(true);
-
                 entity.HasOne(d => d.Rounds)
                     .WithMany(p => p.Questions)
                     .HasForeignKey(d => d.RoundsId)
@@ -267,12 +263,11 @@ namespace GameService.Context
 
                 entity.Property(e => e.DefenderId).HasColumnName("defenderId");
 
-                entity.Property(e => e.GameRoundNumber).HasColumnName("gameRoundNumber");
+                entity.Property(e => e.AttackStage)
+                    .HasConversion<string>()
+                    .IsRequired(false);
 
-                entity.Property(e => e.IsLastUntakenTerritories)
-                    .IsRequired()
-                    .HasDefaultValue(false)
-                    .HasColumnName("isLastUntakenTerritories");
+                entity.Property(e => e.GameRoundNumber).HasColumnName("gameRoundNumber");
 
                 entity.Property(e => e.Description)
                     .HasColumnName("description")
