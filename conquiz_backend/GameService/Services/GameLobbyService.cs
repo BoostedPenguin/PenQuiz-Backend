@@ -267,7 +267,15 @@ namespace GameService.Services
             gameInstance.GameRoundNumber = 1;
 
             a.Update(gameInstance);
+            try
+            {
             await a.SaveChangesAsync();
+
+            }
+            catch(Exception ex)
+            {
+
+            }
 
             // Send request to question service to generate questions in the background
             RequestQuestions(gameInstance.Id, initialRounding, true);
@@ -316,6 +324,8 @@ namespace GameService.Services
                     IsQuestionVotingOpen = false,
                     IsTerritoryVotingOpen = false,
                 };
+
+                baseRound.NeutralRound = new NeutralRound();
 
                 foreach(var roundAttackerId in order.UserRoundAttackOrders[i])
                 {

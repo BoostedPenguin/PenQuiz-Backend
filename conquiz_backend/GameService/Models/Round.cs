@@ -29,10 +29,7 @@ namespace GameService.Models
         public RoundStage RoundStage { get; set; }
         public AttackStage AttackStage { get; set; }
         public int GameInstanceId { get; set; }
-        public int? NeutralRoundId { get; set; }
-        public int? PvpRoundId { get; set; }
         public int GameRoundNumber { get; set; }
-        public int QuestionId { get; set; }
         public bool IsTerritoryVotingOpen { get; set; }
         public bool IsQuestionVotingOpen { get; set; }
         public string Description { get; set; }

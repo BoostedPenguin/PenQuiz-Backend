@@ -5,6 +5,11 @@ namespace GameService.Models
 {
     public partial class ObjectTerritory
     {
+        public ObjectTerritory()
+        {
+            NeutralRoundsAttacks = new HashSet<AttackingNeutralTerritory>();
+            PvpRounds = new HashSet<PvpRound>();
+        }
         public int Id { get; set; }
         public int MapTerritoryId { get; set; }
         public int GameInstanceId { get; set; }

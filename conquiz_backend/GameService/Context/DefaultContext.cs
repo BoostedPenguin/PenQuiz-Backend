@@ -306,9 +306,10 @@ namespace GameService.Context
                     .HasForeignKey(d => d.NeutralRoundId)
                     .HasConstraintName("FK__NeuRound__terAtt__8AWDJXCS");
 
+                //hasone parent, with many childs
                 entity.HasOne(d => d.AttackedTerritory)
                     .WithMany(p => p.NeutralRoundsAttacks)
-                    .HasForeignKey(d => d.NeutralRoundId)
+                    .HasForeignKey(d => d.AttackedTerritoryId)
                     .HasConstraintName("FK__attTer__neuAtt__8AJAWDSW");
             });
 

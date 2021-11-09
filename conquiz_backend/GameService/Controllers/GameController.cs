@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Net.Http;
 using GameService.MessageBus;
 using GameService.Dtos;
+using GameService.Context;
 
 namespace GameService.Controllers
 {
@@ -29,12 +30,14 @@ namespace GameService.Controllers
         private readonly IExampleService context;
         private readonly IHttpClientFactory clientFactory;
         private readonly IMessageBusClient messageBus;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
 
-        public GameController(IExampleService _context, IHttpClientFactory clientFactory, IMessageBusClient messageBus)
+        public GameController(IExampleService _context, IHttpClientFactory clientFactory, IMessageBusClient messageBus, IDbContextFactory<DefaultContext> contextFactory)
         {
             context = _context;
             this.clientFactory = clientFactory;
             this.messageBus = messageBus;
+            this.contextFactory = contextFactory;
         }
 
         [HttpGet("contact")]
@@ -52,6 +55,29 @@ namespace GameService.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("test")]
+        public async Task<IActionResult> Test()
+        {
+            try
+            {
+                var db = contextFactory.CreateDbContext();
+                var round = db.NeutralRound.Include(x => x.TerritoryAttackers).FirstOrDefault();
+
+                round.TerritoryAttackers.Add(new AttackingNeutralTerritory()
+                {
+                    AttackerId = 5,
+                });
+                db.Update(round);
+                db.SaveChanges();
+
+                return Ok();
+            }
+            catch(Exception ex)
+            {
+                return BadRequest();
             }
         }
 
