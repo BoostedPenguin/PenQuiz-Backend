@@ -62,11 +62,11 @@ namespace GameService.EventProcessing
             var mapped = mapper.Map<Questions[]>(questionsResponse.QuestionResponses);
             foreach(var receivedQuestion in mapped)
             {
-                var gameRound = gm.Rounds.Where(x => x.Id == receivedQuestion.RoundsId).FirstOrDefault();
+                var gameRound = gm.Rounds.Where(x => x.Id == receivedQuestion.RoundId).FirstOrDefault();
 
                 if(gameRound == null)
                 {
-                    Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundsId}. Doesn't exist.");
+                    Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
                     continue;
                 }
                 gameRound.Question = receivedQuestion;

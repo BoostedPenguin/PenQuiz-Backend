@@ -25,7 +25,7 @@ namespace GameService.Profiles
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.QuestionId, opt => opt.Ignore());
             CreateMap<QuestionResponse, Questions>()
-                .ForMember(dest => dest.RoundsId, org => org.MapFrom(x => x.RoundId))
+                .ForMember(dest => dest.RoundId, org => org.MapFrom(x => x.RoundId))
                 .ForMember(dest => dest.Id, org => org.Ignore());
             CreateMap<Answers, AnswerClientResponse>();
             CreateMap<Questions, QuestionClientResponse>();

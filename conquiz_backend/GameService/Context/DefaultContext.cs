@@ -221,6 +221,11 @@ namespace GameService.Context
                 entity.Property(e => e.Question)
                     .HasColumnName("question")
                     .HasMaxLength(255);
+
+                entity.HasOne(d => d.Round)
+                    .WithOne(x => x.Question)
+                    .HasForeignKey<Questions>(e => e.RoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
             });
 
             modelBuilder.Entity<Round>(entity =>
@@ -257,26 +262,18 @@ namespace GameService.Context
                     .WithMany(p => p.Rounds)
                     .HasForeignKey(d => d.GameInstanceId)
                     .HasConstraintName("FK__Round__gameI__5CD6CB2B");
-
-                entity.HasOne(d => d.NeutralRound)
-                    .WithOne(x => x.Round)
-                    .HasForeignKey<NeutralRound>(e => e.RoundId)
-                    .OnDelete(DeleteBehavior.ClientSetNull);
-
-                entity.HasOne(d => d.PvpRound)
-                    .WithOne(x => x.Round)
-                    .HasForeignKey<PvpRound>(e => e.RoundId)
-                    .OnDelete(DeleteBehavior.ClientSetNull);
-
-                entity.HasOne(d => d.Question)
-                    .WithOne(x => x.Round)
-                    .HasForeignKey<Questions>(e => e.RoundId)
-                    .OnDelete(DeleteBehavior.ClientSetNull);
             });
 
             modelBuilder.Entity<NeutralRound>(entity =>
             {
                 entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.Property(e => e.AttackOrderNumber).HasColumnName("attackOrderNumber").HasDefaultValue(1);
+
+                entity.HasOne(d => d.Round)
+                    .WithOne(x => x.NeutralRound)
+                    .HasForeignKey<NeutralRound>(e => e.RoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
             });
 
             modelBuilder.Entity<AttackingNeutralTerritory>(entity =>
@@ -284,6 +281,8 @@ namespace GameService.Context
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.AttackerId).HasColumnName("attackerId");
+
+                entity.Property(e => e.AttackOrderNumber).HasColumnName("attackOrderNumber").HasDefaultValue(1);
 
                 entity.Property(e => e.AttackerWon)
                     .HasColumnName("attackerWon")
@@ -326,6 +325,11 @@ namespace GameService.Context
                 entity.Property(e => e.WinnerId)
                     .HasColumnName("winnerId")
                     .IsRequired(false);
+
+                entity.HasOne(d => d.Round)
+                    .WithOne(x => x.PvpRound)
+                    .HasForeignKey<PvpRound>(e => e.RoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
 
                 entity.HasOne(d => d.AttackedTerritory)
                     .WithMany(p => p.PvpRounds)

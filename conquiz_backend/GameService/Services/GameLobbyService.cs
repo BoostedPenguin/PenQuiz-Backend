@@ -327,11 +327,13 @@ namespace GameService.Services
 
                 baseRound.NeutralRound = new NeutralRound();
 
+                var attackOrderNumber = 1;
                 foreach(var roundAttackerId in order.UserRoundAttackOrders[i])
                 {
                     baseRound.NeutralRound.TerritoryAttackers.Add(new AttackingNeutralTerritory()
                     {
                         AttackerId = roundAttackerId,
+                        AttackOrderNumber = attackOrderNumber++,
                     });
                 }
 

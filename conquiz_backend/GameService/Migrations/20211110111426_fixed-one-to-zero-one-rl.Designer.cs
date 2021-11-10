@@ -4,14 +4,16 @@ using GameService.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace GameService.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20211110111426_fixed-one-to-zero-one-rl")]
+    partial class fixedonetozeroonerl
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,12 +56,6 @@ namespace GameService.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<int>("AttackOrderNumber")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("attackOrderNumber");
 
                     b.Property<int?>("AttackedTerritoryId")
                         .HasColumnType("int")
@@ -222,12 +218,6 @@ namespace GameService.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<int>("AttackOrderNumber")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("attackOrderNumber");
 
                     b.Property<int>("RoundId")
                         .HasColumnType("int");
@@ -416,6 +406,9 @@ namespace GameService.Migrations
                         .HasColumnName("question");
 
                     b.Property<int>("RoundId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoundsId")
                         .HasColumnType("int");
 
                     b.Property<string>("Type")

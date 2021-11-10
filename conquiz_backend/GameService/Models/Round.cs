@@ -82,6 +82,7 @@ namespace GameService.Models
         }
         public int Id { get; set; }
         public int RoundId { get; set; }
+        public int AttackOrderNumber { get; set; }
 
         public virtual Round Round { get; set; }
         public virtual ICollection<AttackingNeutralTerritory> TerritoryAttackers { get; set; }
@@ -90,6 +91,7 @@ namespace GameService.Models
     public class AttackingNeutralTerritory
     {
         public int Id { get; set; }
+        public int AttackOrderNumber { get; set; }
         public int? AttackedTerritoryId { get; set; }
         public bool? AttackerWon { get; set; }
         public int AttackerId { get; set; }
