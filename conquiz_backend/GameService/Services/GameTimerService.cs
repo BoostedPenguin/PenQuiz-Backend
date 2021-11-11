@@ -205,6 +205,19 @@ namespace GameService.Services
                 .Game_Show_Main_Screen();
         }
 
+        private async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
+        {
+            return await defaultContext.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .Include(x => x.ObjectTerritory)
+                .ThenInclude(x => x.MapTerritory)
+                .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
+        }
+
         private async Task Open_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
@@ -228,7 +241,11 @@ namespace GameService.Services
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker.AttackerId,
-                    GameActionsTime.GetServerActionsTime(ActionState.GAME_START_PREVIEW_TIME) - ServerClientTimeOffset);
+                    8000);
+
+            var fullGame = await GetFullGameInstance(data.GameInstanceId, db);
+            await hubContext.Clients.Group(data.GameLink)
+                .GetGameInstance(fullGame);
 
             // Set next action and interval
             timerWrapper.Data.NextAction = ActionState.CLOSE_PLAYER_ATTACK_VOTING;
@@ -268,11 +285,13 @@ namespace GameService.Services
                 currentAttacker.AttackedTerritoryId = randomTerritory.Id;
 
                 // Set the ObjectTerritory as being attacked currently
-                randomTerritory.IsAttacked = true;
+                randomTerritory.AttackedBy = currentAttacker.AttackerId;
+                db.Update(randomTerritory);
             }
+            var fullGame = await GetFullGameInstance(data.GameInstanceId, db);
 
             // This attacker voting is over, go to next attacker
-            switch(currentRound.NeutralRound.AttackOrderNumber)
+            switch (currentRound.NeutralRound.AttackOrderNumber)
             {
                 case 1:
                 case 2:
@@ -286,7 +305,10 @@ namespace GameService.Services
 
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink).ShowRoundingAttacker(nextAttacker.AttackerId,
-                        GameActionsTime.GetServerActionsTime(ActionState.GAME_START_PREVIEW_TIME) - ServerClientTimeOffset);
+                        8000);
+
+                    await hubContext.Clients.Group(data.GameLink)
+                        .GetGameInstance(fullGame);
 
                     // Set the next timer event
                     timerWrapper.Data.NextAction = ActionState.CLOSE_PLAYER_ATTACK_VOTING;
@@ -300,6 +322,10 @@ namespace GameService.Services
                 case 3:
                     db.Update(currentRound);
                     await db.SaveChangesAsync();
+
+                    await hubContext.Clients.Group(data.GameLink)
+                        .GetGameInstance(fullGame);
+
                     throw new NotImplementedException();
 
                 default:
@@ -308,39 +334,6 @@ namespace GameService.Services
                     
                     return;
             }
-        }
-
-        private async Task Close_MultipleChoice_Natural_Territory_Selecting(TimerWrapper timerWrapper)
-        {
-            var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
-
-            var currentRound = await db.Round
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
-                .FirstOrDefaultAsync();
-
-            currentRound.IsTerritoryVotingOpen = false;
-
-            var notAnswered = currentRound.NeutralRound.TerritoryAttackers
-                    .Where(x => x.AttackedTerritoryId == null).ToList();
-
-            // Assign random territories to people who didn't choose anything.
-            foreach (var userAttack in notAnswered)
-            {
-                var randomTerritory = await mapGeneratorService
-                    .GetRandomMCTerritoryNeutral(userAttack.AttackerId, data.GameInstanceId);
-                
-                // Set this territory as being attacked from this person
-                userAttack.AttackedTerritoryId = randomTerritory.Id;
-
-                // Set the ObjectTerritory as being attacked currently
-                userAttack.AttackedTerritory.IsAttacked = true;
-            }
-            db.Update(currentRound);
-            await db.SaveChangesAsync();
         }
 
         private async Task Show_MultipleChoice_Screen(TimerWrapper timerWrapper, bool isNeutral)
@@ -425,7 +418,7 @@ namespace GameService.Services
                 if (isThisPlayerAnswerCorrect == null)
                 {
                     p.AttackerWon = false;
-                    p.AttackedTerritory.IsAttacked = false;
+                    p.AttackedTerritory.AttackedBy = null;
                     p.AttackedTerritory.TakenBy = null;
                     continue;
                 }
@@ -439,14 +432,14 @@ namespace GameService.Services
 
                     // Player answered correctly, he gets the territory
                     p.AttackerWon = true;
-                    p.AttackedTerritory.IsAttacked = false;
+                    p.AttackedTerritory.AttackedBy = null;
                     p.AttackedTerritory.TakenBy = p.AttackerId;
                 }
                 else
                 {
                     // Player answered incorrecly, release isattacked lock on objterritory
                     p.AttackerWon = false;
-                    p.AttackedTerritory.IsAttacked = false;
+                    p.AttackedTerritory.AttackedBy = null;
                     p.AttackedTerritory.TakenBy = null;
                 }
             }
@@ -485,7 +478,7 @@ namespace GameService.Services
             {
                 // Player answered incorrecly, release isattacked lock on objterritory
                 currentRound.PvpRound.WinnerId = currentRound.PvpRound.DefenderId;
-                currentRound.PvpRound.AttackedTerritory.IsAttacked = false;
+                currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
             }
             else
             {
@@ -500,7 +493,7 @@ namespace GameService.Services
                 {
                     // Player answered incorrecly, release isattacked lock on objterritory
                     currentRound.PvpRound.WinnerId = currentRound.PvpRound.DefenderId;
-                    currentRound.PvpRound.AttackedTerritory.IsAttacked = false;
+                    currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
                 }
                 else
                 {
@@ -514,7 +507,7 @@ namespace GameService.Services
                     {
                         // Player answered incorrecly, release isattacked lock on objterritory
                         currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
-                        currentRound.PvpRound.AttackedTerritory.IsAttacked = false;
+                        currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
                         currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
                     }
                     else

@@ -77,7 +77,7 @@ namespace GameService.Services
                 .Where(x => 
                     x.GameInstanceId == gameInstanceId &&
                     x.TakenBy == null && 
-                    !x.IsAttacked)
+                    x.AttackedBy == null)
                 .ToListAsync();
 
             var matchingBorders = untakenBorder.Where(x => allPlayerBorders.Any(y => x.MapTerritoryId == y.Id)).ToList();

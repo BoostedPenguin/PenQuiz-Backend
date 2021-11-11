@@ -162,7 +162,7 @@ namespace GameService.Context
                 
                 entity.Property(e => e.TerritoryScore).HasColumnName("territoryScore").HasDefaultValue(0);
 
-                entity.Property(e => e.IsAttacked).HasColumnName("isAttacked").HasDefaultValue(false);
+                entity.Property(e => e.AttackedBy).HasColumnName("attackedBy").HasDefaultValue(null);
 
                 entity.HasOne(d => d.GameInstance)
                     .WithMany(p => p.ObjectTerritory)
