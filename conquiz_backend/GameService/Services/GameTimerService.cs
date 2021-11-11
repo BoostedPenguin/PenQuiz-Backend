@@ -16,15 +16,30 @@ using GameService.Dtos.SignalR_Responses;
 
 namespace GameService.Services
 {
-    public interface IGameTimer
+    public interface IGameTimerService
     {
         void OnGameStart(GameInstance gm);
+    }
+
+    public enum ActionState
+    {
+        GAME_START_PREVIEW_TIME,
+
+        // Rounding
+        OPEN_PLAYER_ATTACK_VOTING,
+        CLOSE_PLAYER_ATTACK_VOTING,
+
+
+        // Open MC Question
+        SHOW_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SCREEN,
+        OPEN_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SELECTING,
+        CLOSE_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SELECTING,
     }
 
     /// <summary>
     /// Handles all game instance timers and callbacks the appropriate GameControlService functions
     /// </summary>
-    public class GameTimer : DataService<DefaultModel>, IGameTimer
+    public class GameTimerService : DataService<DefaultModel>, IGameTimerService
     {
         
         private readonly IDbContextFactory<DefaultContext> contextFactory;
@@ -35,8 +50,8 @@ namespace GameService.Services
 
         // GameId<Game> | CurrentTimer 
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
-        
-        public GameTimer(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        private readonly int ServerClientTimeOffset = 1000;
+        public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
@@ -44,14 +59,30 @@ namespace GameService.Services
             this.mapper = mapper;
             this.mapGeneratorService = mapGeneratorService;
         }
-        public enum NumberQuestionActions
+        public class TimerWrapper : Timer
         {
-            SHOW_SCREEN,
-            START_VOTING,
-            END_VOTING,
-            SHOW_RESULTS,
-            PREVIEW_RESULTS,
-            CLOSE_SCREEN
+            public TimerData Data { get; set; }
+
+            public TimerWrapper(int gameInstanceId, string gameLink)
+            {
+                Data = new TimerData(gameInstanceId, gameLink);
+            }
+
+            public class TimerData
+            {
+                public TimerData(int gameInstanceId, string gameLink)
+                {
+                    GameInstanceId = gameInstanceId;
+                    GameLink = gameLink;
+                }
+                public int GameInstanceId { get; set; }
+
+
+                // This is the invitation link which also acts as a group ID for signalR
+                public string GameLink { get; set; }
+                public int CurrentGameRoundNumber { get; set; }
+                public ActionState NextAction { get; set; }
+            }
         }
 
         public enum MultipleChoiceQuestionActions
@@ -73,48 +104,28 @@ namespace GameService.Services
             CLOSE_SCREEN
         }
 
-        public enum States
+        public enum TestStates
         {
-            //NUMBER_QUESTION,
-            //MULTIPLE_CHOICE_QUESTION,
-            //ATTACKING_NEUTRAL_TERRITORY,
+            GAME_START_PREVIEW_TIME,
+
+            // 1st round
+            OPEN_FIRST_PLAYER_ATTACK_VOTING,
+            CLOSE_FIRST_PLAYER_ATTACK_VOTING,
+            // Game preview = 3s
+            OPEN_SECOND_PLAYER_ATTACK_VOTING,
+            CLOSE_SECOND_PLAYER_ATTACK_VOTING,
+            // Game preview = 3s
+            OPEN_THIRD_PLAYER_ATTACK_VOTING,
+            CLOSE_THIRD_PLAYER_ATTACK_VOTING,
+            // Game preview = 3s
 
 
-            SHOW_SCREEN,
-            START_VOTING,
-            END_VOTING,
-            SHOW_RESULTS,
-            PREVIEW_RESULTS,
-            CLOSE_SCREEN
-        }
-        public class TimerWrapper : Timer
-        {
-            public TimerData Data { get; set; }
-
-            public TimerWrapper(int gameInstanceId, string gameLink)
-            {
-                Data = new TimerData(gameInstanceId, gameLink);
-            }
-
-
-            public class TimerData
-            {
-                public TimerData(int gameInstanceId, string gameLink)
-                {
-                    GameInstanceId = gameInstanceId;
-                    GameLink = gameLink;
-                }
-                public int GameInstanceId { get; set; }
-
-
-                // This is the invitation link which also acts as a group ID for signalR
-                public string GameLink { get; set; }
-                public int CurrentGameRoundNumber { get; set; }
-                public States NextAction { get; set; }
-            }
+            // Open MC Question
+            SHOW_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SCREEN,
+            OPEN_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SELECTING,
+            CLOSE_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SELECTING,
         }
 
-        const int START_PREVIEW_TIME = 5000;
 
         public void OnGameStart(GameInstance gm)
         {
@@ -124,11 +135,12 @@ namespace GameService.Services
             var actionTimer = new TimerWrapper(gm.Id, gm.InvitationLink)
             {
                 AutoReset = false,
-                Interval = START_PREVIEW_TIME,
+                Interval = 500,
             };
-
-            //TODO
-            actionTimer.Data.NextAction = States.CLOSE_SCREEN;
+            
+            // Default starter values
+            actionTimer.Data.NextAction = ActionState.GAME_START_PREVIEW_TIME;
+            actionTimer.Data.CurrentGameRoundNumber = 1;
 
             GameTimers.Add(actionTimer);
 
@@ -137,15 +149,164 @@ namespace GameService.Services
             actionTimer.Start();
         }
 
-        //TODO
-        private void ActionTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private async void ActionTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            // Stop the timer when it elapses.
+            // Start it again after an action is complete
             var timer = (TimerWrapper)sender;
+            timer.Stop();
 
             switch (timer.Data.NextAction)
             {
-                case States.CLOSE_SCREEN:
+                case ActionState.GAME_START_PREVIEW_TIME:
+                    
+                    // Send request to clients to stay on main screen for preview
+                    await Game_Preview_Time(timer);
+
+                    // Set next action
+                    timer.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
+
+                    // Set time until next action *call case state*
+                    timer.Interval = GameActionsTime.GetServerActionsTime(ActionState.GAME_START_PREVIEW_TIME);
+                    
+                    // Restart timer
+                    timer.Start();
+                    return;
+                case ActionState.OPEN_PLAYER_ATTACK_VOTING:
+
+                    // Send request to clients to open the multiple choice voting
+                    // And show whos attacking turn it is
+                    await Open_MultipleChoice_Attacker_Territory_Selecting(timer);
+                    return;
+
+                case ActionState.CLOSE_PLAYER_ATTACK_VOTING:
+                    await Close_MultipleChoice_Attacker_Territory_Selecting(timer);
+                    return;
+            }
+        }
+
+        private async Task UnexpectedCriticalError(TimerWrapper timerWrapper, string message = "Unhandled game exception")
+        {
+            var db = contextFactory.CreateDbContext();
+            var gm = await db.GameInstance.FirstOrDefaultAsync(x => x.Id == timerWrapper.Data.GameInstanceId);
+            gm.GameState = GameState.CANCELED;
+
+            await db.SaveChangesAsync();
+
+            await hubContext.Clients.Group(timerWrapper.Data.GameLink).LobbyCanceled("Unexpected error occured. Game closed.");
+            GameTimers.Remove(timerWrapper);
+            throw new Exception(message);
+        }
+
+        private async Task Game_Preview_Time(TimerWrapper timerWrapper)
+        {
+            var data = timerWrapper.Data;
+            await hubContext.Clients.Group(data.GameLink)
+                .Game_Show_Main_Screen();
+        }
+
+        private async Task Open_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
+        {
+            var data = timerWrapper.Data;
+            using var db = contextFactory.CreateDbContext();
+
+            var currentRound = await db.Round
+                .Include(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            // Open this round for territory voting
+            currentRound.IsTerritoryVotingOpen = true;
+
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+
+            var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
+                .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
+
+            await hubContext.Clients.Group(data.GameLink)
+                .ShowRoundingAttacker(currentAttacker.AttackerId,
+                    GameActionsTime.GetServerActionsTime(ActionState.GAME_START_PREVIEW_TIME) - ServerClientTimeOffset);
+
+            // Set next action and interval
+            timerWrapper.Data.NextAction = ActionState.CLOSE_PLAYER_ATTACK_VOTING;
+            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING);
+
+            timerWrapper.Start();
+        }
+
+        /// <summary>
+        /// When a player's timeframe for attacking neutral territory expires
+        /// Close off the voting for him. If he hasn't selected anything, give him a random selected territory
+        /// Start next player territory select timer
+        /// </summary>
+        /// <returns></returns>
+        private async Task Close_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
+        {
+            var data = timerWrapper.Data;
+            using var db = contextFactory.CreateDbContext();
+
+            var currentRound = await db.Round
+                .Include(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
+                .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
+
+            // Player didn't select anything, assign him a random UNSELECTED territory
+            if(currentAttacker.AttackedTerritoryId == null)
+            {
+                var randomTerritory =
+                    await mapGeneratorService.GetRandomMCTerritoryNeutral(currentAttacker.AttackerId, data.GameInstanceId);
+
+                // Set this territory as being attacked from this person
+                currentAttacker.AttackedTerritoryId = randomTerritory.Id;
+
+                // Set the ObjectTerritory as being attacked currently
+                randomTerritory.IsAttacked = true;
+            }
+
+            // This attacker voting is over, go to next attacker
+            switch(currentRound.NeutralRound.AttackOrderNumber)
+            {
+                case 1:
+                case 2:
+                    var newAttackorderNumber = ++currentRound.NeutralRound.AttackOrderNumber;
+                    var nextAttacker = 
+                        currentRound.NeutralRound.TerritoryAttackers
+                        .First(x => x.AttackOrderNumber == newAttackorderNumber);
+
+                    db.Update(currentRound);
+                    await db.SaveChangesAsync();
+
+                    // Notify the group who is the next attacker
+                    await hubContext.Clients.Group(data.GameLink).ShowRoundingAttacker(nextAttacker.AttackerId,
+                        GameActionsTime.GetServerActionsTime(ActionState.GAME_START_PREVIEW_TIME) - ServerClientTimeOffset);
+
+                    // Set the next timer event
+                    timerWrapper.Data.NextAction = ActionState.CLOSE_PLAYER_ATTACK_VOTING;
+                    timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING);
+
+                    timerWrapper.Start();
+
                     break;
+
+                // This was the last attacker, show a preview of all territories now, and then show the questions
+                case 3:
+                    db.Update(currentRound);
+                    await db.SaveChangesAsync();
+                    throw new NotImplementedException();
+
+                default:
+                    await UnexpectedCriticalError(timerWrapper, 
+                        $"Unexpected attackordernumber value: {currentRound.NeutralRound.AttackOrderNumber}");
+                    
+                    return;
             }
         }
 
@@ -378,7 +539,6 @@ namespace GameService.Services
 
             await hubContext.Clients.Group(data.GameLink).PreviewResult(qResult);
 
-            timerWrapper.Data.NextAction = States.CLOSE_SCREEN;
             timerWrapper.Interval = 3000;
             timerWrapper.Start();
         }

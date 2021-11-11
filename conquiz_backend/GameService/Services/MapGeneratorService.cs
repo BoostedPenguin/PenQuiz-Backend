@@ -77,24 +77,20 @@ namespace GameService.Services
                 .Where(x => 
                     x.GameInstanceId == gameInstanceId &&
                     x.TakenBy == null && 
-                    !x.IsAttacked && 
-                    allPlayerBorders.Any(y => y.Id == x.MapTerritoryId))
+                    !x.IsAttacked)
                 .ToListAsync();
+
+            var matchingBorders = untakenBorder.Where(x => allPlayerBorders.Any(y => x.MapTerritoryId == y.Id)).ToList();
 
             // In case no border territory is available,
             // you have to attack a random available one even if u dont border it
-            if(untakenBorder.Count() == 0)
+            if (matchingBorders.Count() > 0)
             {
-                return untakenBorder[r.Next(0, untakenBorder.Count())];
+                return matchingBorders[r.Next(0, matchingBorders.Count())];
             }
             else
             {
-                var availableNonBorders = await db.ObjectTerritory
-                    .Include(x => x.MapTerritory)
-                    .Where(x => x.GameInstanceId == gameInstanceId && x.TakenBy == null && !x.IsAttacked)
-                    .ToListAsync();
-
-                return availableNonBorders[r.Next(0, untakenBorder.Count())];
+                return untakenBorder[r.Next(0, untakenBorder.Count())];
             }
         }
 

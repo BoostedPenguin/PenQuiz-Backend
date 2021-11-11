@@ -20,11 +20,11 @@ namespace GameService.Services
     /// </summary>
     public class GameControlService : IGameControlService
     {
-        private readonly IGameTimer gameTimer;
+        private readonly IGameTimerService gameTimer;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
 
-        public GameControlService(IGameTimer gameTimer, IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory)
+        public GameControlService(IGameTimerService gameTimer, IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory)
         {
             this.gameTimer = gameTimer;
             this.httpContextAccessor = httpContextAccessor;

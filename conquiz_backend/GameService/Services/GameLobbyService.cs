@@ -269,8 +269,7 @@ namespace GameService.Services
             a.Update(gameInstance);
             try
             {
-            await a.SaveChangesAsync();
-
+                await a.SaveChangesAsync();
             }
             catch(Exception ex)
             {

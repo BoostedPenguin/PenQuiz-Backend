@@ -25,7 +25,21 @@ namespace GameService.Hubs
         Task GameException(string message);
         Task NavigateToLobby();
         Task NavigateToGame();
+
+
+        // Client game actions
+        // Send by user
         Task PlayerAnsweredMCQuestion();
+
+
+        // Server game actions
+        // Controlled by timer
+
+        // We don't need to explicitly tell how much time to display something
+        // Because it is controlled by server timer push events
+        // Things that require displaying of a timer do require ex. time to vote on something
+        Task Game_Show_Main_Screen();
+        Task ShowRoundingAttacker(int userId, int msTimeForAction);
 
         Task CloseQuestionScreen();
         Task PreviewResult(QuestionResultResponse questions);
@@ -37,13 +51,13 @@ namespace GameService.Hubs
     [Authorize]
     public class GameHub : Hub<IGameHub>
     {
-        private readonly IGameTimer timer;
+        private readonly IGameTimerService timer;
         private readonly IGameService gameService;
         private readonly IGameLobbyService gameLobbyService;
         private readonly IGameControlService gameControlService;
         private readonly IHttpContextAccessor httpContext;
 
-        public GameHub(IGameTimer timer, IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService, IGameControlService gameControlService)
+        public GameHub(IGameTimerService timer, IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService, IGameControlService gameControlService)
         {
             this.timer = timer;
             this.gameService = gameService;
@@ -192,6 +206,8 @@ namespace GameService.Hubs
                 await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
 
                 await Clients.Group(gameInstance.InvitationLink).GameStarting();
+
+                timer.OnGameStart(gameInstance);
             }
             catch(Exception ex)
             {

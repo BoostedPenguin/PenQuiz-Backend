@@ -57,7 +57,7 @@ namespace GameService
 
             services.AddSingleton<IGameLobbyService, GameLobbyService>();
 
-            services.AddSingleton<IGameTimer, GameTimer>();
+            services.AddSingleton<IGameTimerService, GameTimerService>();
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
