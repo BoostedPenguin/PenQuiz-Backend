@@ -325,8 +325,8 @@ namespace GameService.Services
 
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);
-
-                    throw new NotImplementedException();
+                    break;
+                    //throw new NotImplementedException();
 
                 default:
                     await UnexpectedCriticalError(timerWrapper, 
