@@ -19,7 +19,7 @@ namespace GameService.Context
 
             var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
             
-            if (isProd)
+            if (true)
             {
                 ApplyMigrations(contextFactory);
             }

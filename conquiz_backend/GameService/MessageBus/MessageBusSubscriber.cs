@@ -1,5 +1,6 @@
 ﻿using GameService.EventProcessing;
 using GameService.Helpers;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
@@ -17,15 +18,16 @@ namespace GameService.MessageBus
     {
         private readonly IEventProcessor eventProcessor;
         private readonly IOptions<AppSettings> appSettings;
+        private readonly IWebHostEnvironment env;
         private  IConnection connection;
         private IModel channel;
         private string queue;
 
-        public MessageBusSubscriber(IEventProcessor eventProcessor, IOptions<AppSettings> appSettings)
+        public MessageBusSubscriber(IEventProcessor eventProcessor, IOptions<AppSettings> appSettings, IWebHostEnvironment env)
         {
             this.eventProcessor = eventProcessor;
             this.appSettings = appSettings;
-
+            this.env = env;
             InitRabbbitMQ();
         }
 
@@ -42,7 +44,15 @@ namespace GameService.MessageBus
             queue = channel.QueueDeclare().QueueName;
             
             channel.QueueBind(queue, "trigger", "");
-            channel.QueueBind(queue, "question_events", "question_response");
+
+            if(env.IsProduction())
+            {
+                channel.QueueBind(queue, "question_events", "question_response");
+            }
+            else
+            {
+                channel.QueueBind(queue, "dev_question_events", "dev_question_response");
+            }
 
             Console.WriteLine("--> Listening on the Message Bus..");
 

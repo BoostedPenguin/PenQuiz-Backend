@@ -205,7 +205,7 @@ namespace GameService.Services
                 .Game_Show_Main_Screen();
         }
 
-        private async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
+        public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
         {
             return await defaultContext.GameInstance
                 .Include(x => x.Participants)
@@ -241,7 +241,7 @@ namespace GameService.Services
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker.AttackerId,
-                    8000);
+                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
 
             var fullGame = await GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
@@ -305,7 +305,7 @@ namespace GameService.Services
 
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink).ShowRoundingAttacker(nextAttacker.AttackerId,
-                        8000);
+                        GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
 
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);

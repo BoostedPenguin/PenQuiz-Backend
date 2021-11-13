@@ -26,6 +26,7 @@ namespace GameService.Models
     public class Round
     {
         public int Id { get; set; }
+        [Obsolete]
         public RoundStage RoundStage { get; set; }
         public AttackStage AttackStage { get; set; }
         public int GameInstanceId { get; set; }

@@ -69,8 +69,7 @@ namespace GameService.EventProcessing
                     Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
                     continue;
                 }
-                gameRound.Question = receivedQuestion;
-                db.Update(gameRound);
+                db.AddAsync(receivedQuestion);
             }
 
             db.SaveChanges();

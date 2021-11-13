@@ -324,7 +324,10 @@ namespace GameService.Services
                     IsTerritoryVotingOpen = false,
                 };
 
-                baseRound.NeutralRound = new NeutralRound();
+                baseRound.NeutralRound = new NeutralRound()
+                {
+                    AttackOrderNumber = 1,
+                };
 
                 var attackOrderNumber = 1;
                 foreach(var roundAttackerId in order.UserRoundAttackOrders[i])

@@ -54,6 +54,15 @@ namespace GameService.Services
     }
 
     [Serializable]
+    public class BorderSelectedGameException : GameException
+    {
+        public BorderSelectedGameException(string message) : base(message)
+        {
+
+        }
+    }
+
+    [Serializable]
     public class JoiningGameException : GameException
     {
         public JoiningGameException(string message) : base(message)
@@ -98,13 +107,9 @@ namespace GameService.Services
             // Checks if there are any in-progress games and tries to put him back in that state
             using var db = contextFactory.CreateDbContext();
             var userId = httpContextAccessor.GetCurrentUserId();
-
             var ongoingGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
-                .Include(x => x.ObjectTerritory)
-                .ThenInclude(x => x.MapTerritory)
-                .Include(x => x.Rounds)
                 .Where(x => x.GameState == GameState.IN_PROGRESS && x.Participants
                     .Any(y => y.PlayerId == userId))
                 .ToListAsync();
@@ -127,6 +132,8 @@ namespace GameService.Services
                 
                 db.Update(thisUser);
                 await db.SaveChangesAsync();
+
+                var gm = await GameTimerService.GetFullGameInstance(currentGameInstance.Id, db);
                 
                 return currentGameInstance;
             }

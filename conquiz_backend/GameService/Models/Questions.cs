@@ -12,7 +12,7 @@ namespace GameService.Models
 
         public int Id { get; set; }
         public string Question { get; set; }
-        public int RoundId { get; set; }
+        public int? RoundId { get; set; }
         public string Type { get; set; }
 
         public virtual ICollection<Answers> Answers { get; set; }

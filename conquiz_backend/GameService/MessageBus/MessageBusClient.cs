@@ -1,5 +1,7 @@
 ﻿using GameService.Dtos;
 using GameService.Helpers;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System;
@@ -20,8 +22,9 @@ namespace GameService.MessageBus
     {
         private readonly IConnection connection;
         private readonly IModel channel;
-
-        public MessageBusClient(IOptions<AppSettings> appSettings)
+        private readonly IWebHostEnvironment env;
+        private readonly string QuestionsExchange;
+        public MessageBusClient(IOptions<AppSettings> appSettings, IWebHostEnvironment env)
         {
             var factory = new ConnectionFactory()
             {
@@ -34,7 +37,16 @@ namespace GameService.MessageBus
                 connection = factory.CreateConnection();
                 channel = connection.CreateModel();
 
-                channel.ExchangeDeclare(exchange: "question_events", type: ExchangeType.Direct);
+                if(env.IsProduction())
+                {
+                    QuestionsExchange = "question_events";
+                }
+                else
+                {
+                    QuestionsExchange = "dev_question_events";
+                }
+
+                channel.ExchangeDeclare(exchange: QuestionsExchange, type: ExchangeType.Direct);
 
                 connection.ConnectionShutdown += Connection_ConnectionShutdown;
 
@@ -44,6 +56,8 @@ namespace GameService.MessageBus
             {
                 Console.WriteLine($"--> Could not connect to the Message Bus: {ex.Message}");
             }
+
+            this.env = env;
         }
 
         private void Connection_ConnectionShutdown(object sender, ShutdownEventArgs e)
@@ -58,7 +72,15 @@ namespace GameService.MessageBus
             if (connection.IsOpen)
             {
                 Console.WriteLine("--> RabbitMQ Connection Open, sending message...");
-                SendMessage(message, "question_request");
+
+                if(env.IsProduction())
+                {
+                    SendMessage(message, "question_request");
+                }
+                else
+                {
+                    SendMessage(message, "dev_question_request");
+                }
             }
             else
             {
@@ -70,7 +92,7 @@ namespace GameService.MessageBus
         {
             var body = Encoding.UTF8.GetBytes(message);
 
-            channel.BasicPublish(exchange: "question_events",
+            channel.BasicPublish(exchange: QuestionsExchange,
                             routingKey: rk,
                             basicProperties: null,
                             body: body);

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using QuestionService.EventProcessing;
 using RabbitMQ.Client;
@@ -16,15 +17,17 @@ namespace QuestionService.MessageBus
     {
         private readonly IEventProcessor eventProcessor;
         private readonly IOptions<AppSettings> appSettings;
+        private readonly IWebHostEnvironment env;
         private IConnection connection;
         private IModel channel;
         private string queue;
+        private string QuestionsExchange;
 
-        public MessageBusSubscriber(IEventProcessor eventProcessor, IOptions<AppSettings> appSettings)
+        public MessageBusSubscriber(IEventProcessor eventProcessor, IOptions<AppSettings> appSettings, IWebHostEnvironment env)
         {
             this.eventProcessor = eventProcessor;
             this.appSettings = appSettings;
-
+            this.env = env;
             InitRabbbitMQ();
         }
 
@@ -37,11 +40,29 @@ namespace QuestionService.MessageBus
             };
             this.connection = factory.CreateConnection();
             this.channel = connection.CreateModel();
-            channel.ExchangeDeclare(exchange: "question_events", type: ExchangeType.Direct);
-            queue = channel.QueueDeclare().QueueName;
 
-            // List all "event types" that you're interested in to listen to
-            channel.QueueBind(queue, "question_events", "question_request");
+            if (env.IsProduction())
+            {
+                QuestionsExchange = "question_events";
+
+                channel.ExchangeDeclare(exchange: QuestionsExchange, type: ExchangeType.Direct);
+                queue = channel.QueueDeclare().QueueName;
+
+                // List all "event types" that you're interested in to listen to
+                channel.QueueBind(queue, QuestionsExchange, "question_request");
+            }
+            else
+            {
+                QuestionsExchange = "dev_question_events";
+
+                channel.ExchangeDeclare(exchange: QuestionsExchange, type: ExchangeType.Direct);
+                queue = channel.QueueDeclare().QueueName;
+
+                // List all "event types" that you're interested in to listen to
+                channel.QueueBind(queue, QuestionsExchange, "dev_question_request");
+            }
+
+
 
             Console.WriteLine("--> Listening on the Message Bus..");
 

@@ -25,6 +25,7 @@ namespace GameService.Services
         Task<MapTerritory[]> GetBorders(int territoryId);
         Task<int> GetAmountOfTerritories(int mapId);
         Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId);
+        Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -58,10 +59,16 @@ namespace GameService.Services
             // Do something
         }
 
-        public async Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId)
+        private class UserBorderInformation
         {
-            using var db = contextFactory.CreateDbContext();
+            public List<ObjectTerritory> UserTerritories { get; set; }
+            public List<ObjectTerritory> UntakenBorders { get; set; }
+            public List<ObjectTerritory> MatchingBorders { get; set; }
+            public MapTerritory[] AllPlayerBorders { get; set; }
+        }
 
+        private async Task<UserBorderInformation> GetBorderInformation(DefaultContext db, int userId, int gameInstanceId, bool takenByCheck = true)
+        {
             var userTerritories = await db.ObjectTerritory
                 .Include(x => x.MapTerritory)
                 .Where(x => x.GameInstanceId == gameInstanceId && x.TakenBy == userId)
@@ -72,25 +79,83 @@ namespace GameService.Services
             // So in case all takenterritories don't border anything, you need a random select
             var allPlayerBorders = await GetBorders(userTerritories.Select(x => x.MapTerritoryId).ToArray());
 
-            var untakenBorder = await db.ObjectTerritory
+            List<ObjectTerritory> untakenBorder;
+
+            // Takes into account takenBy to ensure that the territory doesnt belong to anyone
+            if(takenByCheck)
+            {
+                untakenBorder = await db.ObjectTerritory
                 .Include(x => x.MapTerritory)
-                .Where(x => 
+                .Where(x =>
                     x.GameInstanceId == gameInstanceId &&
-                    x.TakenBy == null && 
+                    x.TakenBy == null &&
                     x.AttackedBy == null)
                 .ToListAsync();
-
-            var matchingBorders = untakenBorder.Where(x => allPlayerBorders.Any(y => x.MapTerritoryId == y.Id)).ToList();
-
-            // In case no border territory is available,
-            // you have to attack a random available one even if u dont border it
-            if (matchingBorders.Count() > 0)
-            {
-                return matchingBorders[r.Next(0, matchingBorders.Count())];
             }
             else
             {
-                return untakenBorder[r.Next(0, untakenBorder.Count())];
+                untakenBorder = await db.ObjectTerritory
+                    .Include(x => x.MapTerritory)
+                    .Where(x =>
+                        x.GameInstanceId == gameInstanceId &&
+                        x.AttackedBy == null)
+                    .ToListAsync();
+            }
+
+            var matchingBorders = untakenBorder.Where(x => allPlayerBorders.Any(y => x.MapTerritoryId == y.Id)).ToList();
+
+            return new UserBorderInformation()
+            {
+                UserTerritories = userTerritories,
+                AllPlayerBorders = allPlayerBorders,
+                UntakenBorders = untakenBorder,
+                MatchingBorders = matchingBorders
+            };
+        }
+
+        /// <summary>
+        /// Needs to handle both neutral territory attacking and pvp
+        /// Do NOT check for if the territory is taken, we don't care if it is, we check later
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="userId"></param>
+        /// <param name="gameInstanceId"></param>
+        /// <param name="selectedMapTerritoryId"></param>
+        /// <returns></returns>
+        public async Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId)
+        {
+            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, false);
+
+            var selectedTerritory = userBorderInfo
+                .MatchingBorders
+                .FirstOrDefault(x => x.MapTerritoryId == selectedMapTerritoryId);
+
+            // The selected map territory isn't a border with the user's current territories
+            if(selectedTerritory == null)
+            {
+                return null;
+            }
+            // The selected map territory is a border with the user's current territories
+            else
+            {
+                // The selected territory is untaken
+                return selectedTerritory;
+            }
+        }
+
+        public async Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId);
+
+            if (userBorderInfo.MatchingBorders.Count() > 0)
+            {
+                return userBorderInfo.MatchingBorders[r.Next(0, userBorderInfo.MatchingBorders.Count())];
+            }
+            else
+            {
+                return userBorderInfo.UntakenBorders[r.Next(0, userBorderInfo.UntakenBorders.Count())];
             }
         }
 

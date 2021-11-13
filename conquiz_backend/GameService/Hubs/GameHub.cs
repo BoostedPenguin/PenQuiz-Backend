@@ -23,6 +23,7 @@ namespace GameService.Hubs
         Task PersonLeftGame(int userId);
         Task PlayerRejoined(int userId);
         Task GameException(string message);
+        Task BorderSelectedGameException (string message);
         Task NavigateToLobby();
         Task NavigateToGame();
 
@@ -153,6 +154,24 @@ namespace GameService.Hubs
                 await RemoveCurrentPersonFromGame();
             }
             catch(Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+        public async Task SelectTerritory(string mapTerritoryName)
+        {
+            try
+            {
+                var gm = await gameControlService.SelectTerritory(mapTerritoryName);
+
+                await Clients.Group(gm.InvitationLink).GetGameInstance(gm);
+            }
+            catch (BorderSelectedGameException ex)
+            {
+                await Clients.Caller.BorderSelectedGameException(ex.Message);
+            }
+            catch (Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }
