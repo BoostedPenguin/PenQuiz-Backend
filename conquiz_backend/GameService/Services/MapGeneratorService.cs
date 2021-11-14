@@ -130,10 +130,26 @@ namespace GameService.Services
                 .MatchingBorders
                 .FirstOrDefault(x => x.MapTerritoryId == selectedMapTerritoryId);
 
+
             // The selected map territory isn't a border with the user's current territories
-            if(selectedTerritory == null)
+            if (selectedTerritory == null)
             {
-                return null;
+                // Untaken borders are all UNTAKEN or UNATTACKED territories on the map
+                if (userBorderInfo.MatchingBorders.Count > 1)
+                {
+                    // There are available borders next to the user taken territories, but the selected one 
+                    // Isn't one of them
+                    throw new BorderSelectedGameException("Attack all neightbour territories first");
+                }
+                else
+                {
+                    // If there arent any available matching borders and if the selected one is
+                    // Available (not attacked)
+                    var notConnectedSelectedTerritory = userBorderInfo.UntakenBorders
+                        .FirstOrDefault(x => x.MapTerritoryId == selectedMapTerritoryId);
+
+                    return notConnectedSelectedTerritory;
+                }
             }
             // The selected map territory is a border with the user's current territories
             else
