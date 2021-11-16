@@ -44,8 +44,7 @@ namespace GameService.Hubs
 
         Task CloseQuestionScreen();
         Task PreviewResult(QuestionResultResponse questions);
-        Task GetRoundQuestion(QuestionClientResponse question);
-        Task CanPerformActions();
+        Task GetRoundQuestion(QuestionClientResponse question, int msTimeForAction);
 
         Task TESTING(string message);
     }

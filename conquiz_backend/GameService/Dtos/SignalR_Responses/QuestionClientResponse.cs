@@ -7,10 +7,16 @@ namespace GameService.Dtos.SignalR_Responses
 {
     public class QuestionClientResponse
     {
+        public bool IsNeutral { get; set; }
         public int Id { get; set; }
         public string Question { get; set; }
         public string Type { get; set; }
         public List<AnswerClientResponse> Answers { get; set; }
+
+
+        public Participants[] Participants { get; set; }
+        public int AttackerId { get; set; }
+        public int DefenderId { get; set; }
     }
 
     public class AnswerClientResponse

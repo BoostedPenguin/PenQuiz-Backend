@@ -31,9 +31,8 @@ namespace GameService.Services
 
 
         // Open MC Question
-        SHOW_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SCREEN,
-        OPEN_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SELECTING,
-        CLOSE_MULTIPLE_CHOICE_NEUTRAL_TERRITORY_SELECTING,
+        SHOW_MULTIPLE_CHOICE_QUESTION,
+        END_MULTIPLE_CHOICE_QUESTION,
     }
 
     /// <summary>
@@ -182,6 +181,10 @@ namespace GameService.Services
                 case ActionState.CLOSE_PLAYER_ATTACK_VOTING:
                     await Close_MultipleChoice_Attacker_Territory_Selecting(timer);
                     return;
+
+                case ActionState.SHOW_MULTIPLE_CHOICE_QUESTION:
+                    await Show_MultipleChoice_Screen(timer, true);
+                    return;
             }
         }
 
@@ -320,11 +323,17 @@ namespace GameService.Services
 
                 // This was the last attacker, show a preview of all territories now, and then show the questions
                 case 3:
+                    currentRound.IsTerritoryVotingOpen = false;
                     db.Update(currentRound);
                     await db.SaveChangesAsync();
 
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);
+
+
+                    timerWrapper.Interval = 3000;
+                    timerWrapper.Data.NextAction = ActionState.SHOW_MULTIPLE_CHOICE_QUESTION;
+                    timerWrapper.Start();
                     break;
                     //throw new NotImplementedException();
 
@@ -349,8 +358,10 @@ namespace GameService.Services
             var question = await db.Questions
                 .Include(x => x.Answers)
                 .Include(x => x.Round)
-                .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber
-                    && x.Round.GameInstanceId == data.GameInstanceId)
+                .ThenInclude(x => x.GameInstance)
+                .ThenInclude(x => x.Participants)
+                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
+                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
                 .FirstOrDefaultAsync();
 
 
@@ -363,29 +374,47 @@ namespace GameService.Services
 
             var response = mapper.Map<QuestionClientResponse>(question);
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
-
             // If the round is a neutral one, then everyone can attack
             if(isNeutral)
             {
-                await hubContext.Clients.Group(data.GameLink).CanPerformActions();
+                response.IsNeutral = true;
+                response.Participants = question.Round.GameInstance.Participants.ToArray();
+
+                await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
+                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
             }
             else
             {
+                response.IsNeutral = false;
+
                 var participants = await db.PvpRounds
                     .Include(x => x.Round)
+                    .ThenInclude(x => x.GameInstance)
+                    .ThenInclude(x => x.Participants)
                     .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
                         x.Round.GameInstanceId == data.GameInstanceId)
                     .Select(x => new
                     {
+                        Participants = x.Round.GameInstance.Participants
+                            .Where(y => y.PlayerId == x.AttackerId || y.PlayerId == x.DefenderId)
+                            .ToArray(),
                         x.AttackerId,
-                        x.DefenderId
+                        x.DefenderId,
                     })
                     .FirstOrDefaultAsync();
 
-                await hubContext.Clients.User(participants.AttackerId.ToString()).CanPerformActions();
-                await hubContext.Clients.User(participants.DefenderId.ToString()).CanPerformActions();
+                response.Participants = participants.Participants;
+                response.AttackerId = participants.AttackerId;
+                response.DefenderId = participants.DefenderId ?? 0;
+
+
+                await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
+                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
             }
+
+            timerWrapper.Data.NextAction = ActionState.END_MULTIPLE_CHOICE_QUESTION;
+            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING);
+            timerWrapper.Start();
         }
 
         private async Task Close_MultipleChoice_Neutral_Voting(TimerWrapper timerWrapper)
