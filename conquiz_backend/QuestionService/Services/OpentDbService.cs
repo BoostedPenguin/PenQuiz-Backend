@@ -88,7 +88,7 @@ namespace QuestionService.Services
                     mcQuestionCount = 0;
                 }
 
-                using var response = await client.GetAsync($"https://opentdb.com/api.php?amount={currentIteration}&type=multiple&token={sessionToken}");
+                using var response = await client.GetAsync($"https://opentdb.com/api.php?amount={currentIteration}&type=multiple&token={sessionToken}&encode=url3986");
 
                 response.EnsureSuccessStatusCode();
 

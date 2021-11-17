@@ -63,6 +63,15 @@ namespace GameService.Services
     }
 
     [Serializable]
+    public class AnswerSubmittedGameException : GameException
+    {
+        public AnswerSubmittedGameException(string message) : base(message)
+        {
+
+        }
+    }
+
+    [Serializable]
     public class JoiningGameException : GameException
     {
         public JoiningGameException(string message) : base(message)

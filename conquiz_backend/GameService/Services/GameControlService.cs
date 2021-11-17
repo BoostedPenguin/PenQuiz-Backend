@@ -151,13 +151,13 @@ namespace GameService.Services
                 .FirstOrDefaultAsync();
 
             if (gm == null || gm.CurrentRound == null)
-                throw new ArgumentException("User isn't participating in any in progress games.");
+                throw new AnswerSubmittedGameException("User isn't participating in any in progress games.");
 
             if (!gm.CurrentRound.IsQuestionVotingOpen)
-                throw new ArgumentException("The voting stage for this question is either over or not started.");
+                throw new AnswerSubmittedGameException("The voting stage for this question is either over or not started.");
 
             if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerId))
-                throw new ArgumentException("The provided answerID isn't valid for this question.");
+                throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
 
             switch (gm.CurrentRound.AttackStage)
             {
@@ -168,7 +168,7 @@ namespace GameService.Services
                         .First(x => x.AttackerId == userId);
 
                     if (playerAttacking.AttackerMChoiceQAnswerId != null)
-                        throw new ArgumentException("This user already voted for this question");
+                        throw new AnswerSubmittedGameException("You already voted for this question");
 
                     playerAttacking.AttackerMChoiceQAnswerId = answerId;
                     break;

@@ -24,13 +24,14 @@ namespace GameService.Hubs
         Task PlayerRejoined(int userId);
         Task GameException(string message);
         Task BorderSelectedGameException (string message);
+        Task AnswerSubmittedGameException(string message);
         Task NavigateToLobby();
         Task NavigateToGame();
 
 
         // Client game actions
         // Send by user
-        Task PlayerAnsweredMCQuestion();
+        Task PlayerAnsweredMCQuestion(int answerId);
 
 
         // Server game actions
@@ -181,10 +182,12 @@ namespace GameService.Hubs
             try
             {
                 await gameControlService.AnswerMCQuestion(answerId);
-
-                await Clients.Caller.PlayerAnsweredMCQuestion();
             }
-            catch(Exception ex)
+            catch(AnswerSubmittedGameException ex)
+            {
+                await Clients.Caller.AnswerSubmittedGameException(ex.Message);
+            }
+            catch (Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }
