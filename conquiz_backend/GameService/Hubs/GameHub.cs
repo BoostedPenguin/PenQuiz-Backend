@@ -44,7 +44,7 @@ namespace GameService.Hubs
         Task ShowRoundingAttacker(int userId, int msTimeForAction);
 
         Task CloseQuestionScreen();
-        Task PreviewResult(QuestionResultResponse questions);
+        Task QuestionPreviewResult(PlayerQuestionAnswers previewResult);
         Task GetRoundQuestion(QuestionClientResponse question, int msTimeForAction);
 
         Task TESTING(string message);

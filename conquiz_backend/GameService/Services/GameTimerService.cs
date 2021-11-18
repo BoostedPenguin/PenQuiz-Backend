@@ -185,6 +185,10 @@ namespace GameService.Services
                 case ActionState.SHOW_MULTIPLE_CHOICE_QUESTION:
                     await Show_MultipleChoice_Screen(timer, true);
                     return;
+
+                case ActionState.END_MULTIPLE_CHOICE_QUESTION:
+                    await Close_MultipleChoice_Neutral_Voting(timer);
+                    return;
             }
         }
 
@@ -381,7 +385,7 @@ namespace GameService.Services
                 response.Participants = question.Round.GameInstance.Participants.ToArray();
 
                 await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
+                    GameActionsTime.GetServerActionsTime(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION));
             }
             else
             {
@@ -409,11 +413,11 @@ namespace GameService.Services
 
 
                 await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
+                    GameActionsTime.GetServerActionsTime(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION));
             }
 
             timerWrapper.Data.NextAction = ActionState.END_MULTIPLE_CHOICE_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING);
+            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION);
             timerWrapper.Start();
         }
 
@@ -430,13 +434,14 @@ namespace GameService.Services
                 .ThenInclude(x => x.Answers)
                 .Include(x => x.NeutralRound)
                 .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefaultAsync();
 
             currentRound.IsQuestionVotingOpen = false;
 
-            var playerCorrect = new Dictionary<int, bool>();
+            var playerIdAnswerId = new Dictionary<int, int>();
 
             foreach (var p in currentRound.NeutralRound.TerritoryAttackers)
             {
@@ -449,16 +454,17 @@ namespace GameService.Services
                     p.AttackerWon = false;
                     p.AttackedTerritory.AttackedBy = null;
                     p.AttackedTerritory.TakenBy = null;
+
+
+                    playerIdAnswerId.Add(
+                        p.AttackerId,
+                        0
+                    );
                     continue;
                 }
 
                 if (isThisPlayerAnswerCorrect.Correct)
                 {
-                    playerCorrect.Add(
-                        p.AttackerId,
-                        isThisPlayerAnswerCorrect.Correct
-                    );
-
                     // Player answered correctly, he gets the territory
                     p.AttackerWon = true;
                     p.AttackedTerritory.AttackedBy = null;
@@ -471,7 +477,33 @@ namespace GameService.Services
                     p.AttackedTerritory.AttackedBy = null;
                     p.AttackedTerritory.TakenBy = null;
                 }
+
+                playerIdAnswerId.Add(
+                    p.AttackerId,
+                    p.AttackerMChoiceQAnswerId ?? 0
+                );
             }
+
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+
+            // Response correct answer and all player answers
+            var response = new PlayerQuestionAnswers()
+            {
+                CorrectAnswerId = currentRound.Question.Answers.FirstOrDefault(x => x.Correct).Id,
+                PlayerAnswers = new List<PlayerIdAnswerId>(),
+            };
+
+            foreach(var pId in playerIdAnswerId)
+            {
+                response.PlayerAnswers.Add(new PlayerIdAnswerId()
+                {
+                    Id = pId.Key,
+                    AnswerId = pId.Value,
+                });
+            }
+
+            await hubContext.Clients.Groups(data.GameLink).QuestionPreviewResult(response);
         }
 
         private async Task Close_MultipleChoice_Pvp_Voting(TimerWrapper timerWrapper)
@@ -547,22 +579,22 @@ namespace GameService.Services
                 }
             }
 
-            db.Update(currentRound);
-            await db.SaveChangesAsync();
+            //db.Update(currentRound);
+            //await db.SaveChangesAsync();
 
-            var qResult = new QuestionResultResponse()
-            {
-                Id = currentRound.Question.Id,
-                Answers = mapper.Map<List<AnswerResultResponse>>(currentRound.Question.Answers),
-                Question = currentRound.Question.Question,
-                Type = currentRound.Question.Type,
-                WinnerId = (int)currentRound.PvpRound.WinnerId,
-            };
+            //var qResult = new QuestionResultResponse()
+            //{
+            //    Id = currentRound.Question.Id,
+            //    Answers = mapper.Map<List<AnswerResultResponse>>(currentRound.Question.Answers),
+            //    Question = currentRound.Question.Question,
+            //    Type = currentRound.Question.Type,
+            //    WinnerId = (int)currentRound.PvpRound.WinnerId,
+            //};
 
-            await hubContext.Clients.Group(data.GameLink).PreviewResult(qResult);
+            //await hubContext.Clients.Group(data.GameLink).PreviewResult(qResult);
 
-            timerWrapper.Interval = 3000;
-            timerWrapper.Start();
+            //timerWrapper.Interval = 3000;
+            //timerWrapper.Start();
         }
 
         private async Task Close_Screen(TimerWrapper timerWrapper)

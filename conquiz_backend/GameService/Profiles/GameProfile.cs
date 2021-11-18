@@ -29,9 +29,6 @@ namespace GameService.Profiles
                 .ForMember(dest => dest.Id, org => org.Ignore());
             CreateMap<Answers, AnswerClientResponse>();
             CreateMap<Questions, QuestionClientResponse>();
-
-            CreateMap<Answers, AnswerResultResponse>();
-            CreateMap<Questions, QuestionResultResponse>();
         }
     }
 }
