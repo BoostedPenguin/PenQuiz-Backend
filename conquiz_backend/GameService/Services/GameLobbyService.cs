@@ -279,8 +279,7 @@ namespace GameService.Services
             // Send request to question service to generate questions in the background
             RequestQuestions(gameInstance.Id, initialRounding, true);
 
-
-            return gameInstance;
+            return await GameTimerService.GetFullGameInstance(gameInstance.Id, a);
         }
 
         private void RequestQuestions(int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)

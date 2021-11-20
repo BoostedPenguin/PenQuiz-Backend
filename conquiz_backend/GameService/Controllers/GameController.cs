@@ -100,7 +100,7 @@ namespace GameService.Controllers
                     }
                 });
 
-                return Ok($"Did scaffolding work: IDK");
+                return Ok($"Game controller version 1.0");
             }
             catch (Exception ex)
             {

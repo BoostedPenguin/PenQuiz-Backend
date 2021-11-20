@@ -49,7 +49,6 @@ namespace GameService.Services
 
         // GameId<Game> | CurrentTimer 
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
-        private readonly int ServerClientTimeOffset = 1000;
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
@@ -214,7 +213,7 @@ namespace GameService.Services
 
         public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
         {
-            return await defaultContext.GameInstance
+            var game = await defaultContext.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
                 .Include(x => x.Rounds)
@@ -223,6 +222,18 @@ namespace GameService.Services
                 .Include(x => x.ObjectTerritory)
                 .ThenInclude(x => x.MapTerritory)
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
+
+            game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
+
+            var ss = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
+            foreach(var round in game.Rounds)
+            {
+                round.NeutralRound.TerritoryAttackers = 
+                    round.NeutralRound.TerritoryAttackers.OrderBy(x => x.AttackOrderNumber).ToList();
+            }
+
+
+            return game;
         }
 
         private async Task Open_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
@@ -335,7 +346,7 @@ namespace GameService.Services
                         .GetGameInstance(fullGame);
 
 
-                    timerWrapper.Interval = 3000;
+                    timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
                     timerWrapper.Data.NextAction = ActionState.SHOW_MULTIPLE_CHOICE_QUESTION;
                     timerWrapper.Start();
                     break;
@@ -430,6 +441,7 @@ namespace GameService.Services
 
             var currentRound =
                 await db.Round
+                .Include(x => x.GameInstance)
                 .Include(x => x.Question)
                 .ThenInclude(x => x.Answers)
                 .Include(x => x.NeutralRound)
@@ -484,6 +496,10 @@ namespace GameService.Services
                 );
             }
 
+            // Go to next round
+            timerWrapper.Data.CurrentGameRoundNumber++;
+            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+
             db.Update(currentRound);
             await db.SaveChangesAsync();
 
@@ -504,6 +520,11 @@ namespace GameService.Services
             }
 
             await hubContext.Clients.Groups(data.GameLink).QuestionPreviewResult(response);
+
+            timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
+            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
+
+            timerWrapper.Start();
         }
 
         private async Task Close_MultipleChoice_Pvp_Voting(TimerWrapper timerWrapper)
