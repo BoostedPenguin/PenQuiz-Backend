@@ -19,6 +19,9 @@ spec:
       containers:
         - name: gameservice
           image: boostedpenguin/gameservice:latest
+          envFrom:
+            - configMapRef:
+                name: games-config
           imagePullPolicy: Always            
 ---
 apiVersion: v1
