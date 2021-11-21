@@ -1,0 +1,31 @@
+name: game_service_workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['3.1.x' ]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ matrix.dotnet-version }}
+    - name: Restore dependencies
+      working-directory: ./conquiz_backend/GameService
+      run: dotnet restore
+    - name: Build
+      working-directory: ./conquiz_backend/GameService
+      run: dotnet build --no-restore
+    - name: Test
+      working-directory: ./conquiz_backend/GameService
+      run: dotnet test --no-build --verbosity normal
