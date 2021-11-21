@@ -100,7 +100,7 @@ namespace GameService.Controllers
                     }
                 });
 
-                return Ok($"Game controller version 1.0");
+                return Ok($"Game controller version 1.3");
             }
             catch (Exception ex)
             {

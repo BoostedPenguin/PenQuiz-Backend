@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: games-depl
+  annotations:
+    keel.sh/policy: force     # update policy (available: patch, minor, major, all, force)
+    keel.sh/trigger: poll     # enable active repository checking (webhooks and GCR would still work)
+    keel.sh/pollSchedule: "@every 30m"
 spec:
   replicas: 1
   selector:
@@ -15,6 +19,7 @@ spec:
       containers:
         - name: gameservice
           image: boostedpenguin/gameservice:latest
+          imagePullPolicy: Always            
 ---
 apiVersion: v1
 kind: Service
