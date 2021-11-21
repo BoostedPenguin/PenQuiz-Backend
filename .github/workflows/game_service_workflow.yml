@@ -16,16 +16,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
     - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
+
     - name: Restore dependencies
       working-directory: ./conquiz_backend/GameService
       run: dotnet restore
+
     - name: Build
       working-directory: ./conquiz_backend/GameService
       run: dotnet build --no-restore
+
     - name: Test
       working-directory: ./conquiz_backend/GameService
       run: dotnet test --no-build --verbosity normal
@@ -48,6 +60,7 @@ jobs:
         file: ./conquiz_backend/GameService/Dockerfile
         push: true
         tags: ${{ secrets.DOCKER_HUB_USERNAME }}/gameservice:latest
-
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
