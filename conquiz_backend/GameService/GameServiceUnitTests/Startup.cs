@@ -11,27 +11,15 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit.DependencyInjection;
 
-namespace backend_testing_xunit
+namespace GameServiceUnitTests
 {
     public class Startup
     {
-        private static IConfiguration Configuration;
-        public static void InitConfiguration()
-        {
-            Configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.test.json")
-                .Build();
-        }
-
-
         public void ConfigureServices(IServiceCollection services)
         {
-            InitConfiguration();
-
             services.AddHttpContextAccessor();
 
             services.AddHttpClient();
-
         }
     }
 }
