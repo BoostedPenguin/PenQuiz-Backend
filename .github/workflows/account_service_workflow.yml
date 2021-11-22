@@ -2,6 +2,8 @@ name: account_service_workflow
 
 on:
   push:
+    paths:
+    - 'conquiz_backend/AccountService/**'
     branches: [ main ]
   pull_request:
     branches: [ main ]
