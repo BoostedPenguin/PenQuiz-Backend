@@ -2,6 +2,8 @@ name: game_service_workflow
 
 on:
   push:
+    paths:
+    - 'conquiz_backend/GameService/**'
     branches: [ main ]
   pull_request:
     branches: [ main ]
