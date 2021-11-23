@@ -341,3 +341,4 @@ conquiz_backend/conquiz_backend/appsettings.json
 conquiz_backend/K8S/ngrok.exe
 conquiz_backend/K8S/games-depl-config.yaml
 conquiz_backend/K8S/accounts-depl-config.yaml
+conquiz_backend/K8S/questions-depl-config.yaml
