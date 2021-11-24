@@ -318,7 +318,6 @@ namespace GameService.Services
                     GameRoundNumber = gameRoundNumber++,
                     AttackStage = AttackStage.MULTIPLE_NEUTRAL,
                     Description = $"MultipleChoice question. Attacker vs NEUTRAL territory",
-                    RoundStage = RoundStage.NOT_STARTED,
                     IsQuestionVotingOpen = false,
                     IsTerritoryVotingOpen = false,
                 };

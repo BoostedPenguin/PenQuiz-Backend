@@ -5,13 +5,6 @@ using System.Threading.Tasks;
 
 namespace GameService.Models
 {
-    public enum RoundStage
-    {
-        NOT_STARTED,
-        CURRENT,
-        FINISHED,
-    }
-
     /// <summary>
     /// Shows what this round represents as an attack stage
     /// </summary>
@@ -26,8 +19,6 @@ namespace GameService.Models
     public class Round
     {
         public int Id { get; set; }
-        [Obsolete]
-        public RoundStage RoundStage { get; set; }
         public AttackStage AttackStage { get; set; }
         public int GameInstanceId { get; set; }
         public int GameRoundNumber { get; set; }

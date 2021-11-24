@@ -617,33 +617,5 @@ namespace GameService.Services
             //timerWrapper.Interval = 3000;
             //timerWrapper.Start();
         }
-
-        private async Task Close_Screen(TimerWrapper timerWrapper)
-        {
-            // Previewing elapsed, move to next round
-            var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
-
-            var gm = await db.GameInstance
-                .Include(x => x.Rounds)
-                .Include(x => x.Participants)
-                .Include(x => x.ObjectTerritory)
-                .Include(x => x.Rounds)
-                .Where(x => x.Id == data.GameInstanceId && x.Rounds
-                    .Any(y => y.GameRoundNumber == data.CurrentGameRoundNumber || y.GameRoundNumber == data.CurrentGameRoundNumber + 1))
-                .FirstOrDefaultAsync();
-
-            // Move to next round
-            gm.GameRoundNumber++;
-
-            gm.Rounds.First(x => x.GameRoundNumber == data.CurrentGameRoundNumber).RoundStage = RoundStage.FINISHED;
-            gm.Rounds.First(x => x.GameRoundNumber == data.CurrentGameRoundNumber + 1).RoundStage = RoundStage.CURRENT;
-
-            db.Update(gm);
-            await db.SaveChangesAsync();
-            
-            await hubContext.Clients.Group(data.GameLink).CloseQuestionScreen();
-            await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
-        }
     }
 }

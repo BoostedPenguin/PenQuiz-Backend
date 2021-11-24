@@ -239,10 +239,6 @@ namespace GameService.Context
                     .HasConversion<string>()
                     .HasDefaultValue(AttackStage.MULTIPLE_NEUTRAL);
 
-                entity.Property(e => e.RoundStage)
-                    .HasConversion<string>()
-                    .HasDefaultValue(RoundStage.NOT_STARTED);
-
                 entity.Property(e => e.GameRoundNumber)
                     .HasColumnName("gameRoundNumber");
 
