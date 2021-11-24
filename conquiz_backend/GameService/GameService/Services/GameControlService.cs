@@ -92,7 +92,7 @@ namespace GameService.Services
                         throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
                     var gameObjTerritory = await mapGeneratorService
-                        .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id);
+                        .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
 
                     if (gameObjTerritory == null)
                         throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");

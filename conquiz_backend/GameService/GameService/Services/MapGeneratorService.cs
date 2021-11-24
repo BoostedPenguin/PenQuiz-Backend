@@ -25,7 +25,8 @@ namespace GameService.Services
         Task<MapTerritory[]> GetBorders(int territoryId);
         Task<int> GetAmountOfTerritories(int mapId);
         Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId);
-        Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId);
+        Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral);
+        Task<string[]> GetAvailableAttackTerritoriesNames(DefaultContext db, int userId, int gameInstanceId, bool isNeutral);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -40,30 +41,25 @@ namespace GameService.Services
             this.httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task Testing()
-        {
-
-            // End
-
-            var borders = await GetBorders("Dager", "Antarctica");
-
-
-            // IsAttackPossible
-            //var result = await areTheyBorders(4, 1);
-            var result = await AreTheyBorders("Dager", "Ronetia", "Antarctica");
-
-            await AddBorderIfNotExistant(5, 3);
-
-
-
-            // Do something
-        }
-
         private class UserBorderInformation
         {
+            /// <summary>
+            /// All current instance territories the user controls
+            /// </summary>
             public List<ObjectTerritory> UserTerritories { get; set; }
+
+            /// <summary>
+            /// All untaken Territories on the map<br/>
+            /// Untaken can be considered a territory which is neutral OR owned by someone (but isn't actively being attacked)
+            /// </summary>
             public List<ObjectTerritory> UntakenBorders { get; set; }
+            /// <summary>
+            /// All untaken borders that are next to a user's border
+            /// </summary>
             public List<ObjectTerritory> MatchingBorders { get; set; }
+            /// <summary>
+            /// All player map territory borders
+            /// </summary>
             public MapTerritory[] AllPlayerBorders { get; set; }
         }
 
@@ -114,6 +110,30 @@ namespace GameService.Services
         }
 
         /// <summary>
+        /// Gets all available to attack territories
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="userId"></param>
+        /// <param name="gameInstanceId"></param>
+        /// <returns></returns>
+        public async Task<string[]> GetAvailableAttackTerritoriesNames(DefaultContext db, int userId, int gameInstanceId, bool isNeutral)
+        {
+            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, isNeutral);
+
+
+            // If matching borders are available return them
+            if(userBorderInfo.MatchingBorders.Count > 0)
+            {
+                return userBorderInfo.MatchingBorders.Select(x => x.MapTerritory.TerritoryName).ToArray();
+            }
+
+            return userBorderInfo.UntakenBorders.Select(x => x.MapTerritory.TerritoryName).ToArray();
+
+
+            // If there aren't any matching borders 
+        }
+
+        /// <summary>
         /// Needs to handle both neutral territory attacking and pvp
         /// Do NOT check for if the territory is taken, we don't care if it is, we check later
         /// </summary>
@@ -122,9 +142,9 @@ namespace GameService.Services
         /// <param name="gameInstanceId"></param>
         /// <param name="selectedMapTerritoryId"></param>
         /// <returns></returns>
-        public async Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId)
+        public async Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral)
         {
-            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, false);
+            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, isNeutral);
 
             var selectedTerritory = userBorderInfo
                 .MatchingBorders
@@ -135,7 +155,7 @@ namespace GameService.Services
             if (selectedTerritory == null)
             {
                 // Untaken borders are all UNTAKEN or UNATTACKED territories on the map
-                if (userBorderInfo.MatchingBorders.Count > 1)
+                if (userBorderInfo.MatchingBorders.Count > 0)
                 {
                     // There are available borders next to the user taken territories, but the selected one 
                     // Isn't one of them
@@ -229,13 +249,13 @@ namespace GameService.Services
 
         public async Task<MapTerritory[]> GetBorders(int[] territoryIds)
         {
-            using var a = contextFactory.CreateDbContext();
-
             var nonRepeatingBorders = new List<MapTerritory>();
             foreach(var territoryId in territoryIds)
             {
                 var theseBorders = await GetBorders(territoryId);
-                nonRepeatingBorders.AddRange(theseBorders.Except(nonRepeatingBorders));
+                var uniqueBorders = theseBorders
+                    .Where(x => nonRepeatingBorders.All(y => y.TerritoryName != x.TerritoryName)).ToList();
+                nonRepeatingBorders.AddRange(uniqueBorders);
             }
 
             return nonRepeatingBorders.ToArray();

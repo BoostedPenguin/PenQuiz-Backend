@@ -257,9 +257,12 @@ namespace GameService.Services
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
 
+            var availableTerritories = await mapGeneratorService
+                .GetAvailableAttackTerritoriesNames(db, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
+
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker.AttackerId,
-                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
+                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING), availableTerritories);
 
             var fullGame = await GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
@@ -321,9 +324,12 @@ namespace GameService.Services
                     db.Update(currentRound);
                     await db.SaveChangesAsync();
 
+                    var availableTerritories = await mapGeneratorService
+                        .GetAvailableAttackTerritoriesNames(db, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
+
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink).ShowRoundingAttacker(nextAttacker.AttackerId,
-                        GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING));
+                        GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING), availableTerritories);
 
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);

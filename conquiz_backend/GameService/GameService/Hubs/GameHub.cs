@@ -41,7 +41,7 @@ namespace GameService.Hubs
         // Because it is controlled by server timer push events
         // Things that require displaying of a timer do require ex. time to vote on something
         Task Game_Show_Main_Screen();
-        Task ShowRoundingAttacker(int userId, int msTimeForAction);
+        Task ShowRoundingAttacker(int userId, int msTimeForAction, string[] availableAttackTerritoriesNames);
 
         Task CloseQuestionScreen();
         Task QuestionPreviewResult(PlayerQuestionAnswers previewResult);
