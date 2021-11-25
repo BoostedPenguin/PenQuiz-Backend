@@ -1,6 +1,7 @@
 ﻿using GameService.Context;
 using GameService.Models;
 using GameService.Services.Extensions;
+using GameService.Services.GameTimerServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -110,7 +111,7 @@ namespace GameService.Services
 
                     await db.SaveChangesAsync();
 
-                    return await GameTimerService.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
+                    return await CommonTimerFunc.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
 
                 case AttackStage.NUMBER_NEUTRAL:
                     throw new NotImplementedException();

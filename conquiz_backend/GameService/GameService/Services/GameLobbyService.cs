@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GameService.MessageBus;
 using GameService.Dtos;
+using GameService.Services.GameTimerServices;
 
 namespace GameService.Services
 {
@@ -273,7 +274,7 @@ namespace GameService.Services
             // Send request to question service to generate questions in the background
             RequestQuestions(gameInstance.Id, initialRounding, true);
 
-            return await GameTimerService.GetFullGameInstance(gameInstance.Id, a);
+            return await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
         }
 
         private void RequestQuestions(int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)

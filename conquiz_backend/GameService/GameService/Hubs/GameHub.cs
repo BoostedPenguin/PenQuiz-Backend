@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using GameService.Dtos;
 using GameService.Dtos.SignalR_Responses;
+using GameService.Services.GameTimerServices;
 
 namespace GameService.Hubs
 {

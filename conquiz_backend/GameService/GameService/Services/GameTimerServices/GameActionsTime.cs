@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GameService.Services
+namespace GameService.Services.GameTimerServices
 {
-    public static class GameActionsTime
+    public class GameActionsTime
     {
         public static int DefaultPreviewTime = 3000;
 

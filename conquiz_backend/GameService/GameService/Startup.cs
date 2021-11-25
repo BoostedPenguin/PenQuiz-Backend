@@ -19,6 +19,7 @@ using System.Text;
 using GameService.EventProcessing;
 using GameService.MessageBus;
 using GameService.Grpc;
+using GameService.Services.GameTimerServices;
 
 namespace GameService
 {
@@ -71,6 +72,10 @@ namespace GameService
             services.AddSingleton<IGameLobbyService, GameLobbyService>();
 
             services.AddSingleton<IGameTimerService, GameTimerService>();
+
+            services.AddSingleton<INeutralStageTimerEvents, NeutralStageTimerEvents>();
+
+            services.AddSingleton<IPvpStageTimerEvents, PvpStageTimerEvents>();
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 

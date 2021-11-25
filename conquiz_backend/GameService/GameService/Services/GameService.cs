@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using GameService.Services.GameTimerServices;
 
 namespace GameService.Services
 {
@@ -142,7 +143,7 @@ namespace GameService.Services
                 db.Update(thisUser);
                 await db.SaveChangesAsync();
 
-                var gm = await GameTimerService.GetFullGameInstance(currentGameInstance.Id, db);
+                var gm = await CommonTimerFunc.GetFullGameInstance(currentGameInstance.Id, db);
                 
                 return currentGameInstance;
             }
