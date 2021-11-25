@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using GameService.Dtos;
 using GameService.Dtos.SignalR_Responses;
+using GameService.MessageBus;
 
 namespace GameService.Services
 {
@@ -45,6 +46,7 @@ namespace GameService.Services
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IMapper mapper;
+        private readonly IMessageBusClient messageBus;
         private readonly IGameTerritoryService gameTerritoryService;
 
         // GameId<Game> | CurrentTimer 
@@ -52,13 +54,15 @@ namespace GameService.Services
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory, 
             IHttpContextAccessor httpContextAccessor, 
             IHubContext<GameHub, IGameHub> hubContext, 
-            IMapper mapper, 
+            IMapper mapper,
+            IMessageBusClient messageBus,
             IGameTerritoryService gameTerritoryService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.hubContext = hubContext;
             this.mapper = mapper;
+            this.messageBus = messageBus;
             this.gameTerritoryService = gameTerritoryService;
         }
 
@@ -79,7 +83,7 @@ namespace GameService.Services
                     GameLink = gameLink;
                 }
                 public int GameInstanceId { get; set; }
-
+                public int LastNeutralMCRound { get; set; }
 
                 // This is the invitation link which also acts as a group ID for signalR
                 public string GameLink { get; set; }
@@ -140,7 +144,13 @@ namespace GameService.Services
                 AutoReset = false,
                 Interval = 500,
             };
-            
+
+            // Set the last neutral mc round 
+            using var db = contextFactory.CreateDbContext();
+            actionTimer.Data.LastNeutralMCRound = db.Round
+                .Where(x => x.GameInstanceId == gm.Id && x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
+                .Count();
+
             // Default starter values
             actionTimer.Data.NextAction = ActionState.GAME_START_PREVIEW_TIME;
             actionTimer.Data.CurrentGameRoundNumber = 1;
@@ -191,7 +201,7 @@ namespace GameService.Services
                     return;
 
                 case ActionState.END_MULTIPLE_CHOICE_QUESTION:
-                    await Close_MultipleChoice_Neutral_Voting(timer);
+                    await Close_MultipleChoice_Neutral_Question_Voting(timer);
                     return;
             }
         }
@@ -443,7 +453,7 @@ namespace GameService.Services
             timerWrapper.Start();
         }
 
-        private async Task Close_MultipleChoice_Neutral_Voting(TimerWrapper timerWrapper)
+        private async Task Close_MultipleChoice_Neutral_Question_Voting(TimerWrapper timerWrapper)
         {
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
             timerWrapper.Stop();
@@ -461,6 +471,8 @@ namespace GameService.Services
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefaultAsync();
+
+            
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -507,12 +519,26 @@ namespace GameService.Services
                 );
             }
 
+            // Create number question rounds if gm multiple choice neutral rounds are over
+            Round[] rounds = null;
+            if(currentRound.GameRoundNumber == data.LastNeutralMCRound)
+            {
+                rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
+                await db.AddRangeAsync(rounds);
+            }
+
             // Go to next round
             timerWrapper.Data.CurrentGameRoundNumber++;
             currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
             db.Update(currentRound);
             await db.SaveChangesAsync();
+
+            // Request a new batch of number questions from the question service
+            if(currentRound.GameRoundNumber == data.LastNeutralMCRound)
+            {
+                RequestQuestions(data.GameInstanceId, rounds, true);
+            }
 
             // Response correct answer and all player answers
             var response = new PlayerQuestionAnswers()
@@ -536,6 +562,67 @@ namespace GameService.Services
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
 
             timerWrapper.Start();
+        }
+
+        private void RequestQuestions(int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
+        {
+            // Request questions only for the initial multiple questions for neutral attacking order
+            // After multiple choices are over, request a new batch for number questions for all untaken territories
+            messageBus.RequestQuestions(new RequestQuestionsDto()
+            {
+                Event = "Question_Request",
+                GameInstanceId = gameInstanceId,
+                MultipleChoiceQuestionsRoundId = new List<int>(),
+                NumberQuestionsRoundId = rounds.Select(x => x.Id).ToList(),
+                IsNeutralGeneration = isNeutralGeneration,
+            });
+        }
+
+        private async Task<Round[]> Create_Neutral_Number_Rounds(DefaultContext db, TimerWrapper timerWrapper)
+        {
+            var data = timerWrapper.Data;
+            var untakenTerritoriesCount = await db.ObjectTerritory
+                .Where(x => x.TakenBy == null && x.GameInstanceId == data.GameInstanceId)
+                .CountAsync();
+
+            var participantsIds = await db.Participants
+                .Where(x => x.GameId == data.GameInstanceId)
+                .Select(x => x.PlayerId)
+                .ToListAsync();
+
+            var numberQuestionRounds = new List<Round>();
+            int baseDebug = 5;
+            for(var i = 0; i < untakenTerritoriesCount; i++)
+            {
+                var baseRound = new Round()
+                {
+                    // After this method executes we switch to the next round automatically thus + 1 now
+                    GameRoundNumber = baseDebug + i + 1,
+                    AttackStage = AttackStage.NUMBER_NEUTRAL,
+                    Description = $"Number question. Attacker vs NEUTRAL territory",
+                    IsQuestionVotingOpen = false,
+                    IsTerritoryVotingOpen = false,
+                    GameInstanceId = data.GameInstanceId
+                };
+
+                baseRound.NeutralRound = new NeutralRound()
+                {
+                    AttackOrderNumber = 0,
+                };
+
+                foreach(var participId in participantsIds)
+                {
+                    baseRound.NeutralRound.TerritoryAttackers.Add(new AttackingNeutralTerritory()
+                    {
+                        AttackerId = participId,
+                        AttackOrderNumber = 0,
+                    });
+                }
+
+                numberQuestionRounds.Add(baseRound);
+            }
+
+            return numberQuestionRounds.ToArray();
         }
 
         private async Task Close_MultipleChoice_Pvp_Voting(TimerWrapper timerWrapper)

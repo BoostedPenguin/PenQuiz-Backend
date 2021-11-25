@@ -41,7 +41,7 @@ namespace QuestionService.Context
         private static void Seed(DefaultContext db)
         {
             // Questions
-            var questions = new Questions[6]
+            var questions = new List<Questions>()
             {
                 new Questions("In what year was Bulgaria founded?", "681"),
                 new Questions("In what year did World War 2 start?", "1939"),
@@ -49,6 +49,23 @@ namespace QuestionService.Context
                 new Questions("In what year was the first case of COVID19 discovered?", "2019"),
                 new Questions("When did Bulgaria join the European Union?", "2016"),
                 new Questions("How much is the world population in November 2021", "7904393844"),
+                new Questions("What year was the very first model of the iPhone released?", "2007"),
+                new Questions("What year did the Titanic movie come out?", "1997"),
+                new Questions("How many parts (screws and bolts included) does the average car have?", "30000"),
+                new Questions("About how many taste buds does the average human tongue have?", "10000"),
+                new Questions("What percentage of our bodies is made up of water?", "63"),
+                new Questions("How many times does the heartbeat per day?", "100000"),
+                new Questions("In which year World War I begin?", "1914"),
+                new Questions("When was the company Nike founded?", "1971"),
+                new Questions("When did construction on the Empire State building started?", "1929"),
+                new Questions("How many eyes does a bee have?", "5"),
+                new Questions("In what year did Steve Jobs die?", "2011"),
+                new Questions("How many cards are there in a deck of Uno?", "108"),
+                new Questions("How many books are in the Catholic Bible?", "73"),
+                new Questions("How many ribs are in a human body?", "24"),
+                new Questions("Water has a pH level of around?", "7"),
+                new Questions("On a dartboard, what number is directly opposite No. 1?", "19"),
+                new Questions("How many colors are there in a rainbow?", "7"),
             };
 
             var result = questions.Where(x => !db.Questions.Any(y => y.Question == x.Question)).ToList();
