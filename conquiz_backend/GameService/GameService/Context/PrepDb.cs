@@ -26,8 +26,7 @@ namespace GameService.Context
 
             ValidateResources(
                 serviceScope.ServiceProvider.GetService<IMapGeneratorService>(),
-                serviceScope.ServiceProvider.GetService<IGameService>(),
-                serviceScope.ServiceProvider.GetService<IQuestionService>());
+                serviceScope.ServiceProvider.GetService<IGameService>());
 
             Console.WriteLine("--> Database prepared!");
 
@@ -73,7 +72,7 @@ namespace GameService.Context
             }
         }
 
-        private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService, IQuestionService questionService)
+        private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService)
         {
             try
             {

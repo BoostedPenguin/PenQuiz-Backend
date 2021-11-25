@@ -65,8 +65,6 @@ namespace GameService
 
             services.AddSingleton<IGameTerritoryService, GameTerritoryService>();
 
-            services.AddSingleton<IQuestionService, QuestionService>();
-
             services.AddSingleton<IGameService, Services.GameService>();
 
             services.AddSingleton<IGameLobbyService, GameLobbyService>();
