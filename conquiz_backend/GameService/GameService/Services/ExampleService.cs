@@ -21,7 +21,7 @@ namespace GameService.Services
         {
         }
 
-        public async Task<bool> DoSomething()
+        public bool DoSomething()
         {
             //var borders = await mapGeneratorService.GetBorders("srg", "ar");
             //var b = httpContext.GetCurrentUserId();

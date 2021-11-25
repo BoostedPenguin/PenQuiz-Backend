@@ -23,13 +23,13 @@ namespace GameService.Services
     {
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
-        private readonly IMapGeneratorService mapGeneratorService;
+        private readonly IGameTerritoryService gameTerritoryService;
         private readonly string DefaultMap = "Antarctica";
-        public GameControlService(IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory, IMapGeneratorService mapGeneratorService)
+        public GameControlService(IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory, IGameTerritoryService gameTerritoryService)
         {
             this.httpContextAccessor = httpContextAccessor;
             this.contextFactory = contextFactory;
-            this.mapGeneratorService = mapGeneratorService;
+            this.gameTerritoryService = gameTerritoryService;
         }
 
         public async Task<GameInstance> SelectTerritory(string mapTerritoryName)
@@ -91,7 +91,7 @@ namespace GameService.Services
                     if (mapTerritory == null)
                         throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
-                    var gameObjTerritory = await mapGeneratorService
+                    var gameObjTerritory = await gameTerritoryService
                         .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
 
                     if (gameObjTerritory == null)

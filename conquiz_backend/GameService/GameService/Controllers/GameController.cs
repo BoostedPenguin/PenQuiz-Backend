@@ -58,31 +58,8 @@ namespace GameService.Controllers
             }
         }
 
-        [HttpGet("test")]
-        public async Task<IActionResult> Test()
-        {
-            try
-            {
-                var db = contextFactory.CreateDbContext();
-                var round = db.NeutralRound.Include(x => x.TerritoryAttackers).FirstOrDefault();
-
-                round.TerritoryAttackers.Add(new AttackingNeutralTerritory()
-                {
-                    AttackerId = 5,
-                });
-                db.Update(round);
-                db.SaveChanges();
-
-                return Ok();
-            }
-            catch(Exception ex)
-            {
-                return BadRequest();
-            }
-        }
-
         [HttpGet]
-        public async Task<IActionResult> DoSomething()
+        public IActionResult DoSomething()
         {
             try
             {

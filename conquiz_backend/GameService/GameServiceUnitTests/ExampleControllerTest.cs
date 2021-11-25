@@ -37,12 +37,12 @@ namespace GameServiceUnitTests
 
 
         [Fact]
-        public async Task ExampleTest()
+        public void ExampleTest()
         {
 
             var service = new ExampleService(mockContextFactory.Object);
 
-            var result = await service.DoSomething();
+            var result = service.DoSomething();
 
             Assert.True(result);
         }

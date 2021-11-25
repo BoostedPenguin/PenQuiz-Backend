@@ -45,18 +45,23 @@ namespace GameService.Services
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IMapper mapper;
-        private readonly IMapGeneratorService mapGeneratorService;
+        private readonly IGameTerritoryService gameTerritoryService;
 
         // GameId<Game> | CurrentTimer 
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
-        public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IHubContext<GameHub, IGameHub> hubContext, IMapper mapper, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory, 
+            IHttpContextAccessor httpContextAccessor, 
+            IHubContext<GameHub, IGameHub> hubContext, 
+            IMapper mapper, 
+            IGameTerritoryService gameTerritoryService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.hubContext = hubContext;
             this.mapper = mapper;
-            this.mapGeneratorService = mapGeneratorService;
+            this.gameTerritoryService = gameTerritoryService;
         }
+
         public class TimerWrapper : Timer
         {
             public TimerData Data { get; set; }
@@ -257,7 +262,7 @@ namespace GameService.Services
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
 
-            var availableTerritories = await mapGeneratorService
+            var availableTerritories = await gameTerritoryService
                 .GetAvailableAttackTerritoriesNames(db, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
 
             await hubContext.Clients.Group(data.GameLink)
@@ -300,7 +305,7 @@ namespace GameService.Services
             if(currentAttacker.AttackedTerritoryId == null)
             {
                 var randomTerritory =
-                    await mapGeneratorService.GetRandomMCTerritoryNeutral(currentAttacker.AttackerId, data.GameInstanceId);
+                    await gameTerritoryService.GetRandomMCTerritoryNeutral(currentAttacker.AttackerId, data.GameInstanceId);
 
                 // Set this territory as being attacked from this person
                 currentAttacker.AttackedTerritoryId = randomTerritory.Id;
@@ -324,7 +329,7 @@ namespace GameService.Services
                     db.Update(currentRound);
                     await db.SaveChangesAsync();
 
-                    var availableTerritories = await mapGeneratorService
+                    var availableTerritories = await gameTerritoryService
                         .GetAvailableAttackTerritoriesNames(db, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
 
                     // Notify the group who is the next attacker

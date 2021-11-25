@@ -24,7 +24,7 @@ namespace GameService.Hubs
         // Same as above but it's strongly typed without magic strings ("receivemessage") is defined
         public async Task SendMessage(string message)
         {
-            var result = await service.DoSomething();
+            var result = service.DoSomething();
             await Clients.All.ReceiveMessage($"{message} | and the service injection is: {result}");
         }
 

@@ -62,6 +62,8 @@ namespace GameService
 
             services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
 
+            services.AddSingleton<IGameTerritoryService, GameTerritoryService>();
+
             services.AddSingleton<IQuestionService, QuestionService>();
 
             services.AddSingleton<IGameService, Services.GameService>();

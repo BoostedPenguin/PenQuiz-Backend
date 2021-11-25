@@ -8,6 +8,6 @@ namespace GameService.Services.Interfaces
 {
     public interface IExampleService
     {
-        Task<bool> DoSomething();
+        bool DoSomething();
     }
 }
