@@ -41,11 +41,12 @@ namespace GameService.Hubs
         // We don't need to explicitly tell how much time to display something
         // Because it is controlled by server timer push events
         // Things that require displaying of a timer do require ex. time to vote on something
-        Task Game_Show_Main_Screen();
+        Task Game_Show_Main_Screen(int msTimeForAction = 0);
         Task ShowRoundingAttacker(int userId, int msTimeForAction, string[] availableAttackTerritoriesNames);
 
         Task CloseQuestionScreen();
-        Task QuestionPreviewResult(PlayerQuestionAnswers previewResult);
+        Task QuestionPreviewResult(MCPlayerQuestionAnswers previewResult);
+        Task NumberQuestionPreviewResult(NumberPlayerQuestionAnswers previewResult);
         Task GetRoundQuestion(QuestionClientResponse question, int msTimeForAction);
 
         Task TESTING(string message);
@@ -178,11 +179,11 @@ namespace GameService.Hubs
             }
         }
 
-        public async Task AnswerMCQuestion(int answerId)
+        public async Task AnswerQuestion(int answerId)
         {
             try
             {
-                await gameControlService.AnswerMCQuestion(answerId);
+                await gameControlService.AnswerQuestion(answerId);
             }
             catch(AnswerSubmittedGameException ex)
             {

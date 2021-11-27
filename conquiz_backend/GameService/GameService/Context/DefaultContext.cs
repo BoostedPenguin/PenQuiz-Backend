@@ -284,6 +284,11 @@ namespace GameService.Context
                     .HasColumnName("attackerWon")
                     .IsRequired(false);
 
+                entity.Property(e => e.AnsweredAt)
+                    .HasColumnName("answered_at")
+                    .IsRequired(false)
+                    .HasColumnType("datetime");
+
                 entity.Property(e => e.AttackedTerritoryId)
                     .HasColumnName("attackedTerritoryId")
                     .IsRequired(false);

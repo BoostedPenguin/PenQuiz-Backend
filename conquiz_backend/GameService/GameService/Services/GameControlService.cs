@@ -13,7 +13,7 @@ namespace GameService.Services
 {
     public interface IGameControlService
     {
-        Task AnswerMCQuestion(int answerId);
+        Task AnswerQuestion(int answerId);
         Task<GameInstance> SelectTerritory(string mapTerritoryName);
     }
 
@@ -123,7 +123,7 @@ namespace GameService.Services
             throw new Exception("Unknown error occured");
         }
 
-        public async Task AnswerMCQuestion(int answerId)
+        public async Task AnswerQuestion(int answerId)
         {
             var answeredAt = DateTime.Now;
 
@@ -172,6 +172,19 @@ namespace GameService.Services
                         throw new AnswerSubmittedGameException("You already voted for this question");
 
                     playerAttacking.AttackerMChoiceQAnswerId = answerId;
+                    break;
+
+                case AttackStage.NUMBER_NEUTRAL:
+                    var pAttacker = gm.CurrentRound
+                        .NeutralRound
+                        .TerritoryAttackers
+                        .First(x => x.AttackerId == userId);
+
+                    if(pAttacker.AttackerNumberQAnswer != null)
+                        throw new AnswerSubmittedGameException("You already voted for this question");
+
+                    pAttacker.AnsweredAt = DateTime.Now;
+                    pAttacker.AttackerNumberQAnswer = answerId;
                     break;
 
                 case AttackStage.MULTIPLE_PVP:

@@ -104,7 +104,19 @@ namespace GameService.Services.GameTimerServices
                         await neutralStageTimerEvents
                             .Close_Neutral_MultipleChoice_Question_Voting(timer);
                         return;
-                        #endregion
+                    #endregion
+
+                    case ActionState.SHOW_PREVIEW_GAME_MAP:
+                        await neutralStageTimerEvents.Show_Game_Map_Screen(timer);
+                        return;
+
+                    case ActionState.SHOW_NUMBER_QUESTION:
+                        await neutralStageTimerEvents.Show_Neutral_Number_Screen(timer);
+                        return;
+
+                    case ActionState.END_NUMBER_QUESTION:
+                        await neutralStageTimerEvents.Close_Neutral_Number_Question_Voting(timer);
+                        return;
                 }
             }
             catch(Exception ex)

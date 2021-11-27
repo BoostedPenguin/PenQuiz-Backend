@@ -85,6 +85,7 @@ namespace GameService.Models
         public int Id { get; set; }
         public int AttackOrderNumber { get; set; }
         public int? AttackedTerritoryId { get; set; }
+        public DateTime? AnsweredAt { get; set; }
         public bool? AttackerWon { get; set; }
         public int AttackerId { get; set; }
         public int NeutralRoundId { get; set; }

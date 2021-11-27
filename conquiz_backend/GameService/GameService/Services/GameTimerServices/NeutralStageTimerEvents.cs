@@ -18,8 +18,11 @@ namespace GameService.Services.GameTimerServices
     {
         Task Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
         Task Close_Neutral_MultipleChoice_Question_Voting(TimerWrapper timerWrapper);
+        Task Close_Neutral_Number_Question_Voting(TimerWrapper timerWrapper);
         Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
+        Task Show_Game_Map_Screen(TimerWrapper timerWrapper);
         Task Show_Neutral_MultipleChoice_Screen(TimerWrapper timerWrapper);
+        Task Show_Neutral_Number_Screen(TimerWrapper timerWrapper);
     }
 
     public class NeutralStageTimerEvents : INeutralStageTimerEvents
@@ -29,6 +32,7 @@ namespace GameService.Services.GameTimerServices
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
+        private readonly Random r = new Random();
 
         public NeutralStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext, 
@@ -211,6 +215,64 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Start();
         }
 
+        public async Task Show_Neutral_Number_Screen(TimerWrapper timerWrapper)
+        {
+            // Stop timer until we calculate the next action and client event
+            timerWrapper.Stop();
+
+            // Get the question and show it to the clients
+            var data = timerWrapper.Data;
+            var db = contextFactory.CreateDbContext();
+
+            // Show the question to the user
+            var question = await db.Questions
+                .Include(x => x.Answers)
+                .Include(x => x.Round)
+                .ThenInclude(x => x.GameInstance)
+                .ThenInclude(x => x.Participants)
+                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
+                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
+                .FirstOrDefaultAsync();
+
+
+            // Open this question for voting
+            question.Round.IsQuestionVotingOpen = true;
+            db.Update(question.Round);
+            await db.SaveChangesAsync();
+
+            var response = mapper.Map<QuestionClientResponse>(question);
+
+            // If the round is a neutral one, then everyone can attack
+            response.IsNeutral = true;
+            response.Participants = question.Round.GameInstance.Participants.ToArray();
+
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
+                GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION));
+
+
+            timerWrapper.Data.NextAction = ActionState.END_NUMBER_QUESTION;
+            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION);
+            timerWrapper.Start();
+        }
+
+        public async Task Show_Game_Map_Screen(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            var data = timerWrapper.Data;
+            var db = contextFactory.CreateDbContext();
+
+            await hubContext.Clients.Group(data.GameLink)
+                .Game_Show_Main_Screen(GameActionsTime.DefaultPreviewTime);
+
+            var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
+            await hubContext.Clients.Group(data.GameLink)
+                .GetGameInstance(fullGame);
+
+            timerWrapper.Data.NextAction = ActionState.SHOW_NUMBER_QUESTION;
+            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
+            timerWrapper.Start();
+        }
+
 
         public async Task Close_Neutral_MultipleChoice_Question_Voting(TimerWrapper timerWrapper)
         {
@@ -300,7 +362,7 @@ namespace GameService.Services.GameTimerServices
             }
 
             // Response correct answer and all player answers
-            var response = new PlayerQuestionAnswers()
+            var response = new MCPlayerQuestionAnswers()
             {
                 CorrectAnswerId = currentRound.Question.Answers.FirstOrDefault(x => x.Correct).Id,
                 PlayerAnswers = new List<PlayerIdAnswerId>(),
@@ -317,7 +379,161 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).QuestionPreviewResult(response);
 
-            timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
+            if(currentRound.GameRoundNumber == data.LastNeutralMCRound)
+            {
+                // Next action should be a number question related one
+                timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
+            }
+            else
+            {
+                timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
+            }
+            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
+
+            timerWrapper.Start();
+        }
+
+        public async Task Close_Neutral_Number_Question_Voting(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            var data = timerWrapper.Data;
+            var db = contextFactory.CreateDbContext();
+
+            var currentRound =
+                await db.Round
+                .Include(x => x.GameInstance)
+                .Include(x => x.Question)
+                .ThenInclude(x => x.Answers)
+                .Include(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
+                    && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            currentRound.IsQuestionVotingOpen = false;
+
+            var correctNumberQuestionAnswer = int.Parse(currentRound.Question.Answers.First().Answer);
+
+            var attackerAnswers = currentRound
+                .NeutralRound
+                .TerritoryAttackers
+                .Select(x => new
+                {
+                    x.AnsweredAt,
+                    x.AttackerId,
+                    x.AttackerNumberQAnswer,
+                });
+
+            // 2 things need to happen:
+            // First check for closest answer to the correct answer
+            // The closest answer wins the round
+            // If 2 or more answers are same check answeredAt and the person who answered
+            // The quickest wins the round
+
+            // Use case: If no person answered, then reward the a random territory to a random person
+            // (to prevent empty rounds)
+
+            var clientResponse = new NumberPlayerQuestionAnswers()
+            {
+                CorrectAnswer = correctNumberQuestionAnswer,
+                PlayerAnswers = new List<NumberPlayerIdAnswer>(),
+            };
+
+
+            foreach(var at in attackerAnswers)
+            {
+                if(at.AttackerNumberQAnswer == null)
+                {
+                    clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
+                    {
+                        Answer = null,
+                        AnsweredAt = null,
+                        PlayerId = at.AttackerId,
+                    });
+                    continue;
+                }
+                // Solution is to absolute value both of them
+                // Then subtract from each other
+                // Also have to make an absolute value the result
+
+                var difference = Math.Abs(correctNumberQuestionAnswer) - Math.Abs((int)at.AttackerNumberQAnswer);
+                var absoluteDifference = Math.Abs(difference);
+
+                clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
+                {
+                    Answer = at.AttackerNumberQAnswer,
+                    AnsweredAt = at.AnsweredAt,
+                    PlayerId = at.AttackerId,
+                    DifferenceWithCorrect = absoluteDifference,
+                });
+            }
+
+            // After calculating all answer differences, see who is the winner
+
+            // If all player answers are null (no one answered) give a random person a random territory
+            // Will prioritize matching borders instead of totally random territories
+            // Will make the map look more connected
+            
+            int winnerId;
+
+            // If no player answered
+            // Give out a random territory to one of them
+            if(clientResponse.PlayerAnswers.All(x => x.Answer == null))
+            {
+                var randomWinnerIndex = r.Next(0, clientResponse.PlayerAnswers.Count());
+                winnerId = clientResponse.PlayerAnswers[randomWinnerIndex].PlayerId;
+            }
+            else
+            {
+                // Order by answer first
+                // Then orderby answeredat
+                winnerId = clientResponse.PlayerAnswers
+                    .Where(x => x.Answer != null && x.AnsweredAt != null)
+                    .OrderBy(x => x.Answer)
+                    .ThenBy(x => x.AnsweredAt)
+                    .Select(x => x.PlayerId)
+                    .First();
+            }
+
+            var randomTerritory = await gameTerritoryService
+                .GetRandomMCTerritoryNeutral(winnerId, currentRound.GameInstanceId);
+
+            var selectedPersonObj = currentRound
+                .NeutralRound
+                .TerritoryAttackers
+                .First(x => x.AttackerId == winnerId);
+
+            // Client response winner
+            clientResponse.PlayerAnswers.ForEach(x => x.Winner = x.PlayerId == winnerId);
+            
+            // Update db
+            randomTerritory.TakenBy = winnerId;
+            randomTerritory.AttackedBy = null;
+            selectedPersonObj.AttackerWon = true;
+            selectedPersonObj.AttackedTerritoryId = randomTerritory.Id;
+
+            // All other attackers lost
+            currentRound
+                .NeutralRound
+                .TerritoryAttackers
+                .Where(x => x.AttackerId != winnerId)
+                .ToList()
+                .ForEach(x => x.AttackerWon = false);
+
+            // Go to next round
+            timerWrapper.Data.CurrentGameRoundNumber++;
+            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+
+            db.Update(randomTerritory);
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+
+            // Tell clients
+            await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
+
+            // Set next action
+            //timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
 
             timerWrapper.Start();
@@ -350,13 +566,12 @@ namespace GameService.Services.GameTimerServices
                 .ToListAsync();
 
             var numberQuestionRounds = new List<Round>();
-            int baseDebug = 5;
             for (var i = 0; i < untakenTerritoriesCount; i++)
             {
                 var baseRound = new Round()
                 {
                     // After this method executes we switch to the next round automatically thus + 1 now
-                    GameRoundNumber = baseDebug + i + 1,
+                    GameRoundNumber = data.LastNeutralMCRound + i + 1,
                     AttackStage = AttackStage.NUMBER_NEUTRAL,
                     Description = $"Number question. Attacker vs NEUTRAL territory",
                     IsQuestionVotingOpen = false,

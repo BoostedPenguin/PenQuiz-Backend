@@ -18,6 +18,9 @@ namespace GameService.Services.GameTimerServices
                 ActionState.CLOSE_PLAYER_ATTACK_VOTING => throw new NotImplementedException(),
                 ActionState.SHOW_MULTIPLE_CHOICE_QUESTION => 17000,
                 ActionState.END_MULTIPLE_CHOICE_QUESTION => throw new NotImplementedException(),
+                ActionState.SHOW_NUMBER_QUESTION => 17000,
+                ActionState.END_NUMBER_QUESTION => throw new NotImplementedException(),
+                ActionState.SHOW_MAP_NUMBER_QUESTION => throw new NotImplementedException(),
                 _ => throw new NotImplementedException(),
             };
         }

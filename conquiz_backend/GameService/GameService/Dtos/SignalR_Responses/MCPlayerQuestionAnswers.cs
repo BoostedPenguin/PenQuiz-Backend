@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace GameService.Dtos.SignalR_Responses
 {
-    public class PlayerQuestionAnswers
+    public class MCPlayerQuestionAnswers
     {
         public int CorrectAnswerId { get; set; }
         public List<PlayerIdAnswerId> PlayerAnswers { get; set; }
