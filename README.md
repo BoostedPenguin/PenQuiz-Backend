@@ -46,9 +46,10 @@ You can then access the backend production web server on https://localhost/api/a
 If you issued a self-signed SSL certificate you'd be prompted to allow access to this URL
 
 ## Microservices endpoints
-There are currently 2 microservices running on a single node:
+There are currently 3 microservices running on a single node:
 * AccountService - host/api/account
 * GameService - host/api/game
+* QuestionService - host/api/question
 
 ## Use https 
 The kubernetes cluster doesn't communicate with HTTPS between the pods, however if you want to expose it to the public you have to make sure that the public IP has valid HTTPS.
