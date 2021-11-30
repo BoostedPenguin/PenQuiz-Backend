@@ -24,6 +24,7 @@ namespace GameService.Models
         public int GameRoundNumber { get; set; }
         public bool IsTerritoryVotingOpen { get; set; }
         public bool IsQuestionVotingOpen { get; set; }
+        public DateTime? QuestionOpenedAt { get; set; }
         public string Description { get; set; }
 
 

@@ -16,7 +16,8 @@ namespace GameService.Dtos.SignalR_Responses
         public int PlayerId { get; set; }
         public int? Answer { get; set; }
         public int DifferenceWithCorrect { get; set; }
-        public DateTime? AnsweredAt { get; set; }
+        public double TimeElapsedNumber { get; set; }
+        public string TimeElapsed { get; set; }
         public bool Winner { get; set; }
     }
 }

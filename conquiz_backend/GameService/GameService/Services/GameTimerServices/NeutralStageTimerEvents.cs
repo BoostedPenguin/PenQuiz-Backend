@@ -237,6 +237,8 @@ namespace GameService.Services.GameTimerServices
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
+            question.Round.QuestionOpenedAt = DateTime.Now;
+
             db.Update(question.Round);
             await db.SaveChangesAsync();
 
@@ -262,7 +264,7 @@ namespace GameService.Services.GameTimerServices
             var db = contextFactory.CreateDbContext();
 
             await hubContext.Clients.Group(data.GameLink)
-                .Game_Show_Main_Screen(GameActionsTime.DefaultPreviewTime);
+                .ShowGameMap(GameActionsTime.DefaultPreviewTime);
 
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
@@ -340,6 +342,13 @@ namespace GameService.Services.GameTimerServices
                 );
             }
 
+            // Debug
+            if (currentRound.GameRoundNumber == 1)
+            {
+                currentRound.GameRoundNumber = 5;
+                timerWrapper.Data.CurrentGameRoundNumber = 5;
+            }
+
             // Create number question rounds if gm multiple choice neutral rounds are over
             Round[] rounds = null;
             if (currentRound.GameRoundNumber == data.LastNeutralMCRound)
@@ -377,7 +386,7 @@ namespace GameService.Services.GameTimerServices
                 });
             }
 
-            await hubContext.Clients.Groups(data.GameLink).QuestionPreviewResult(response);
+            await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
             if(currentRound.GameRoundNumber == data.LastNeutralMCRound)
             {
@@ -448,7 +457,7 @@ namespace GameService.Services.GameTimerServices
                     clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
                     {
                         Answer = null,
-                        AnsweredAt = null,
+                        TimeElapsed = "",
                         PlayerId = at.AttackerId,
                     });
                     continue;
@@ -460,10 +469,13 @@ namespace GameService.Services.GameTimerServices
                 var difference = Math.Abs(correctNumberQuestionAnswer) - Math.Abs((int)at.AttackerNumberQAnswer);
                 var absoluteDifference = Math.Abs(difference);
 
+                var timeElapsed = Math.Abs((currentRound.QuestionOpenedAt - at.AnsweredAt).Value.TotalSeconds);
+
                 clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
                 {
                     Answer = at.AttackerNumberQAnswer,
-                    AnsweredAt = at.AnsweredAt,
+                    TimeElapsedNumber = timeElapsed,
+                    TimeElapsed = timeElapsed.ToString("0.00"),
                     PlayerId = at.AttackerId,
                     DifferenceWithCorrect = absoluteDifference,
                 });
@@ -489,9 +501,9 @@ namespace GameService.Services.GameTimerServices
                 // Order by answer first
                 // Then orderby answeredat
                 winnerId = clientResponse.PlayerAnswers
-                    .Where(x => x.Answer != null && x.AnsweredAt != null)
-                    .OrderBy(x => x.Answer)
-                    .ThenBy(x => x.AnsweredAt)
+                    .Where(x => x.Answer != null && x.TimeElapsed != null)
+                    .OrderBy(x => x.DifferenceWithCorrect)
+                    .ThenBy(x => x.TimeElapsedNumber)
                     .Select(x => x.PlayerId)
                     .First();
             }
@@ -533,7 +545,7 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
             // Set next action
-            //timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
+            timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
 
             timerWrapper.Start();

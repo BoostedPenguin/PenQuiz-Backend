@@ -157,12 +157,12 @@ namespace GameService.Services
             if (!gm.CurrentRound.IsQuestionVotingOpen)
                 throw new AnswerSubmittedGameException("The voting stage for this question is either over or not started.");
 
-            if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerId))
-                throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
-
             switch (gm.CurrentRound.AttackStage)
             {
                 case AttackStage.MULTIPLE_NEUTRAL:
+                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerId))
+                        throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
+
                     var playerAttacking = gm.CurrentRound
                         .NeutralRound
                         .TerritoryAttackers
@@ -189,6 +189,9 @@ namespace GameService.Services
 
                 case AttackStage.MULTIPLE_PVP:
                     // Requesting user is the attacker
+                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerId))
+                        throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
+
                     var userAttacking = gm.CurrentRound
                         .PvpRound
                         .PvpRoundAnswers
