@@ -47,7 +47,7 @@ namespace QuestionService.Context
                 new Questions("In what year did World War 2 start?", "1939"),
                 new Questions("In what year did World War 1 end?", "1918"),
                 new Questions("In what year was the first case of COVID19 discovered?", "2019"),
-                new Questions("When did Bulgaria join the European Union?", "2016"),
+                new Questions("When did Bulgaria join the European Union?", "2007"),
                 new Questions("How much is the world population in November 2021", "7904393844"),
                 new Questions("What year was the very first model of the iPhone released?", "2007"),
                 new Questions("What year did the Titanic movie come out?", "1997"),
