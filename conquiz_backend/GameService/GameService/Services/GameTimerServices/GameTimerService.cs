@@ -122,6 +122,7 @@ namespace GameService.Services.GameTimerServices
             catch(Exception ex)
             {
                 await UnexpectedCriticalError(timer, ex.Message);
+                Console.WriteLine(ex);
             }
         }
 

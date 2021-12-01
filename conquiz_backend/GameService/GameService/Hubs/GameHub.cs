@@ -180,11 +180,11 @@ namespace GameService.Hubs
             }
         }
 
-        public async Task AnswerQuestion(int answerId)
+        public async Task AnswerQuestion(string answerIdNumber)
         {
             try
             {
-                await gameControlService.AnswerQuestion(answerId);
+                await gameControlService.AnswerQuestion(answerIdNumber);
             }
             catch(AnswerSubmittedGameException ex)
             {

@@ -91,7 +91,7 @@ namespace GameService.Models
         public int AttackerId { get; set; }
         public int NeutralRoundId { get; set; }
         public int? AttackerMChoiceQAnswerId { get; set; }
-        public int? AttackerNumberQAnswer { get; set; }
+        public long? AttackerNumberQAnswer { get; set; }
 
         public virtual ObjectTerritory AttackedTerritory { get; set; }
         public virtual NeutralRound NeutralRound { get; set; }

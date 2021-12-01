@@ -13,7 +13,7 @@ namespace GameService.Services
 {
     public interface IGameControlService
     {
-        Task AnswerQuestion(int answerId);
+        Task AnswerQuestion(string answerIdString);
         Task<GameInstance> SelectTerritory(string mapTerritoryName);
     }
 
@@ -123,7 +123,7 @@ namespace GameService.Services
             throw new Exception("Unknown error occured");
         }
 
-        public async Task AnswerQuestion(int answerId)
+        public async Task AnswerQuestion(string answerIdString)
         {
             var answeredAt = DateTime.Now;
 
@@ -160,7 +160,12 @@ namespace GameService.Services
             switch (gm.CurrentRound.AttackStage)
             {
                 case AttackStage.MULTIPLE_NEUTRAL:
-                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerId))
+
+                    bool successMNeutral = int.TryParse(answerIdString, out int answerIdMNeutral);
+                    if (!successMNeutral)
+                        throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
+                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerIdMNeutral))
                         throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
 
                     var playerAttacking = gm.CurrentRound
@@ -171,10 +176,15 @@ namespace GameService.Services
                     if (playerAttacking.AttackerMChoiceQAnswerId != null)
                         throw new AnswerSubmittedGameException("You already voted for this question");
 
-                    playerAttacking.AttackerMChoiceQAnswerId = answerId;
+                    playerAttacking.AttackerMChoiceQAnswerId = answerIdMNeutral;
                     break;
 
                 case AttackStage.NUMBER_NEUTRAL:
+
+                    bool successNNeutral = long.TryParse(answerIdString, out long answerIdNNeutral);
+                    if (!successNNeutral)
+                        throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
                     var pAttacker = gm.CurrentRound
                         .NeutralRound
                         .TerritoryAttackers
@@ -184,12 +194,17 @@ namespace GameService.Services
                         throw new AnswerSubmittedGameException("You already voted for this question");
 
                     pAttacker.AnsweredAt = DateTime.Now;
-                    pAttacker.AttackerNumberQAnswer = answerId;
+                    pAttacker.AttackerNumberQAnswer = answerIdNNeutral;
                     break;
 
                 case AttackStage.MULTIPLE_PVP:
+
+                    bool success = int.TryParse(answerIdString, out int answerIdMPvp);
+                    if (!success)
+                        throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
                     // Requesting user is the attacker
-                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerId))
+                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerIdMPvp))
                         throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
 
                     var userAttacking = gm.CurrentRound
@@ -200,7 +215,7 @@ namespace GameService.Services
                     if (userAttacking.MChoiceQAnswerId != null)
                         throw new ArgumentException("This user already voted for this question");
 
-                    userAttacking.MChoiceQAnswerId = answerId;
+                    userAttacking.MChoiceQAnswerId = answerIdMPvp;
                     break;
             }
 

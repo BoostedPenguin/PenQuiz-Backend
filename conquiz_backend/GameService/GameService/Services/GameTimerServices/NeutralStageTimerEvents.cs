@@ -422,7 +422,7 @@ namespace GameService.Services.GameTimerServices
 
             currentRound.IsQuestionVotingOpen = false;
 
-            var correctNumberQuestionAnswer = int.Parse(currentRound.Question.Answers.First().Answer);
+            var correctNumberQuestionAnswer = long.Parse(currentRound.Question.Answers.First().Answer);
 
             var attackerAnswers = currentRound
                 .NeutralRound
@@ -445,7 +445,7 @@ namespace GameService.Services.GameTimerServices
 
             var clientResponse = new NumberPlayerQuestionAnswers()
             {
-                CorrectAnswer = correctNumberQuestionAnswer,
+                CorrectAnswer = correctNumberQuestionAnswer.ToString(),
                 PlayerAnswers = new List<NumberPlayerIdAnswer>(),
             };
 
@@ -466,18 +466,19 @@ namespace GameService.Services.GameTimerServices
                 // Then subtract from each other
                 // Also have to make an absolute value the result
 
-                var difference = Math.Abs(correctNumberQuestionAnswer) - Math.Abs((int)at.AttackerNumberQAnswer);
+                var difference = Math.Abs(correctNumberQuestionAnswer) - Math.Abs((long)at.AttackerNumberQAnswer);
                 var absoluteDifference = Math.Abs(difference);
 
                 var timeElapsed = Math.Abs((currentRound.QuestionOpenedAt - at.AnsweredAt).Value.TotalSeconds);
 
                 clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
                 {
-                    Answer = at.AttackerNumberQAnswer,
+                    Answer = at.AttackerNumberQAnswer.ToString(),
                     TimeElapsedNumber = timeElapsed,
                     TimeElapsed = timeElapsed.ToString("0.00"),
+                    DifferenceWithCorrectNumber = absoluteDifference,
                     PlayerId = at.AttackerId,
-                    DifferenceWithCorrect = absoluteDifference,
+                    DifferenceWithCorrect = absoluteDifference.ToString(),
                 });
             }
 
@@ -502,7 +503,7 @@ namespace GameService.Services.GameTimerServices
                 // Then orderby answeredat
                 winnerId = clientResponse.PlayerAnswers
                     .Where(x => x.Answer != null && x.TimeElapsed != null)
-                    .OrderBy(x => x.DifferenceWithCorrect)
+                    .OrderBy(x => x.DifferenceWithCorrectNumber)
                     .ThenBy(x => x.TimeElapsedNumber)
                     .Select(x => x.PlayerId)
                     .First();
