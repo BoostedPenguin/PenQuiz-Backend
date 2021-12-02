@@ -88,15 +88,17 @@ namespace GameService.Services
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IGameTimerService gameTimerService;
         public const string DefaultMap = "Antarctica";
 
         public const int RequiredPlayers = 3;
         public const int InvitationCodeLength = 4;
 
-        public GameService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
+        public GameService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IGameTimerService gameTimerService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
+            this.gameTimerService = gameTimerService;
         }
 
         public async Task CancelOngoingGames()
@@ -229,6 +231,9 @@ namespace GameService.Services
                     {
                         gameInstance.GameState = GameState.CANCELED;
                         //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
+
+                        // Stop the timer for this gameinstance
+                        gameTimerService.CancelGameTimer(gameInstance);
 
                         db.Update(gameInstance);
                     }

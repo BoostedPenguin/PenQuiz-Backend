@@ -14,6 +14,7 @@ namespace GameService.Services.GameTimerServices
     public interface IGameTimerService
     {
         void OnGameStart(GameInstance gm);
+        void CancelGameTimer(GameInstance gm);
     }
 
     public class GameTimerService : IGameTimerService
@@ -155,6 +156,15 @@ namespace GameService.Services.GameTimerServices
 
             // Restart timer
             timerWrapper.Start();
+        }
+
+        public void CancelGameTimer(GameInstance gm)
+        {
+            var gameTimer = GameTimers.FirstOrDefault(x => x.Data.GameLink == gm.InvitationLink);
+            if (gameTimer == null) return;
+
+            gameTimer.Stop();
+            GameTimers.Remove(gameTimer);
         }
     }
 }
