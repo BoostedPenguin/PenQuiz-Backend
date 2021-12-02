@@ -343,11 +343,11 @@ namespace GameService.Services.GameTimerServices
             }
 
             // Debug
-            if (currentRound.GameRoundNumber == 1)
-            {
-                currentRound.GameRoundNumber = 5;
-                timerWrapper.Data.CurrentGameRoundNumber = 5;
-            }
+            //if (currentRound.GameRoundNumber == 1)
+            //{
+            //    currentRound.GameRoundNumber = 5;
+            //    timerWrapper.Data.CurrentGameRoundNumber = 5;
+            //}
 
             // Create number question rounds if gm multiple choice neutral rounds are over
             Round[] rounds = null;
@@ -579,7 +579,7 @@ namespace GameService.Services.GameTimerServices
                 .ToListAsync();
 
             var numberQuestionRounds = new List<Round>();
-            for (var i = 0; i < untakenTerritoriesCount; i++)
+            for (var i = 0; i < untakenTerritoriesCount - 1; i++)
             {
                 var baseRound = new Round()
                 {
