@@ -66,9 +66,26 @@ namespace QuestionService.Context
                 new Questions("Water has a pH level of around?", "7"),
                 new Questions("On a dartboard, what number is directly opposite No. 1?", "19"),
                 new Questions("How many colors are there in a rainbow?", "7"),
+                new Questions("How long is an Olympic swimming pool (in meters)?", "50"),
+                new Questions("Demolition of the Berlin wall began in what year?", "1989"),
+                new Questions("How many hearts does an octopus have?", "3"),
+                new Questions("How many legs does a spider have?", "8"),
+                new Questions("How many months do elephant pregnancies last?", "22"),
+                new Questions("How many teeth does an adult human have?", "32"),
+                new Questions("How many inches are in a foot?", "12"),
+                new Questions("How many zeros are in a million?", "6"),
+                new Questions("How many oceans are there?", "4"),
+                new Questions("What year was Minecraft released?", "2011"),
+                new Questions("When was the U.S. established?", "1776"),
+                new Questions("How many states did the U.S. start with?", "13"),
+                new Questions("How many Earths can fit inside the sun?", "1300000"),
+                new Questions("In which year was Notorious BIG (rapper) shot and killed?", "1997"),
+                new Questions("In which year was Tupac Shakur shot and killed?", "1996"),
+                new Questions("The British Raj lasted how many years in India?", "90"),
+                new Questions("When did the Eiffel Tower open?", "1889"),
             };
 
-            var result = questions.Where(x => !db.Questions.Any(y => y.Question == x.Question)).ToList();
+            var result = questions.Where(x => !db.Questions.Any(y => y.Question.ToLower() == x.Question.ToLower())).ToList();
 
             if(result.Count() != 0)
             {
