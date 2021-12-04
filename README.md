@@ -51,6 +51,8 @@ There are currently 3 microservices running on a single node:
 * GameService - host/api/game
 * QuestionService - host/api/question
 
+Backend is also using Keel.sh to poll dockerhub for new container images and redeploys a service if it finds a new digest.
+
 ## Use https 
 The kubernetes cluster doesn't communicate with HTTPS between the pods, however if you want to expose it to the public you have to make sure that the public IP has valid HTTPS.
 We use Cert Manager to manage our SSL Certificates
