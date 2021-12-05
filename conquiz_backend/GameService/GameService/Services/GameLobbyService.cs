@@ -296,8 +296,9 @@ namespace GameService.Services
 
         public async Task<Round[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers, int gameInstanceId)
         {
+            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(mapId);
 
-            var order = await GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), mapId);
+            var order = CommonTimerFunc.GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), totalTerritories, RequiredPlayers);
 
             // Create default rounds
             var finalRounds = new List<Round>();
@@ -393,63 +394,6 @@ namespace GameService.Services
 
             return allTerritories;
         }
-
-        class UserAttackOrder
-        {
-            /// <summary>
-            /// Goes like this:
-            /// First 3 rounds are stored in a list
-            /// Each person gets random attack order in them: 2, 3, 1
-            /// Then that gets stored in a list itself
-            /// 1 {1, 3, 2}   2 {2, 3, 1}  3{3, 1, 2} etc.
-            /// </summary>
-            public List<List<int>> UserRoundAttackOrders { get; set; }
-            public int TotalTerritories { get; set; }
-            public int LeftTerritories { get; set; }
-
-            public UserAttackOrder(List<List<int>> userRoundAttackOrders, int totalTerritories, int leftTerritories)
-            {
-                this.UserRoundAttackOrders = userRoundAttackOrders;
-                this.TotalTerritories = totalTerritories;
-                this.LeftTerritories = leftTerritories;
-            }
-        }
-
-        private async Task<UserAttackOrder> GenerateAttackOrder(List<int> userIds, int mapId)
-        {
-            if (userIds.Count != RequiredPlayers) throw new ArgumentException("There must be a total of 3 people in a game!");
-
-            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(mapId);
-
-            // 1 3 2   3 2 1
-
-            // Removing the capital territories;
-            var emptyTerritories = totalTerritories - RequiredPlayers;
-
-            if (emptyTerritories < RequiredPlayers) throw new ArgumentException("There are less than 3 territories left except the capital. Abort the game.");
-
-            // Store 
-            var attackOrder = new List<List<int>>();
-            while (emptyTerritories >= RequiredPlayers)
-            {
-                var fullRound = new List<int>();
-
-                while (fullRound.Count < RequiredPlayers)
-                {
-                    var person = userIds[r.Next(0, RequiredPlayers)];
-                    if (!fullRound.Contains(person))
-                    {
-                        fullRound.Add(person);
-                    }
-                }
-                attackOrder.Add(fullRound);
-                emptyTerritories -= fullRound.Count();
-            }
-
-            return new UserAttackOrder(attackOrder, totalTerritories, emptyTerritories);
-        }
-
-
 
 
         public string[] Avatars = new string[3]

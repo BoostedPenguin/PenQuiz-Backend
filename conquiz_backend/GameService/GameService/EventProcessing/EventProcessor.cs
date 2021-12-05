@@ -48,26 +48,38 @@ namespace GameService.EventProcessing
 
             var gm = db.GameInstance
                 .Include(x => x.Rounds)
+                .ThenInclude(x => x.PvpRound)
+                .Include(x => x.Rounds)
                 .ThenInclude(x => x.Question)
                 .Where(x => x.Id == questionsResponse.GameInstanceId)
                 .FirstOrDefault();
 
 
-            if(gm == null)
+            if (gm == null)
             {
                 Console.WriteLine("--> Game instance doesn't exist");
                 return;
             }
 
             var mapped = mapper.Map<Questions[]>(questionsResponse.QuestionResponses);
-            foreach(var receivedQuestion in mapped)
+            foreach (var receivedQuestion in mapped)
             {
                 var gameRound = gm.Rounds.Where(x => x.Id == receivedQuestion.RoundId).FirstOrDefault();
 
-                if(gameRound == null)
+
+
+                if (gameRound == null)
                 {
                     Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
                     continue;
+                }
+
+                // If secondary number question, switch to pvproundid instead of main roundid
+                if ((gameRound.AttackStage == AttackStage.NUMBER_PVP || gameRound.AttackStage == AttackStage.MULTIPLE_PVP)
+                    && receivedQuestion.Type == "number")
+                {
+                    receivedQuestion.PvpRoundId = gameRound.PvpRound.Id;
+                    receivedQuestion.RoundId = null;
                 }
                 db.AddAsync(receivedQuestion);
             }

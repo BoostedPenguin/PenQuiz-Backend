@@ -10,7 +10,7 @@ namespace GameService.Services
 {
     public interface IGameTerritoryService
     {
-        Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId);
+        Task<ObjectTerritory> GetRandomTerritory(int userId, int gameInstanceId, bool takenByCheck = true);
         Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral);
         Task<string[]> GetAvailableAttackTerritoriesNames(DefaultContext db, int userId, int gameInstanceId, bool isNeutral);
     }
@@ -84,8 +84,8 @@ namespace GameService.Services
                     .ToListAsync();
             }
 
+            untakenBorder = untakenBorder.Except(userTerritories).ToList();
             var matchingBorders = untakenBorder.Where(x => allPlayerBorders.Any(y => x.MapTerritoryId == y.Id)).ToList();
-
             return new UserBorderInformation()
             {
                 UserTerritories = userTerritories,
@@ -165,11 +165,11 @@ namespace GameService.Services
             }
         }
 
-        public async Task<ObjectTerritory> GetRandomMCTerritoryNeutral(int userId, int gameInstanceId)
+        public async Task<ObjectTerritory> GetRandomTerritory(int userId, int gameInstanceId, bool takenByCheck = true)
         {
             using var db = contextFactory.CreateDbContext();
 
-            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId);
+            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, takenByCheck);
 
             if (userBorderInfo.MatchingBorders.Count() > 0)
             {

@@ -16,13 +16,17 @@ namespace GameService.Services.GameTimerServices
 {
     public interface INeutralStageTimerEvents
     {
+        // Number
+        Task Show_Game_Map_Screen(TimerWrapper timerWrapper);
+        Task Close_Neutral_Number_Question_Voting(TimerWrapper timerWrapper);
+        Task Show_Neutral_Number_Screen(TimerWrapper timerWrapper);
+
+        // MultipleChoice
         Task Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
         Task Close_Neutral_MultipleChoice_Question_Voting(TimerWrapper timerWrapper);
-        Task Close_Neutral_Number_Question_Voting(TimerWrapper timerWrapper);
         Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
-        Task Show_Game_Map_Screen(TimerWrapper timerWrapper);
         Task Show_Neutral_MultipleChoice_Screen(TimerWrapper timerWrapper);
-        Task Show_Neutral_Number_Screen(TimerWrapper timerWrapper);
+        Task Debug_Assign_All_Territories_Start_Pvp(TimerWrapper timerWrapper);
     }
 
     public class NeutralStageTimerEvents : INeutralStageTimerEvents
@@ -31,6 +35,7 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly IMapGeneratorService mapGeneratorService;
         private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
 
@@ -38,12 +43,14 @@ namespace GameService.Services.GameTimerServices
             IHubContext<GameHub, IGameHub> hubContext, 
             IGameTerritoryService gameTerritoryService, 
             IMapper mapper,
+            IMapGeneratorService mapGeneratorService,
             IMessageBusClient messageBus)
         {
             contextFactory = _contextFactory;
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.mapGeneratorService = mapGeneratorService;
             this.messageBus = messageBus;
         }
 
@@ -112,7 +119,7 @@ namespace GameService.Services.GameTimerServices
             if (currentAttacker.AttackedTerritoryId == null)
             {
                 var randomTerritory =
-                    await gameTerritoryService.GetRandomMCTerritoryNeutral(currentAttacker.AttackerId, data.GameInstanceId);
+                    await gameTerritoryService.GetRandomTerritory(currentAttacker.AttackerId, data.GameInstanceId);
 
                 // Set this territory as being attacked from this person
                 currentAttacker.AttackedTerritoryId = randomTerritory.Id;
@@ -264,14 +271,14 @@ namespace GameService.Services.GameTimerServices
             var db = contextFactory.CreateDbContext();
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowGameMap(GameActionsTime.DefaultPreviewTime);
+                .ShowGameMap(GameActionsTime.NumberQuestionPreviewTime);
 
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(fullGame);
 
             timerWrapper.Data.NextAction = ActionState.SHOW_NUMBER_QUESTION;
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
+            timerWrapper.Interval = GameActionsTime.NumberQuestionPreviewTime;
             timerWrapper.Start();
         }
 
@@ -349,13 +356,6 @@ namespace GameService.Services.GameTimerServices
             //    timerWrapper.Data.CurrentGameRoundNumber = 5;
             //}
 
-            // Create number question rounds if gm multiple choice neutral rounds are over
-            Round[] rounds = null;
-            if (currentRound.GameRoundNumber == data.LastNeutralMCRound)
-            {
-                rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
-                await db.AddRangeAsync(rounds);
-            }
 
             // Go to next round
             timerWrapper.Data.CurrentGameRoundNumber++;
@@ -365,8 +365,20 @@ namespace GameService.Services.GameTimerServices
             await db.SaveChangesAsync();
 
             // Request a new batch of number questions from the question service
-            if (currentRound.GameRoundNumber == data.LastNeutralMCRound)
+            if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
             {
+                // Create number question rounds if gm multiple choice neutral rounds are over
+                var rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
+                await db.AddRangeAsync(rounds);
+                await db.SaveChangesAsync();
+                
+                data.LastNeutralNumberRound = db.Round
+                    .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                    .OrderByDescending(x => x.GameRoundNumber)
+                    .Select(x => x.GameRoundNumber)
+                    .First();
+
+
                 RequestQuestions(data.GameInstanceId, rounds, true);
             }
 
@@ -388,7 +400,7 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
-            if(currentRound.GameRoundNumber == data.LastNeutralMCRound)
+            if(data.CurrentGameRoundNumber > data.LastNeutralMCRound)
             {
                 // Next action should be a number question related one
                 timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
@@ -510,7 +522,7 @@ namespace GameService.Services.GameTimerServices
             }
 
             var randomTerritory = await gameTerritoryService
-                .GetRandomMCTerritoryNeutral(winnerId, currentRound.GameInstanceId);
+                .GetRandomTerritory(winnerId, currentRound.GameInstanceId);
 
             var selectedPersonObj = currentRound
                 .NeutralRound
@@ -534,6 +546,14 @@ namespace GameService.Services.GameTimerServices
                 .ToList()
                 .ForEach(x => x.AttackerWon = false);
 
+
+            // Debug
+            //if (currentRound.GameRoundNumber == 6)
+            //{
+            //    currentRound.GameRoundNumber = 22;
+            //    timerWrapper.Data.CurrentGameRoundNumber = 22;
+            //}
+
             // Go to next round
             timerWrapper.Data.CurrentGameRoundNumber++;
             currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
@@ -542,14 +562,78 @@ namespace GameService.Services.GameTimerServices
             db.Update(currentRound);
             await db.SaveChangesAsync();
 
+
+            // Request a new batch of number questions from the question service
+
+            if (data.CurrentGameRoundNumber > data.LastNeutralNumberRound)
+            {
+                // Create pvp question rounds if gm number neutral rounds are over
+                var rounds = await Create_Pvp_Rounds(db, timerWrapper, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
+                await db.AddRangeAsync(rounds);
+                await db.SaveChangesAsync();
+
+                RequestQuestions(data.GameInstanceId, rounds, false);
+            }
+
             // Tell clients
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
+
+            if (data.CurrentGameRoundNumber > data.LastNeutralNumberRound)
+            {
+                // Next action should be a pvp question related one
+                timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+            }
+            else
+            {
+                timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
+            }
+
             // Set next action
-            timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
 
             timerWrapper.Start();
+        }
+
+        private async Task<Round[]> Create_Pvp_Rounds(DefaultContext db, TimerWrapper timerWrapper, List<int> userIds)
+        {
+            int RequiredPlayers = 3;
+            var data = timerWrapper.Data;
+
+            var mapId = await db.Maps.Where(x => x.Name == "Antarctica").Select(x => x.Id).FirstAsync();
+            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(mapId);
+
+            var order = CommonTimerFunc.GenerateAttackOrder(userIds, totalTerritories, RequiredPlayers, false);
+
+            var finalRounds = new List<Round>();
+
+            var roundCounter = data.CurrentGameRoundNumber;
+
+            foreach(var fullRound in order.UserRoundAttackOrders)
+            {
+                foreach(var roundAttackerId in fullRound)
+                {
+                    var baseRound = new Round()
+                    {
+                        GameInstanceId = data.GameInstanceId,
+                        GameRoundNumber = roundCounter++,
+                        AttackStage = AttackStage.MULTIPLE_PVP,
+                        Description = $"MultipleChoice question. Attacker vs PVP territory",
+                        IsQuestionVotingOpen = false,
+                        IsTerritoryVotingOpen = false,
+                    };
+                    baseRound.PvpRound = new PvpRound()
+                    {
+                        AttackerId = roundAttackerId,
+                    };
+
+                    finalRounds.Add(baseRound);
+                }
+            }
+
+            var result = finalRounds.ToArray();
+
+            return result;
         }
 
         private void RequestQuestions(int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
@@ -560,8 +644,14 @@ namespace GameService.Services.GameTimerServices
             {
                 Event = "Question_Request",
                 GameInstanceId = gameInstanceId,
-                MultipleChoiceQuestionsRoundId = new List<int>(),
-                NumberQuestionsRoundId = rounds.Select(x => x.Id).ToList(),
+                MultipleChoiceQuestionsRoundId = rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL || 
+                        x.AttackStage == AttackStage.MULTIPLE_PVP)
+                    .Select(x => x.Id)
+                    .ToList(),
+                NumberQuestionsRoundId = rounds.Where(x => x.AttackStage == AttackStage.NUMBER_NEUTRAL ||
+                        x.AttackStage == AttackStage.NUMBER_PVP)
+                    .Select(x => x.Id)
+                    .ToList(),
                 IsNeutralGeneration = isNeutralGeneration,
             });
         }
@@ -579,12 +669,12 @@ namespace GameService.Services.GameTimerServices
                 .ToListAsync();
 
             var numberQuestionRounds = new List<Round>();
-            for (var i = 0; i < untakenTerritoriesCount - 1; i++)
+            for (var i = 0; i < untakenTerritoriesCount; i++)
             {
                 var baseRound = new Round()
                 {
                     // After this method executes we switch to the next round automatically thus + 1 now
-                    GameRoundNumber = data.LastNeutralMCRound + i + 1,
+                    GameRoundNumber = data.CurrentGameRoundNumber + i,
                     AttackStage = AttackStage.NUMBER_NEUTRAL,
                     Description = $"Number question. Attacker vs NEUTRAL territory",
                     IsQuestionVotingOpen = false,
@@ -610,6 +700,42 @@ namespace GameService.Services.GameTimerServices
             }
 
             return numberQuestionRounds.ToArray();
+        }
+
+        public async Task Debug_Assign_All_Territories_Start_Pvp(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            using var db = contextFactory.CreateDbContext();
+
+            var data = timerWrapper.Data;
+
+            var gm = db.GameInstance
+                .Include(x => x.Participants)
+                .Include(x => x.ObjectTerritory)
+                .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
+
+            var untakenTer = gm.ObjectTerritory.Where(x => x.TakenBy == null).ToList();
+
+            untakenTer.ForEach(x =>
+            {
+                var particip = gm.Participants.ToList();
+                var randomIndex = r.Next(0, gm.Participants.Count());
+                x.TakenBy = particip[randomIndex].PlayerId;
+            });
+            data.CurrentGameRoundNumber = 40;
+            gm.GameRoundNumber = 41;
+
+            var rounds = await Create_Pvp_Rounds(db, timerWrapper, gm.Participants.Select(x => x.PlayerId).ToList());
+            data.CurrentGameRoundNumber++;
+            await db.AddRangeAsync(rounds);
+            db.Update(gm);
+            await db.SaveChangesAsync();
+            
+            RequestQuestions(data.GameInstanceId, rounds, false);
+
+            timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+            timerWrapper.Interval = 3000;
+            timerWrapper.Start();
         }
     }
 }

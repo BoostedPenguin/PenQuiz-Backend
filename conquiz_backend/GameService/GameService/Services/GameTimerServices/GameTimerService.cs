@@ -21,15 +21,18 @@ namespace GameService.Services.GameTimerServices
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly INeutralStageTimerEvents neutralStageTimerEvents;
+        private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
 
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory,
             INeutralStageTimerEvents neutralStageTimerEvents,
+            IPvpStageTimerEvents pvpStageTimerEvents,
             IHubContext<GameHub, IGameHub> hubContext)
         {
             contextFactory = _contextFactory;
             this.neutralStageTimerEvents = neutralStageTimerEvents;
+            this.pvpStageTimerEvents = pvpStageTimerEvents;
             this.hubContext = hubContext;
         }
 
@@ -68,6 +71,8 @@ namespace GameService.Services.GameTimerServices
             var timer = (TimerWrapper)sender;
             timer.Stop();
 
+
+
             try
             {
                 switch (timer.Data.NextAction)
@@ -76,9 +81,12 @@ namespace GameService.Services.GameTimerServices
 
                         // Send request to clients to stay on main screen for preview
                         await Game_Preview_Time(timer);
+                        
+                        // Debug
+                        //await neutralStageTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
                         return;
 
-                    #region Neutral events
+                    #region Neutral Multiple Choice events
                     case ActionState.OPEN_PLAYER_ATTACK_VOTING:
 
                         // Send request to clients to open the multiple choice voting
@@ -107,6 +115,7 @@ namespace GameService.Services.GameTimerServices
                         return;
                     #endregion
 
+                    #region Neutral Number Events
                     case ActionState.SHOW_PREVIEW_GAME_MAP:
                         await neutralStageTimerEvents.Show_Game_Map_Screen(timer);
                         return;
@@ -118,6 +127,26 @@ namespace GameService.Services.GameTimerServices
                     case ActionState.END_NUMBER_QUESTION:
                         await neutralStageTimerEvents.Close_Neutral_Number_Question_Voting(timer);
                         return;
+                    #endregion
+
+                    #region Pvp Events
+                    case ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING:
+                        await pvpStageTimerEvents.Open_Pvp_MultipleChoice_Attacker_Territory_Selecting(timer);
+                        return;
+
+                    case ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING:
+                        await pvpStageTimerEvents.Close_Pvp_MultipleChoice_Attacker_Territory_Selecting(timer);
+                        return;
+
+                    case ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION:
+                        await pvpStageTimerEvents.Show_Pvp_MultipleChoice_Screen(timer);
+                        return;
+
+                    case ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION:
+                        await pvpStageTimerEvents.Close_Pvp_MultipleChoice_Question_Voting(timer);
+                        return;
+                    #endregion
+
                 }
             }
             catch(Exception ex)

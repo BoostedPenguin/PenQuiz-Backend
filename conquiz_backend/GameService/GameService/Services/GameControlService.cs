@@ -61,66 +61,109 @@ namespace GameService.Services
             if (!currentRoundOverview.IsTerritoryVotingOpen)
                 throw new GameException("The round's territory voting stage isn't open");
 
-            switch (currentRoundOverview.AttackStage)
+            // Selecting territory for multiple choice neutral rounds
+            if(currentRoundOverview.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
             {
-                case AttackStage.MULTIPLE_NEUTRAL:
-                    var neutralRound = await db.Round
-                        .Include(x => x.NeutralRound)
-                        .ThenInclude(x => x.TerritoryAttackers)
-                        .ThenInclude(x => x.AttackedTerritory)
-                        .Where(x => x.Id == currentRoundOverview.RoundId)
-                        .FirstOrDefaultAsync();
+                var neutralRound = await db.Round
+                    .Include(x => x.NeutralRound)
+                    .ThenInclude(x => x.TerritoryAttackers)
+                    .ThenInclude(x => x.AttackedTerritory)
+                    .Where(x => x.Id == currentRoundOverview.RoundId)
+                    .FirstOrDefaultAsync();
 
-                    // Check if it's this player's turn for selecting a neutral territory or not
+                // Check if it's this player's turn for selecting a neutral territory or not
 
-                    var currentTurnsPlayer = neutralRound
-                        .NeutralRound
-                        .TerritoryAttackers
-                        .FirstOrDefault(x => x.AttackOrderNumber == neutralRound.NeutralRound.AttackOrderNumber && x.AttackerId == userId);
+                var currentTurnsPlayer = neutralRound
+                    .NeutralRound
+                    .TerritoryAttackers
+                    .FirstOrDefault(x => x.AttackOrderNumber == neutralRound.NeutralRound.AttackOrderNumber && x.AttackerId == userId);
 
-                    if (currentTurnsPlayer == null)
-                        throw new GameException("Unknown player turn.");
+                if (currentTurnsPlayer == null)
+                    throw new GameException("Unknown player turn.");
 
-                    if (currentTurnsPlayer.AttackedTerritoryId != null)
-                        throw new BorderSelectedGameException("You already selected a territory for this round");
+                if (currentTurnsPlayer.AttackedTerritoryId != null)
+                    throw new BorderSelectedGameException("You already selected a territory for this round");
 
-                    var mapTerritory = await db.MapTerritory
-                        .Include(x => x.Map)
-                        .Where(x => x.TerritoryName == mapTerritoryName && x.Map.Name == DefaultMap)
-                        .FirstOrDefaultAsync();
+                var mapTerritory = await db.MapTerritory
+                    .Include(x => x.Map)
+                    .Where(x => x.TerritoryName == mapTerritoryName && x.Map.Name == DefaultMap)
+                    .FirstOrDefaultAsync();
 
-                    if (mapTerritory == null)
-                        throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
+                if (mapTerritory == null)
+                    throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
-                    var gameObjTerritory = await gameTerritoryService
-                        .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
+                var gameObjTerritory = await gameTerritoryService
+                    .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
 
-                    if (gameObjTerritory == null)
-                        throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
+                if (gameObjTerritory == null)
+                    throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
 
-                    if(gameObjTerritory.TakenBy != null)
-                        throw new BorderSelectedGameException("The selected territory is already taken by somebody else");
+                if (gameObjTerritory.TakenBy != null)
+                    throw new BorderSelectedGameException("The selected territory is already taken by somebody else");
 
-                    // Set this territory as being attacked from this person
-                    currentTurnsPlayer.AttackedTerritoryId = gameObjTerritory.Id;
+                // Set this territory as being attacked from this person
+                currentTurnsPlayer.AttackedTerritoryId = gameObjTerritory.Id;
 
-                    // Set the ObjectTerritory as being attacked currently
-                    gameObjTerritory.AttackedBy = currentTurnsPlayer.AttackerId;
-                    db.Update(gameObjTerritory);
-                    db.Update(currentTurnsPlayer);
+                // Set the ObjectTerritory as being attacked currently
+                gameObjTerritory.AttackedBy = currentTurnsPlayer.AttackerId;
+                db.Update(gameObjTerritory);
+                db.Update(currentTurnsPlayer);
 
-                    await db.SaveChangesAsync();
+                await db.SaveChangesAsync();
 
-                    return await CommonTimerFunc.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
+                return await CommonTimerFunc.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
 
-                case AttackStage.NUMBER_NEUTRAL:
-                    throw new NotImplementedException();
-                case AttackStage.MULTIPLE_PVP:
-                    throw new NotImplementedException();
-                case AttackStage.NUMBER_PVP:
-                    throw new NotImplementedException();
             }
-            throw new Exception("Unknown error occured");
+
+            // Selecting territory for multiple choice pvp rounds
+            else if (currentRoundOverview.AttackStage == AttackStage.MULTIPLE_PVP)
+            {
+                var pvpRound = await db.Round
+                    .Include(x => x.PvpRound)
+                    .ThenInclude(x => x.PvpRoundAnswers)
+                    .Include(x => x.PvpRound)
+                    .ThenInclude(x => x.AttackedTerritory)
+                    .Where(x => x.Id == currentRoundOverview.RoundId)
+                    .FirstOrDefaultAsync();
+
+                // Person who selected a territory is the attacker
+                if(pvpRound.PvpRound.AttackerId != userId)
+                    throw new GameException("Not this players turn");
+
+                if(pvpRound.PvpRound.AttackedTerritoryId != null)
+                    throw new BorderSelectedGameException("You already selected a territory for this round");
+
+                var mapTerritory = await db.MapTerritory
+                    .Include(x => x.Map)
+                    .Where(x => x.TerritoryName == mapTerritoryName && x.Map.Name == DefaultMap)
+                    .FirstOrDefaultAsync();
+
+                if (mapTerritory == null)
+                    throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
+
+                var gameObjTerritory = await gameTerritoryService
+                    .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, false);
+
+                if (gameObjTerritory == null)
+                    throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
+
+                // Set this territory as being attacked from this person
+                pvpRound.PvpRound.AttackedTerritoryId = gameObjTerritory.Id;
+                pvpRound.PvpRound.DefenderId = gameObjTerritory.TakenBy;
+
+                // Set the ObjectTerritory as being attacked currently
+                gameObjTerritory.AttackedBy = pvpRound.PvpRound.AttackerId;
+                db.Update(gameObjTerritory);
+                db.Update(pvpRound);
+
+                await db.SaveChangesAsync();
+
+                return await CommonTimerFunc.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
+            }
+            else
+            {
+                throw new GameException("Current round isn't either multiple neutral nor multiple pvp");
+            }
         }
 
         public async Task AnswerQuestion(string answerIdString)
@@ -206,27 +249,30 @@ namespace GameService.Services
                     // Requesting user is the attacker
                     if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerIdMPvp))
                         throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
-
+                    
+                    if (userId != gm.CurrentRound.PvpRound.AttackerId && userId != gm.CurrentRound.PvpRound.DefenderId)
+                        throw new AnswerSubmittedGameException("You can't vote for this question");
+                    
                     var userAttacking = gm.CurrentRound
                         .PvpRound
                         .PvpRoundAnswers
-                        .First(x => x.UserId == userId);
+                        .FirstOrDefault(x => x.UserId == userId);
 
-                    if (userAttacking.MChoiceQAnswerId != null)
+                    if (userAttacking != null && userAttacking.MChoiceQAnswerId != null)
                         throw new ArgumentException("This user already voted for this question");
 
-                    userAttacking.MChoiceQAnswerId = answerIdMPvp;
+                    var result = new PvpRoundAnswers()
+                    {
+                        MChoiceQAnswerId = answerIdMPvp,
+                        UserId = userId
+                    };
+                    gm.CurrentRound.PvpRound.PvpRoundAnswers.Add(result);
                     break;
             }
 
             db.Update(gm.CurrentRound);
 
             await db.SaveChangesAsync();
-        }
-
-        public async Task AnswerNumberQuestion()
-        {
-
         }
     }
 }

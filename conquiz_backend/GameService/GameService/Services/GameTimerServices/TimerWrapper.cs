@@ -24,6 +24,7 @@ namespace GameService.Services.GameTimerServices
             }
             public int GameInstanceId { get; set; }
             public int LastNeutralMCRound { get; set; }
+            public int LastNeutralNumberRound { get; set; }
 
             // This is the invitation link which also acts as a group ID for signalR
             public string GameLink { get; set; }

@@ -4,14 +4,16 @@ using GameService.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace GameService.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20211204131624_fixedPVPNumberQuestion")]
+    partial class fixedPVPNumberQuestion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -340,9 +342,8 @@ namespace GameService.Migrations
                         .HasColumnName("id")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int?>("AttackedTerritoryId")
-                        .HasColumnType("int")
-                        .HasColumnName("attackedTerritoryId");
+                    b.Property<int>("AttackedTerritoryId")
+                        .HasColumnType("int");
 
                     b.Property<int>("AttackerId")
                         .HasColumnType("int")
@@ -644,7 +645,10 @@ namespace GameService.Migrations
                 {
                     b.HasOne("GameService.Models.ObjectTerritory", "AttackedTerritory")
                         .WithMany("PvpRounds")
-                        .HasForeignKey("AttackedTerritoryId");
+                        .HasForeignKey("AttackedTerritoryId")
+                        .HasConstraintName("FK__attTer__pvpRou__123JKAWD")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("GameService.Models.Round", "Round")
                         .WithOne("PvpRound")

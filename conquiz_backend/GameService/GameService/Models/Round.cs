@@ -40,13 +40,11 @@ namespace GameService.Models
         {
             PvpRoundAnswers = new HashSet<PvpRoundAnswers>();
         }
-
         public int Id { get; set; }
         public int AttackerId { get; set; }
         public int? DefenderId { get; set; }
         public int? WinnerId { get; set; }
-        public int AttackedTerritoryId { get; set; }
-        public int NumberQuestionId { get; set; }
+        public int? AttackedTerritoryId { get; set; }
         public int RoundId { get; set; }
 
         public virtual Questions NumberQuestion { get; set; }

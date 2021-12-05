@@ -226,6 +226,11 @@ namespace GameService.Context
                     .WithOne(x => x.Question)
                     .HasForeignKey<Questions>(e => e.RoundId)
                     .OnDelete(DeleteBehavior.ClientSetNull);
+
+                entity.HasOne(d => d.PvpRoundNum)
+                    .WithOne(x => x.NumberQuestion)
+                    .HasForeignKey<Questions>(e => e.PvpRoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
             });
 
             modelBuilder.Entity<Round>(entity =>
@@ -332,10 +337,9 @@ namespace GameService.Context
                     .HasForeignKey<PvpRound>(e => e.RoundId)
                     .OnDelete(DeleteBehavior.ClientSetNull);
 
-                entity.HasOne(d => d.AttackedTerritory)
-                    .WithMany(p => p.PvpRounds)
-                    .HasForeignKey(d => d.AttackedTerritoryId)
-                    .HasConstraintName("FK__attTer__pvpRou__123JKAWD");
+                entity.Property(e => e.AttackedTerritoryId)
+                    .HasColumnName("attackedTerritoryId")
+                    .IsRequired(false);
             });
 
             modelBuilder.Entity<PvpRoundAnswers>(entity =>
