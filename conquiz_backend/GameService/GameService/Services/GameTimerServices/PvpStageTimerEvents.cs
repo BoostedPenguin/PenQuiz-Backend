@@ -3,6 +3,7 @@ using GameService.Context;
 using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
+using GameService.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -20,6 +21,8 @@ namespace GameService.Services.GameTimerServices
         Task Close_Pvp_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
         Task Close_Pvp_MultipleChoice_Question_Voting(TimerWrapper timerWrapper);
         Task Show_Pvp_MultipleChoice_Screen(TimerWrapper timerWrapper);
+        Task Show_Pvp_Number_Screen(TimerWrapper timerWrapper);
+        Task Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper);
     }
 
     public class PvpStageTimerEvents : IPvpStageTimerEvents
@@ -29,6 +32,8 @@ namespace GameService.Services.GameTimerServices
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
+        private object participantIds;
+        private readonly Random r;
 
         public PvpStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
@@ -141,7 +146,7 @@ namespace GameService.Services.GameTimerServices
                 .PvpRoundAnswers
                 .FirstOrDefault(x => x.UserId == currentRound.PvpRound.DefenderId);
 
-
+            bool bothPlayersAnsweredCorrectly = false;
             // Attacker didn't answer, automatically loses
             if (attackerAnswer == null || attackerAnswer.MChoiceQAnswerId == null)
             {
@@ -177,14 +182,16 @@ namespace GameService.Services.GameTimerServices
                     // Both people answered correctly, show a blitz number question
                     else
                     {
-                        // A new number question has to be shown
-                        throw new NotImplementedException("A new number question has to be shown");
+                        bothPlayersAnsweredCorrectly = true;
                     }
                 }
             }
 
-            timerWrapper.Data.CurrentGameRoundNumber++;
-            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            if(!bothPlayersAnsweredCorrectly)
+            {
+                timerWrapper.Data.CurrentGameRoundNumber++;
+                currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            }
 
             db.Update(currentRound);
             await db.SaveChangesAsync();
@@ -210,10 +217,173 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
-            timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+            if(bothPlayersAnsweredCorrectly)
+            {
+                timerWrapper.Data.NextAction = ActionState.SHOW_PVP_NUMBER_QUESTION;
+            }
+            else
+            {
+                timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+            }
 
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
 
+            timerWrapper.Start();
+        }
+
+        public async Task Show_Pvp_Number_Screen(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            var data = timerWrapper.Data;
+            var db = contextFactory.CreateDbContext();
+
+            var question = await db.Questions
+                .Include(x => x.Answers)
+                .Include(x => x.PvpRoundNum)
+                .ThenInclude(x => x.Round)
+                .ThenInclude(x => x.GameInstance)
+                .ThenInclude(x => x.Participants)
+                .Where(x => x.PvpRoundNum.Round.GameInstanceId == data.GameInstanceId &&
+                    x.PvpRoundNum.Round.GameRoundNumber == data.CurrentGameRoundNumber)
+                .FirstOrDefaultAsync();
+
+            question.PvpRoundNum.Round.IsQuestionVotingOpen = true;
+            question.PvpRoundNum.Round.QuestionOpenedAt = DateTime.Now;
+
+            question.PvpRoundNum.Round.AttackStage = AttackStage.NUMBER_PVP;
+            db.Update(question);
+            await db.SaveChangesAsync();
+
+            var response = mapper.Map<QuestionClientResponse>(question);
+
+            response.IsNeutral = false;
+            response.Participants = question
+                .PvpRoundNum
+                .Round
+                .GameInstance
+                .Participants
+                .Where(x => x.PlayerId == question.PvpRoundNum.AttackerId || x.PlayerId == question.PvpRoundNum.DefenderId)
+                .ToArray();
+
+            response.AttackerId = question.PvpRoundNum.AttackerId;
+            response.DefenderId = question.PvpRoundNum.DefenderId ?? 0;
+
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
+                GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION));
+
+
+            timerWrapper.Data.NextAction = ActionState.END_PVP_NUMBER_QUESTION;
+            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION);
+            timerWrapper.Start();
+        }
+
+        public async Task Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            var data = timerWrapper.Data;
+            using var db = contextFactory.CreateDbContext();
+
+            var currentRound =
+                await db.Round
+                .Include(x => x.GameInstance)
+                .Include(x => x.PvpRound)
+                .ThenInclude(x => x.NumberQuestion)
+                .ThenInclude(x => x.Answers)
+                .Include(x => x.PvpRound)
+                .ThenInclude(x => x.PvpRoundAnswers)
+                .Include(x => x.PvpRound)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
+                    && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            currentRound.IsQuestionVotingOpen = false;
+
+            var correctNumberQuestionAnswer = long.Parse(currentRound.PvpRound.NumberQuestion.Answers.First().Answer);
+
+            var playerAnswers = currentRound.PvpRound.PvpRoundAnswers.Select(x => new
+            {
+                x.NumberQAnswer,
+                x.UserId,
+                x.NumberQAnsweredAt,
+            });
+
+            var clientResponse = new NumberPlayerQuestionAnswers()
+            {
+                CorrectAnswer = correctNumberQuestionAnswer.ToString(),
+                PlayerAnswers = new List<NumberPlayerIdAnswer>(),
+            };
+
+            foreach(var player in playerAnswers)
+            {
+                if (player.NumberQAnswer == null)
+                {
+                    clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
+                    {
+                        Answer = null,
+                        TimeElapsed = "",
+                        PlayerId = player.UserId,
+                    });
+                    continue;
+                }
+
+                var difference = Math.Abs(correctNumberQuestionAnswer) - Math.Abs((long)player.NumberQAnswer);
+                var absoluteDifference = Math.Abs(difference);
+
+                var timeElapsed = Math.Abs((currentRound.QuestionOpenedAt - player.NumberQAnsweredAt).Value.TotalSeconds);
+
+                clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
+                {
+                    Answer = player.NumberQAnswer.ToString(),
+                    TimeElapsedNumber = timeElapsed,
+                    TimeElapsed = timeElapsed.ToString("0.00"),
+                    DifferenceWithCorrectNumber = absoluteDifference,
+                    PlayerId = player.UserId,
+                    DifferenceWithCorrect = absoluteDifference.ToString(),
+                });
+            }
+
+            int winnerId;
+
+            // If no player answered
+            // Defender won
+            if (clientResponse.PlayerAnswers.All(x => x.Answer == null))
+            {
+                winnerId = currentRound.PvpRound.DefenderId ?? 0;
+            }
+            else
+            {
+                // Order by answer first
+                // Then orderby answeredat
+                winnerId = clientResponse.PlayerAnswers
+                    .Where(x => x.Answer != null && x.TimeElapsed != null)
+                    .OrderBy(x => x.DifferenceWithCorrectNumber)
+                    .ThenBy(x => x.TimeElapsedNumber)
+                    .Select(x => x.PlayerId)
+                    .First();
+            }
+
+            // Winner gets territory (if defender it stays his)
+            currentRound.PvpRound.AttackedTerritory.TakenBy = winnerId;
+            currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
+            currentRound.PvpRound.WinnerId = winnerId;
+
+
+            clientResponse.PlayerAnswers.ForEach(x => x.Winner = x.PlayerId == winnerId);
+
+
+            // Go to next round
+            timerWrapper.Data.CurrentGameRoundNumber++;
+            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+
+            await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
+
+            // Set next action
+            timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
             timerWrapper.Start();
         }
 

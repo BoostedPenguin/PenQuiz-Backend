@@ -268,6 +268,23 @@ namespace GameService.Services
                     };
                     gm.CurrentRound.PvpRound.PvpRoundAnswers.Add(result);
                     break;
+
+                case AttackStage.NUMBER_PVP:
+                    bool successNPvp = long.TryParse(answerIdString, out long answerIdNPvp);
+                    if (!successNPvp)
+                        throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
+                    var pvpAttacker = gm.CurrentRound
+                        .PvpRound
+                        .PvpRoundAnswers
+                        .First(x => x.UserId == userId);
+
+                    if (pvpAttacker.NumberQAnswer != null)
+                        throw new AnswerSubmittedGameException("You already voted for this question");
+
+                    pvpAttacker.NumberQAnsweredAt = DateTime.Now;
+                    pvpAttacker.NumberQAnswer = answerIdNPvp;
+                    break;
             }
 
             db.Update(gm.CurrentRound);

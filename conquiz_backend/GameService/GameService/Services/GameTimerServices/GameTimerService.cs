@@ -80,10 +80,10 @@ namespace GameService.Services.GameTimerServices
                     case ActionState.GAME_START_PREVIEW_TIME:
 
                         // Send request to clients to stay on main screen for preview
-                        await Game_Preview_Time(timer);
+                        //await Game_Preview_Time(timer);
                         
                         // Debug
-                        //await neutralStageTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        await neutralStageTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
                         return;
 
                     #region Neutral Multiple Choice events
@@ -144,6 +144,14 @@ namespace GameService.Services.GameTimerServices
 
                     case ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION:
                         await pvpStageTimerEvents.Close_Pvp_MultipleChoice_Question_Voting(timer);
+                        return;
+
+                    case ActionState.SHOW_PVP_NUMBER_QUESTION:
+                        await pvpStageTimerEvents.Show_Pvp_Number_Screen(timer);
+                        return;
+
+                    case ActionState.END_PVP_NUMBER_QUESTION:
+                        await pvpStageTimerEvents.Close_Pvp_Number_Question_Voting(timer);
                         return;
                     #endregion
 

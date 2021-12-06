@@ -32,5 +32,8 @@ namespace GameService.Services.GameTimerServices
         SHOW_PVP_MULTIPLE_CHOICE_QUESTION,
         END_PVP_MULTIPLE_CHOICE_QUESTION,
 
+        SHOW_PVP_NUMBER_QUESTION,
+        END_PVP_NUMBER_QUESTION,
+
     }
 }

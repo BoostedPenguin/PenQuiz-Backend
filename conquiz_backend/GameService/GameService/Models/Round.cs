@@ -59,7 +59,8 @@ namespace GameService.Models
         public int UserId { get; set; }
 
         public int? MChoiceQAnswerId { get; set; }
-        public int? NumberQAnswer { get; set; }
+        public long? NumberQAnswer { get; set; }
+        public DateTime? NumberQAnsweredAt { get; set; }
         public int PvpRoundId { get; set; }
 
         public virtual PvpRound PvpRound { get; set; }
