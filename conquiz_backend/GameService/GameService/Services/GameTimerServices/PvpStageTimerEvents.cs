@@ -171,6 +171,8 @@ namespace GameService.Services.GameTimerServices
                 }
                 else
                 {
+
+
                     // Defender didn't vote, he lost
                     if (defenderAnswer == null || defenderAnswer.MChoiceQAnswerId == null)
                     {
@@ -182,7 +184,24 @@ namespace GameService.Services.GameTimerServices
                     // Both people answered correctly, show a blitz number question
                     else
                     {
-                        bothPlayersAnsweredCorrectly = true;
+                        var didDefenderAnswerCorrectly = currentRound
+                            .Question
+                            .Answers
+                            .First(x => x.Id == defenderAnswer.MChoiceQAnswerId)
+                            .Correct;
+
+                        // If defender answered incorrectly attacker wins
+                        if (!didDefenderAnswerCorrectly)
+                        {
+                            // Player answered incorrecly, release isattacked lock on objterritory
+                            currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
+                            currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
+                            currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
+                        }
+                        else
+                        {
+                            bothPlayersAnsweredCorrectly = true;
+                        }
                     }
                 }
             }

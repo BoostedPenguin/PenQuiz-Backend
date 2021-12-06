@@ -49,9 +49,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.MapTerritory)
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 
-            game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
 
-            var ss = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
             foreach (var round in game.Rounds)
             {
                 if(round.AttackStage == AttackStage.MULTIPLE_NEUTRAL || round.AttackStage == AttackStage.NUMBER_NEUTRAL)
@@ -61,6 +59,7 @@ namespace GameService.Services.GameTimerServices
                 }
             }
 
+            game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
             return game;
         }
 
