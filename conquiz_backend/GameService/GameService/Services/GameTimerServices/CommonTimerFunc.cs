@@ -1,5 +1,7 @@
 ﻿using GameService.Context;
+using GameService.Dtos;
 using GameService.Hubs;
+using GameService.MessageBus;
 using GameService.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -96,6 +98,26 @@ namespace GameService.Services.GameTimerServices
             }
 
             return new UserAttackOrder(attackOrder, totalTerritories, emptyTerritories);
+        }
+
+        public static void RequestQuestions(IMessageBusClient messageBus, int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
+        {
+            // Request questions only for the initial multiple questions for neutral attacking order
+            // After multiple choices are over, request a new batch for number questions for all untaken territories
+            messageBus.RequestQuestions(new RequestQuestionsDto()
+            {
+                Event = "Question_Request",
+                GameInstanceId = gameInstanceId,
+                MultipleChoiceQuestionsRoundId = rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL ||
+                        x.AttackStage == AttackStage.MULTIPLE_PVP)
+                    .Select(x => x.Id)
+                    .ToList(),
+                NumberQuestionsRoundId = rounds.Where(x => x.AttackStage == AttackStage.NUMBER_NEUTRAL ||
+                        x.AttackStage == AttackStage.NUMBER_PVP)
+                    .Select(x => x.Id)
+                    .ToList(),
+                IsNeutralGeneration = isNeutralGeneration,
+            });
         }
     }
 }

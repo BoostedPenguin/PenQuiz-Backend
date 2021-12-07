@@ -71,7 +71,9 @@ namespace GameService
 
             services.AddSingleton<IGameTimerService, GameTimerService>();
 
-            services.AddSingleton<INeutralStageTimerEvents, NeutralStageTimerEvents>();
+            // Neutral stage
+            services.AddSingleton<INeutralNumberTimerEvents, NeutralNumberTimerEvents>();
+            services.AddSingleton<INeutralMCTimerEvents, NeutralMCTimerEvents>();
 
             services.AddSingleton<IPvpStageTimerEvents, PvpStageTimerEvents>();
 
