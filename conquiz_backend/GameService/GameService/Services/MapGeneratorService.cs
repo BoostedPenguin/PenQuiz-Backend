@@ -30,12 +30,10 @@ namespace GameService.Services
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
-        private readonly IHttpContextAccessor httpContextAccessor;
         private const string defaultMapFile = "Antarctica";
-        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor) : base(_contextFactory)
+        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
-            this.httpContextAccessor = httpContextAccessor;
         }
 
         private async Task<bool> AddBorderIfNotExistant(int territoryId, int territoryId2)
