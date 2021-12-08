@@ -75,9 +75,41 @@ namespace QuestionService.EventProcessing
                     messageBus.PublishRequestedQuestions(response);
 
                     break;
+                case EventType.CapitalQuestionRequest:
+                    await CapitalRequest(message);
+
+                    break;
                 default:
                     break;
             }
+        }
+
+        private async Task CapitalRequest(string message)
+        {
+            var capitalRequest = JsonSerializer.Deserialize<CapitalQuestionRequest>(message);
+
+            var sessionToken =
+                await openDBService.GenerateSessionToken(capitalRequest.GameInstanceId);
+
+            var mulChoiceQuestions = await
+                openDBService.GetMultipleChoiceQuestion(sessionToken.Token, capitalRequest.QuestionsCapitalRoundId);
+
+            var numberQuestions =
+                await numberQuestionsService.GetNumberQuestions(capitalRequest.QuestionsCapitalRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);
+
+            // Add both questions
+            mulChoiceQuestions.AddRange(numberQuestions);
+
+            var mappedQuestions = mapper.Map<QuestionResponse[]>(mulChoiceQuestions);
+
+            var response = new QResponse()
+            {
+                GameInstanceId = capitalRequest.GameInstanceId,
+                QuestionResponses = mappedQuestions,
+                Event = "Capital_Question_Response",
+            };
+
+            messageBus.PublishRequestedQuestions(response);
         }
 
         private EventType DetermineEvent(string notificationMessage)
@@ -88,6 +120,9 @@ namespace QuestionService.EventProcessing
 
             switch (eventType.Event)
             {
+                case "Capital_Question_Request":
+                    Console.WriteLine("Capital Question Request Event Detected");
+                    return EventType.CapitalQuestionRequest;
                 case "Question_Request":
                     Console.WriteLine("Question Request Event Detected");
                     return EventType.QuestionRequest;
@@ -100,6 +135,7 @@ namespace QuestionService.EventProcessing
 
     enum EventType
     {
+        CapitalQuestionRequest,
         QuestionRequest,
         Undetermined
     }

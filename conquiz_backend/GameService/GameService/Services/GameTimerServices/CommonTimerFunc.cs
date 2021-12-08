@@ -100,6 +100,18 @@ namespace GameService.Services.GameTimerServices
             return new UserAttackOrder(attackOrder, totalTerritories, emptyTerritories);
         }
 
+        public static void RequestCapitalQuestions(IMessageBusClient messageBus, int gameInstanceId, List<int> capitalRoundsIds)
+        {
+            // Request questions only for the initial multiple questions for neutral attacking order
+            // After multiple choices are over, request a new batch for number questions for all untaken territories
+            messageBus.RequestQuestions(new RequestCapitalQuestionsDto()
+            {
+                Event = "Capital_Question_Request",
+                GameInstanceId = gameInstanceId,
+                QuestionsCapitalRoundId = capitalRoundsIds,
+            });
+        }
+
         public static void RequestQuestions(IMessageBusClient messageBus, int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
         {
             // Request questions only for the initial multiple questions for neutral attacking order

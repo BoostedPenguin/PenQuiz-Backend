@@ -16,6 +16,7 @@ namespace GameService.MessageBus
     public interface IMessageBusClient
     {
         void RequestQuestions(RequestQuestionsDto requestQuestionsDto);
+        void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto);
     }
 
     public class MessageBusClient : IMessageBusClient, IDisposable
@@ -65,15 +66,15 @@ namespace GameService.MessageBus
             Console.WriteLine("--> RabbitMQ Connection Shutdown");
         }
 
-        public void RequestQuestions(RequestQuestionsDto requestQuestionsDto)
+        private void QRequest(object requestDto)
         {
-            var message = JsonSerializer.Serialize(requestQuestionsDto);
+            var message = JsonSerializer.Serialize(requestDto);
 
             if (connection.IsOpen)
             {
                 Console.WriteLine("--> RabbitMQ Connection Open, sending message...");
 
-                if(env.IsProduction())
+                if (env.IsProduction())
                 {
                     SendMessage(message, "question_request");
                 }
@@ -86,6 +87,16 @@ namespace GameService.MessageBus
             {
                 Console.WriteLine("--> RabbitMQ connectionis closed, not sending");
             }
+        }
+
+        public void RequestQuestions(RequestQuestionsDto requestQuestionsDto)
+        {
+            QRequest(requestQuestionsDto);
+        }
+
+        public void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto)
+        {
+            QRequest(requestQuestionsDto);
         }
 
         private void SendMessage(string message, string rk)

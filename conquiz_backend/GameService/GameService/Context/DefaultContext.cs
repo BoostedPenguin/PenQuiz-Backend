@@ -30,6 +30,7 @@ namespace GameService.Context
         public virtual DbSet<NeutralRound> NeutralRound { get; set; }
         public virtual DbSet<AttackingNeutralTerritory> AttackingNeutralTerritory { get; set; }
         public virtual DbSet<Users> Users { get; set; }
+        public virtual DbSet<CapitalRound> CapitalRound { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -424,7 +425,6 @@ namespace GameService.Context
                 entity.HasOne(e => e.CapitalRound)
                     .WithMany(d => d.CapitalRoundUserAnswers)
                     .HasForeignKey(e => e.CapitalRoundId)
-                    .HasConstraintName("FK__capitalRouAns__capitalRou__KOAWD")
                     .OnDelete(DeleteBehavior.ClientSetNull);
             });
 

@@ -37,9 +37,57 @@ namespace GameService.EventProcessing
                     var result = JsonSerializer.Deserialize<QResponse>(message);
                     AddGameQuestions(result);
                     break;
+                case EventType.CapitalQuestionResponse:
+                    AddCapitalQuestions(message);
+                    break;
                 default:
                     break;
             }
+        }
+
+        private void AddCapitalQuestions(string message)
+        {
+            var result = JsonSerializer.Deserialize<QResponse>(message);
+
+            using var db = contextFactory.CreateDbContext();
+
+            var capitalRounds = db.CapitalRound
+                .Include(x => x.PvpRound)
+                .ThenInclude(x => x.Round)
+                .Where(x => x.PvpRound.Round.GameInstanceId == result.GameInstanceId)
+                .ToList();
+
+            var mapped = mapper.Map<Questions[]>(result.QuestionResponses);
+
+            foreach (var receivedQuestion in mapped)
+            {
+                var capitalRound = capitalRounds.Where(x => x.Id == receivedQuestion.RoundId).FirstOrDefault();
+
+                if (capitalRound == null)
+                {
+                    Console.WriteLine($"--> Capital Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
+                    continue;
+                }
+
+                // Ensure these id's are null
+                receivedQuestion.RoundId = null;
+                receivedQuestion.PvpRoundId = null;
+
+                if (receivedQuestion.Type == "number")
+                {
+                    receivedQuestion.CapitalRoundNumberId = capitalRound.Id;
+                    receivedQuestion.CapitalRoundMCId = null;
+                }
+                else
+                {
+                    receivedQuestion.CapitalRoundMCId = capitalRound.Id;
+                    receivedQuestion.CapitalRoundNumberId = null;
+
+                }
+                db.AddAsync(receivedQuestion);
+            }
+
+            db.SaveChanges();
         }
 
         private void AddGameQuestions(QResponse questionsResponse)
@@ -128,6 +176,9 @@ namespace GameService.EventProcessing
                 case "User_Published":
                     Console.WriteLine("User Published Event Detected");
                     return EventType.UserPublished;
+                case "Capital_Question_Response":
+                    Console.WriteLine("Capital Question Response Detected");
+                    return EventType.CapitalQuestionResponse;
                 default:
                     Console.WriteLine("--> Could not determine the event type");
                     return EventType.Undetermined;
@@ -137,6 +188,7 @@ namespace GameService.EventProcessing
 
     enum EventType
     {
+        CapitalQuestionResponse,
         QuestionsReceived,
         UserPublished,
         Undetermined

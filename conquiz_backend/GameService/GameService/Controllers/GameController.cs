@@ -16,6 +16,7 @@ using System.Net.Http;
 using GameService.MessageBus;
 using GameService.Dtos;
 using GameService.Context;
+using GameService.Services.GameTimerServices;
 
 namespace GameService.Controllers
 {
@@ -63,18 +64,9 @@ namespace GameService.Controllers
         {
             try
             {
-                messageBus.RequestQuestions(new RequestQuestionsDto()
+                CommonTimerFunc.RequestCapitalQuestions(messageBus, 90000, new List<int>()
                 {
-                    Event = "Question_Request",
-                    GameInstanceId = 1,
-                    MultipleChoiceQuestionsRoundId = new List<int>()
-                    {
-                        1,2,5
-                    },
-                    NumberQuestionsRoundId = new List<int>()
-                    {
-                        2,3
-                    }
+                    1,5,2,3,12,65,
                 });
 
                 return Ok($"Game controller version 1.3");

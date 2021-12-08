@@ -32,8 +32,6 @@ namespace GameService.Services.GameTimerServices
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
-        private object participantIds;
-        private readonly Random r;
 
         public PvpStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
@@ -197,6 +195,8 @@ namespace GameService.Services.GameTimerServices
                             currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
                             currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
                             currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
+
+
                         }
                         else
                         {
@@ -450,7 +450,11 @@ namespace GameService.Services.GameTimerServices
 
             var currentRound = await db.Round
                 .Include(x => x.PvpRound)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Include(x => x.PvpRound)
                 .ThenInclude(x => x.PvpRoundAnswers)
+                .Include(x => x.PvpRound)
+                .ThenInclude(x => x.CapitalRounds)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefaultAsync();
 
@@ -468,11 +472,33 @@ namespace GameService.Services.GameTimerServices
                 db.Update(randomTerritory);
             }
 
+
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
 
             currentRound.IsTerritoryVotingOpen = false;
             db.Update(currentRound);
             await db.SaveChangesAsync();
+
+            // If the chosen territory is a capital add additional rounds
+            if (currentRound.PvpRound.AttackedTerritory.IsCapital)
+            {
+                const int AdditionalCapitalRounds = 1;
+
+                for (var i = 0; i < AdditionalCapitalRounds; i++)
+                {
+                    currentRound.PvpRound.CapitalRounds.Add(new CapitalRound());
+                }
+
+                db.Update(currentRound);
+                await db.SaveChangesAsync();
+
+                // Request questions for these rounds
+                CommonTimerFunc.RequestCapitalQuestions(messageBus,
+                    data.GameInstanceId,
+                    currentRound.PvpRound.CapitalRounds.Select(x => x.Id).ToList());
+            }
+
+
 
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(fullGame);

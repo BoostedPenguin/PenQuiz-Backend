@@ -20,20 +20,23 @@ namespace GameService.Services.GameTimerServices
     public class GameTimerService : IGameTimerService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
-        private readonly INeutralStageTimerEvents neutralStageTimerEvents;
+        private readonly INeutralMCTimerEvents neutralMCTimerEvents;
+        private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
 
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory,
-            INeutralStageTimerEvents neutralStageTimerEvents,
             IPvpStageTimerEvents pvpStageTimerEvents,
-            IHubContext<GameHub, IGameHub> hubContext)
+            IHubContext<GameHub, IGameHub> hubContext,
+            INeutralMCTimerEvents neutralMCTimerEvents, 
+            INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
             contextFactory = _contextFactory;
-            this.neutralStageTimerEvents = neutralStageTimerEvents;
             this.pvpStageTimerEvents = pvpStageTimerEvents;
             this.hubContext = hubContext;
+            this.neutralMCTimerEvents = neutralMCTimerEvents;
+            this.neutralNumberTimerEvents = neutralNumberTimerEvents;
         }
 
         public void OnGameStart(GameInstance gm)
@@ -83,7 +86,7 @@ namespace GameService.Services.GameTimerServices
                         //await Game_Preview_Time(timer);
                         
                         // Debug
-                        await neutralStageTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
                         return;
 
                     #region Neutral Multiple Choice events
@@ -92,40 +95,40 @@ namespace GameService.Services.GameTimerServices
                         // Send request to clients to open the multiple choice voting
                         // And show whos attacking turn it is
 
-                        await neutralStageTimerEvents
+                        await neutralMCTimerEvents
                             .Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(timer);
                         return;
 
                     case ActionState.CLOSE_PLAYER_ATTACK_VOTING:
 
-                        await neutralStageTimerEvents
+                        await neutralMCTimerEvents
                             .Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(timer);
                         return;
 
                     case ActionState.SHOW_MULTIPLE_CHOICE_QUESTION:
 
-                        await neutralStageTimerEvents
+                        await neutralMCTimerEvents
                             .Show_Neutral_MultipleChoice_Screen(timer);
                         return;
 
                     case ActionState.END_MULTIPLE_CHOICE_QUESTION:
 
-                        await neutralStageTimerEvents
+                        await neutralMCTimerEvents
                             .Close_Neutral_MultipleChoice_Question_Voting(timer);
                         return;
                     #endregion
 
                     #region Neutral Number Events
                     case ActionState.SHOW_PREVIEW_GAME_MAP:
-                        await neutralStageTimerEvents.Show_Game_Map_Screen(timer);
+                        await neutralNumberTimerEvents.Show_Game_Map_Screen(timer);
                         return;
 
                     case ActionState.SHOW_NUMBER_QUESTION:
-                        await neutralStageTimerEvents.Show_Neutral_Number_Screen(timer);
+                        await neutralNumberTimerEvents.Show_Neutral_Number_Screen(timer);
                         return;
 
                     case ActionState.END_NUMBER_QUESTION:
-                        await neutralStageTimerEvents.Close_Neutral_Number_Question_Voting(timer);
+                        await neutralNumberTimerEvents.Close_Neutral_Number_Question_Voting(timer);
                         return;
                     #endregion
 
