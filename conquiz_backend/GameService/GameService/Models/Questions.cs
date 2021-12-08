@@ -14,9 +14,11 @@ namespace GameService.Models
         public string Question { get; set; }
         public int? RoundId { get; set; }
         public int? PvpRoundId { get; set; }
+        public int? CapitalRoundId { get; set; }
         public string Type { get; set; }
 
         public virtual ICollection<Answers> Answers { get; set; }
+        public virtual CapitalRound CapitalRound { get; set; }
         public virtual Round Round { get; set; }
         public virtual PvpRound PvpRoundNum { get; set; }
     }

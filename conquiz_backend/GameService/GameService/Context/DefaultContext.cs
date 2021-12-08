@@ -227,6 +227,11 @@ namespace GameService.Context
                     .HasForeignKey<Questions>(e => e.RoundId)
                     .OnDelete(DeleteBehavior.ClientSetNull);
 
+                entity.HasOne(d => d.CapitalRound)
+                    .WithOne(e => e.CapitalRoundQuestion)
+                    .HasForeignKey<Questions>(e => e.CapitalRoundId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
+
                 entity.HasOne(d => d.PvpRoundNum)
                     .WithOne(x => x.NumberQuestion)
                     .HasForeignKey<Questions>(e => e.PvpRoundId)
@@ -374,6 +379,48 @@ namespace GameService.Context
                     .IsRequired()
                     .HasColumnName("username")
                     .HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<CapitalRound>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.Property(e => e.IsCompleted)
+                    .HasColumnName("isCompleted")
+                    .HasDefaultValue(false);
+
+
+                entity.HasOne(d => d.PvpRound)
+                    .WithMany(x => x.CapitalRounds)
+                    .HasForeignKey(e => e.PvpRoundId)
+                    .HasConstraintName("FK__capitalRou__pvpRound__JAWD2")
+                    .OnDelete(DeleteBehavior.ClientSetNull);
+            });
+
+            modelBuilder.Entity<CapitalRoundAnswers>(entity =>
+            {
+                entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.Property(e => e.UserId).HasColumnName("userId");
+
+                entity.Property(e => e.MChoiceQAnswerId)
+                    .HasColumnName("mChoiceQAnswerId")
+                    .IsRequired(false);
+
+                entity.Property(e => e.NumberQAnswer)
+                    .HasColumnName("numberQAnswer")
+                    .IsRequired(false);
+
+                entity.Property(e => e.NumberQAnsweredAt)
+                    .HasColumnName("numebrQAnsweredAt")
+                    .IsRequired(false)
+                    .HasColumnType("datetime");
+
+                entity.HasOne(e => e.CapitalRound)
+                    .WithMany(d => d.CapitalRoundUserAnswers)
+                    .HasForeignKey(e => e.CapitalRoundId)
+                    .HasConstraintName("FK__capitalRouAns__capitalRou__KOAWD")
+                    .OnDelete(DeleteBehavior.ClientSetNull);
             });
 
             OnModelCreatingPartial(modelBuilder);

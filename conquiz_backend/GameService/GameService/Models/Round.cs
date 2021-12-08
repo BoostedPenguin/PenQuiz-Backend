@@ -39,6 +39,7 @@ namespace GameService.Models
         public PvpRound()
         {
             PvpRoundAnswers = new HashSet<PvpRoundAnswers>();
+            CapitalRounds = new HashSet<CapitalRound>();
         }
         public int Id { get; set; }
         public int AttackerId { get; set; }
@@ -50,7 +51,33 @@ namespace GameService.Models
         public virtual Questions NumberQuestion { get; set; }
         public virtual ObjectTerritory AttackedTerritory { get; set; }
         public virtual Round Round { get; set; }
+
+        public virtual ICollection<CapitalRound> CapitalRounds { get; set; }
         public virtual ICollection<PvpRoundAnswers> PvpRoundAnswers { get; set; }
+    }
+
+    public class CapitalRound
+    {
+        public int Id { get; set; }
+        public bool IsCompleted { get; set; } = false;
+        public int PvpRoundId { get; set; }
+        public virtual PvpRound PvpRound { get; set; }
+
+        public virtual Questions CapitalRoundQuestion { get; set; }
+        public virtual ICollection<CapitalRoundAnswers> CapitalRoundUserAnswers { get; set; }
+    }
+
+    public class CapitalRoundAnswers
+    {
+        public int Id { get; set; }
+        public int UserId { get; set; }
+
+        public int? MChoiceQAnswerId { get; set; }
+        public long? NumberQAnswer { get; set; }
+        public DateTime? NumberQAnsweredAt { get; set; }
+
+        public int CapitalRoundId { get; set; }
+        public virtual CapitalRound CapitalRound { get; set; }
     }
 
     public class PvpRoundAnswers

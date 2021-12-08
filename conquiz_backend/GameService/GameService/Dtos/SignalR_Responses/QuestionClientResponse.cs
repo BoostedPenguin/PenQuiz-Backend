@@ -9,6 +9,11 @@ namespace GameService.Dtos.SignalR_Responses
     public class QuestionClientResponse
     {
         public bool IsNeutral { get; set; }
+        
+        // NULL if round isn't pvp and the attacked territory isn't capital
+        // Rounds remanining to take this territory (plus this current one)
+        // ex. 2 rounds in total remaining to take the territory -> value = 2
+        public int? CapitalRoundsRemaining { get; set; }
         public int Id { get; set; }
         public string Question { get; set; }
         public string Type { get; set; }
