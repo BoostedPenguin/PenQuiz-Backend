@@ -227,9 +227,14 @@ namespace GameService.Context
                     .HasForeignKey<Questions>(e => e.RoundId)
                     .OnDelete(DeleteBehavior.ClientSetNull);
 
-                entity.HasOne(d => d.CapitalRound)
-                    .WithOne(e => e.CapitalRoundQuestion)
-                    .HasForeignKey<Questions>(e => e.CapitalRoundId)
+                entity.HasOne(d => d.CapitalRoundMultiple)
+                    .WithOne(e => e.CapitalRoundMultipleQuestion)
+                    .HasForeignKey<Questions>(e => e.CapitalRoundMCId)
+                    .OnDelete(DeleteBehavior.ClientSetNull);
+
+                entity.HasOne(d => d.CapitalRoundNumber)
+                    .WithOne(e => e.CapitalRoundNumberQuestion)
+                    .HasForeignKey<Questions>(e => e.CapitalRoundNumberId)
                     .OnDelete(DeleteBehavior.ClientSetNull);
 
                 entity.HasOne(d => d.PvpRoundNum)

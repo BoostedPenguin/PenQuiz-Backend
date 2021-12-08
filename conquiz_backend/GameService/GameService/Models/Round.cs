@@ -56,14 +56,21 @@ namespace GameService.Models
         public virtual ICollection<PvpRoundAnswers> PvpRoundAnswers { get; set; }
     }
 
+    public enum CapitalRoundAttackStage
+    {
+        MULTIPLE_CHOICE_QUESTION,
+        NUMBER_QUESTION
+    }
     public class CapitalRound
     {
         public int Id { get; set; }
+        public CapitalRoundAttackStage CapitalRoundAttackStage { get; set; } = CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION;
         public bool IsCompleted { get; set; } = false;
         public int PvpRoundId { get; set; }
         public virtual PvpRound PvpRound { get; set; }
 
-        public virtual Questions CapitalRoundQuestion { get; set; }
+        public virtual Questions CapitalRoundNumberQuestion { get; set; }
+        public virtual Questions CapitalRoundMultipleQuestion { get; set; }
         public virtual ICollection<CapitalRoundAnswers> CapitalRoundUserAnswers { get; set; }
     }
 
