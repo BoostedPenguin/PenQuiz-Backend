@@ -184,10 +184,22 @@ namespace GameService.Services.GameTimerServices
                         // No more remaining capital rounds
                         if (remainingCapitalRoundsCount == 0)
                         {
+                            // All defender territories are now the attackers
+                            var allDefenderTerritories = await db.ObjectTerritory
+                                .Where(x => x.GameInstanceId == data.GameInstanceId &&
+                                    x.TakenBy == baseRound.PvpRound.DefenderId)
+                                .ToListAsync();
+
+                            foreach (var terr in allDefenderTerritories)
+                            {
+                                terr.TakenBy = baseRound.PvpRound.AttackerId;
+                                terr.AttackedBy = null;
+                                db.Update(terr);
+                            }
+
+
                             // Player answered incorrecly, release isattacked lock on objterritory
                             baseRound.PvpRound.WinnerId = baseRound.PvpRound.AttackerId;
-                            baseRound.PvpRound.AttackedTerritory.AttackedBy = null;
-                            baseRound.PvpRound.AttackedTerritory.TakenBy = baseRound.PvpRound.AttackerId;
 
                             pvpRoundFinished = true;
                         }
@@ -212,9 +224,23 @@ namespace GameService.Services.GameTimerServices
                             // If it's capital and there are remaining non-finished capital rounds go to next one
                             if (remainingCapitalRoundsCount == 0)
                             {
+                                // All defender territories are now the attackers
+                                var allDefenderTerritories = await db.ObjectTerritory
+                                    .Where(x => x.GameInstanceId == data.GameInstanceId &&
+                                        x.TakenBy == baseRound.PvpRound.DefenderId).ToListAsync();
+
+                                foreach (var terr in allDefenderTerritories)
+                                {
+                                    terr.TakenBy = baseRound.PvpRound.AttackerId;
+                                    terr.AttackedBy = null;
+                                    db.Update(terr);
+                                }
+
+
+                                // Player answered incorrecly, release isattacked lock on objterritory
                                 baseRound.PvpRound.WinnerId = baseRound.PvpRound.AttackerId;
-                                baseRound.PvpRound.AttackedTerritory.AttackedBy = null;
-                                baseRound.PvpRound.AttackedTerritory.TakenBy = baseRound.PvpRound.AttackerId;
+
+                                pvpRoundFinished = true;
                             }
                             else
                             {
@@ -441,9 +467,20 @@ namespace GameService.Services.GameTimerServices
                 // If it's capital and there are remaining non-finished capital rounds go to next one
                 if (remainingCapitalRoundsCount == 0)
                 {
+                    // All defender territories are now the attackers
+                    var allDefenderTerritories = await db.ObjectTerritory
+                        .Where(x => x.GameInstanceId == data.GameInstanceId &&
+                            x.TakenBy == baseRound.PvpRound.DefenderId).ToListAsync();
+
+                    foreach (var terr in allDefenderTerritories)
+                    {
+                        terr.TakenBy = baseRound.PvpRound.AttackerId;
+                        terr.AttackedBy = null;
+                        db.Update(terr);
+                    }
+
+                    // Player answered incorrecly, release isattacked lock on objterritory
                     baseRound.PvpRound.WinnerId = baseRound.PvpRound.AttackerId;
-                    baseRound.PvpRound.AttackedTerritory.AttackedBy = null;
-                    baseRound.PvpRound.AttackedTerritory.TakenBy = baseRound.PvpRound.AttackerId;
 
                     pvpRoundFinished = true;
                 }

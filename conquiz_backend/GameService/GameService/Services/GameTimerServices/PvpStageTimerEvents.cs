@@ -462,6 +462,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
 
             var currentRound = await db.Round
+                .Include(x => x.GameInstance)
                 .Include(x => x.PvpRound)
                 .ThenInclude(x => x.PvpRoundAnswers)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
@@ -474,6 +475,25 @@ namespace GameService.Services.GameTimerServices
             await db.SaveChangesAsync();
 
             var currentAttacker = currentRound.PvpRound.AttackerId;
+
+            var userTerritoriesCount = await db.ObjectTerritory
+                .Where(x => x.GameInstanceId == data.GameInstanceId && x.TakenBy == currentAttacker)
+                .CountAsync();
+
+            // User already lost, move to next attacker
+            if(userTerritoriesCount == 0)
+            {
+                // Go to next round
+                timerWrapper.Data.CurrentGameRoundNumber++;
+                currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                db.Update(currentRound);
+                await db.SaveChangesAsync();
+
+                timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+                timerWrapper.Interval = 50;
+                timerWrapper.Start();
+                return;
+            }
 
             var availableTerritories = await gameTerritoryService
                 .GetAvailableAttackTerritoriesNames(db, currentAttacker, data.GameInstanceId, false);
