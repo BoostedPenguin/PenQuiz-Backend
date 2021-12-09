@@ -48,6 +48,9 @@ namespace GameService.Models
         public int? AttackedTerritoryId { get; set; }
         public int RoundId { get; set; }
 
+        // This should be true only after the main question has been resolved for isCapital attackedterritories
+        public bool IsCurrentlyCapitalStage { get; set; } = false;
+
         public virtual Questions NumberQuestion { get; set; }
         public virtual ObjectTerritory AttackedTerritory { get; set; }
         public virtual Round Round { get; set; }
@@ -68,6 +71,8 @@ namespace GameService.Models
         public bool IsCompleted { get; set; } = false;
         public int PvpRoundId { get; set; }
         public virtual PvpRound PvpRound { get; set; }
+        public bool IsQuestionVotingOpen { get; set; }
+        public DateTime? QuestionOpenedAt { get; set; }
 
         public virtual Questions CapitalRoundNumberQuestion { get; set; }
         public virtual Questions CapitalRoundMultipleQuestion { get; set; }

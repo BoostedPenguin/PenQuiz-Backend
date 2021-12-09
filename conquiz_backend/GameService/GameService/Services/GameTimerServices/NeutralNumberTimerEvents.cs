@@ -313,12 +313,54 @@ namespace GameService.Services.GameTimerServices
             gm.GameRoundNumber = 41;
 
             var rounds = await Create_Pvp_Rounds(db, timerWrapper, gm.Participants.Select(x => x.PlayerId).ToList());
+
+            foreach(var round in rounds)
+            {
+                // Multiple
+                round.Question = new Questions()
+                {
+                    Question = "When was bulgaria created?",
+                    Type = "multiple",
+                };
+                round.Question.Answers.Add(new Answers()
+                {
+                    Correct = true,
+                    Answer = "681",
+                });
+                round.Question.Answers.Add(new Answers()
+                {
+                    Correct = false,
+                    Answer = "15",
+                });
+                round.Question.Answers.Add(new Answers()
+                {
+                    Correct = false,
+                    Answer = "22",
+                });
+                round.Question.Answers.Add(new Answers()
+                {
+                    Correct = false,
+                    Answer = "512",
+                });
+
+                // Number
+                round.PvpRound.NumberQuestion = new Questions()
+                {
+                    Question = "When was covid discovered?",
+                    Type = "number"
+                };
+                round.PvpRound.NumberQuestion.Answers.Add(new Answers()
+                {
+                    Correct = true,
+                    Answer = "2019"
+                });
+            }
             data.CurrentGameRoundNumber++;
             await db.AddRangeAsync(rounds);
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
+            //CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
 
             timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
             timerWrapper.Interval = 3000;

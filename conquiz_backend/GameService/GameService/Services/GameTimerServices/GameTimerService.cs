@@ -21,6 +21,7 @@ namespace GameService.Services.GameTimerServices
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly INeutralMCTimerEvents neutralMCTimerEvents;
+        private readonly ICapitalStageTimerEvents capitalStageTimerEvents;
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
@@ -30,12 +31,14 @@ namespace GameService.Services.GameTimerServices
             IPvpStageTimerEvents pvpStageTimerEvents,
             IHubContext<GameHub, IGameHub> hubContext,
             INeutralMCTimerEvents neutralMCTimerEvents, 
+            ICapitalStageTimerEvents capitalStageTimerEvents,
             INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
             contextFactory = _contextFactory;
             this.pvpStageTimerEvents = pvpStageTimerEvents;
             this.hubContext = hubContext;
             this.neutralMCTimerEvents = neutralMCTimerEvents;
+            this.capitalStageTimerEvents = capitalStageTimerEvents;
             this.neutralNumberTimerEvents = neutralNumberTimerEvents;
         }
 
@@ -155,6 +158,24 @@ namespace GameService.Services.GameTimerServices
 
                     case ActionState.END_PVP_NUMBER_QUESTION:
                         await pvpStageTimerEvents.Close_Pvp_Number_Question_Voting(timer);
+                        return;
+                    #endregion
+
+                    #region CapitalPvpRoundStages
+                    case ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION:
+                        await capitalStageTimerEvents.Capital_Show_Pvp_MultipleChoice_Question_Voting(timer);
+                        return;
+
+                    case ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION:
+                        await capitalStageTimerEvents.Capital_Close_Pvp_MultipleChoice_Question_Voting(timer);
+                        return;
+
+                    case ActionState.SHOW_CAPITAL_PVP_NUMBER_QUESTION:
+                        await capitalStageTimerEvents.Capital_Show_Pvp_Number_Screen(timer);
+                        return;
+
+                    case ActionState.END_CAPITAL_PVP_NUMBER_QUESTION:
+                        await capitalStageTimerEvents.Capital_Close_Pvp_Number_Question_Voting(timer);
                         return;
                     #endregion
 

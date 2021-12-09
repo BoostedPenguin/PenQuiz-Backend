@@ -145,6 +145,8 @@ namespace GameService.Services.GameTimerServices
                 .FirstOrDefault(x => x.UserId == currentRound.PvpRound.DefenderId);
 
             bool bothPlayersAnsweredCorrectly = false;
+            var nextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+
             // Attacker didn't answer, automatically loses
             if (attackerAnswer == null || attackerAnswer.MChoiceQAnswerId == null)
             {
@@ -168,18 +170,27 @@ namespace GameService.Services.GameTimerServices
                     currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
                 }
                 else
+                // Attacker answered correctly
                 {
-
+                    // If capital go to next capital question, defender didn't lose capital yet
+                    var isTerritoryCapital = currentRound.PvpRound.AttackedTerritory.IsCapital;
 
                     // Defender didn't vote, he lost
                     if (defenderAnswer == null || defenderAnswer.MChoiceQAnswerId == null)
                     {
-                        // Player answered incorrecly, release isattacked lock on objterritory
-                        currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
-                        currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
-                        currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
+                        if(isTerritoryCapital)
+                        {
+                            nextAction = ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION;
+                        }
+                        else
+                        {
+                            // Player answered incorrecly, release isattacked lock on objterritory
+                            currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
+                            currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
+                            currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
+                        }
                     }
-                    // Both people answered correctly, show a blitz number question
+                    // Defender had an answer
                     else
                     {
                         var didDefenderAnswerCorrectly = currentRound
@@ -188,28 +199,43 @@ namespace GameService.Services.GameTimerServices
                             .First(x => x.Id == defenderAnswer.MChoiceQAnswerId)
                             .Correct;
 
-                        // If defender answered incorrectly attacker wins
+                        // If defender answered incorrectly 
                         if (!didDefenderAnswerCorrectly)
                         {
-                            // Player answered incorrecly, release isattacked lock on objterritory
-                            currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
-                            currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
-                            currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
 
-
+                            // If it's capital and there are remaining non-finished capital rounds go to next one
+                            if (currentRound.PvpRound.AttackedTerritory.IsCapital)
+                            {
+                                nextAction = ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION;
+                            }
+                            else
+                            {
+                                // Defender answered incorrecly, release isattacked lock on objterritory
+                                currentRound.PvpRound.WinnerId = currentRound.PvpRound.AttackerId;
+                                currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
+                                currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
+                            }
                         }
                         else
                         {
+                            nextAction = ActionState.SHOW_PVP_NUMBER_QUESTION;
                             bothPlayersAnsweredCorrectly = true;
                         }
                     }
                 }
             }
 
-            if(!bothPlayersAnsweredCorrectly)
+            if(!bothPlayersAnsweredCorrectly && nextAction != ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION)
             {
                 timerWrapper.Data.CurrentGameRoundNumber++;
                 currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            }
+            
+
+            // Indicate that this pvpround is already on capital questions
+            if(nextAction == ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION)
+            {
+                currentRound.PvpRound.IsCurrentlyCapitalStage = true;
             }
 
             db.Update(currentRound);
@@ -236,14 +262,7 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
-            if(bothPlayersAnsweredCorrectly)
-            {
-                timerWrapper.Data.NextAction = ActionState.SHOW_PVP_NUMBER_QUESTION;
-            }
-            else
-            {
-                timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
-            }
+            timerWrapper.Data.NextAction = nextAction;
 
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
 
@@ -381,19 +400,50 @@ namespace GameService.Services.GameTimerServices
                     .Select(x => x.PlayerId)
                     .First();
             }
+            bool pvpRoundFinished = false;
+            var nextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
 
-            // Winner gets territory (if defender it stays his)
-            currentRound.PvpRound.AttackedTerritory.TakenBy = winnerId;
-            currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
-            currentRound.PvpRound.WinnerId = winnerId;
+            // Defender won
+            if (winnerId == currentRound.PvpRound.DefenderId)
+            {
+                currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.DefenderId;
+                currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
+                currentRound.PvpRound.WinnerId = winnerId;
 
+                pvpRoundFinished = true;
+            }
+            // Attacker won
+            else
+            {
+                if (currentRound.PvpRound.AttackedTerritory.IsCapital)
+                {
+                    nextAction = ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION;
+                }
+                else
+                {
+                    currentRound.PvpRound.AttackedTerritory.TakenBy = currentRound.PvpRound.AttackerId;
+                    currentRound.PvpRound.AttackedTerritory.AttackedBy = null;
+                    currentRound.PvpRound.WinnerId = winnerId;
+
+                    pvpRoundFinished = true;
+                }
+            }
 
             clientResponse.PlayerAnswers.ForEach(x => x.Winner = x.PlayerId == winnerId);
 
+            if (pvpRoundFinished)
+            {
+                // Go to next round
+                timerWrapper.Data.CurrentGameRoundNumber++;
+                currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            }
 
-            // Go to next round
-            timerWrapper.Data.CurrentGameRoundNumber++;
-            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+
+            // Indicate that this pvpround is already on capital questions
+            if (nextAction == ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION)
+            {
+                currentRound.PvpRound.IsCurrentlyCapitalStage = true;
+            }
 
             db.Update(currentRound);
             await db.SaveChangesAsync();
@@ -401,7 +451,7 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
             // Set next action
-            timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+            timerWrapper.Data.NextAction = nextAction;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
             timerWrapper.Start();
         }

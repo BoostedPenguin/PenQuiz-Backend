@@ -73,9 +73,14 @@ namespace GameService
 
             // Neutral stage
             services.AddSingleton<INeutralNumberTimerEvents, NeutralNumberTimerEvents>();
+
             services.AddSingleton<INeutralMCTimerEvents, NeutralMCTimerEvents>();
 
+            // Pvp stage
             services.AddSingleton<IPvpStageTimerEvents, PvpStageTimerEvents>();
+
+            // Capital stage events
+            services.AddSingleton<ICapitalStageTimerEvents, CapitalStageTimerEvents>();
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 

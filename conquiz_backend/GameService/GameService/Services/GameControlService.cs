@@ -166,6 +166,75 @@ namespace GameService.Services
             }
         }
 
+        private async Task CapitalStageAnswer(DefaultContext db, string answerIdString, Round currentRound, DateTime answeredAt, int userId)
+        {
+            var capitalRound =
+                currentRound
+                .PvpRound
+                .CapitalRounds
+                .FirstOrDefault(x => !x.IsCompleted && x.IsQuestionVotingOpen);
+
+            if (capitalRound == null)
+                throw new AnswerSubmittedGameException("This capital round is null. Fatal error");
+
+            if (!capitalRound.IsQuestionVotingOpen)
+                throw new AnswerSubmittedGameException("The voting stage for this question is either over or not started.");
+
+            switch (capitalRound.CapitalRoundAttackStage)
+            {
+                case CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION:
+                    
+                    bool success = int.TryParse(answerIdString, out int answerIdMPvp);
+                    if (!success)
+                        throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
+                    // Requesting user is the attacker
+                    if (!capitalRound.CapitalRoundMultipleQuestion.Answers.Any(x => x.Id == answerIdMPvp))
+                        throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
+
+                    if (userId != currentRound.PvpRound.AttackerId && userId != currentRound.PvpRound.DefenderId)
+                        throw new AnswerSubmittedGameException("You can't vote for this question");
+
+                    var userAttacking = capitalRound.CapitalRoundUserAnswers
+                        .FirstOrDefault(x => x.UserId == userId);
+
+                    if (userAttacking != null && userAttacking.MChoiceQAnswerId != null)
+                        throw new ArgumentException("This user already voted for this question");
+
+                    var result = new CapitalRoundAnswers()
+                    {
+                        MChoiceQAnswerId = answerIdMPvp,
+                        UserId = userId
+                    };
+
+                    capitalRound.CapitalRoundUserAnswers.Add(result);
+                    break;
+
+                case CapitalRoundAttackStage.NUMBER_QUESTION:
+
+                    bool successNPvp = long.TryParse(answerIdString, out long answerIdNPvp);
+                    if (!successNPvp)
+                        throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
+                    var pvpAttacker = capitalRound.CapitalRoundUserAnswers
+                        .FirstOrDefault(x => x.UserId == userId);
+
+                    if (pvpAttacker == null)
+                        throw new AnswerSubmittedGameException("User doesn't have an existing multiple choice answer. Fatal error.");
+
+                    if (pvpAttacker.NumberQAnswer != null)
+                        throw new AnswerSubmittedGameException("You already voted for this question");
+
+                    pvpAttacker.NumberQAnsweredAt = answeredAt;
+                    pvpAttacker.NumberQAnswer = answerIdNPvp;
+
+                    break;
+            }
+
+            db.Update(currentRound);
+            await db.SaveChangesAsync();
+        }
+
         public async Task AnswerQuestion(string answerIdString)
         {
             var answeredAt = DateTime.Now;
@@ -180,6 +249,20 @@ namespace GameService.Services
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.PvpRound)
                 .ThenInclude(x => x.PvpRoundAnswers)
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.PvpRound)
+                .ThenInclude(x => x.CapitalRounds)
+                .ThenInclude(x => x.CapitalRoundUserAnswers)
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.PvpRound)
+                .ThenInclude(x => x.CapitalRounds)
+                .ThenInclude(x => x.CapitalRoundMultipleQuestion)
+                .ThenInclude(x => x.Answers)
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.PvpRound)
+                .ThenInclude(x => x.CapitalRounds)
+                .ThenInclude(x => x.CapitalRoundNumberQuestion)
+                .ThenInclude(x => x.Answers)
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.NeutralRound)
                 .ThenInclude(x => x.TerritoryAttackers)
@@ -196,6 +279,14 @@ namespace GameService.Services
 
             if (gm == null || gm.CurrentRound == null)
                 throw new AnswerSubmittedGameException("User isn't participating in any in progress games.");
+
+            // Capital stage
+            // Skip every check here and check externally
+            if(gm.CurrentRound.PvpRound?.IsCurrentlyCapitalStage == true)
+            {
+                await CapitalStageAnswer(db, answerIdString, gm.CurrentRound, answeredAt, userId);
+                return;
+            }
 
             if (!gm.CurrentRound.IsQuestionVotingOpen)
                 throw new AnswerSubmittedGameException("The voting stage for this question is either over or not started.");
