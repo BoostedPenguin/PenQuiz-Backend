@@ -51,6 +51,21 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.MapTerritory)
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 
+            foreach(var particip in game.Participants)
+            {
+                var totalParticipScore = game.ObjectTerritory
+                    .Where(x => x.TakenBy == particip.PlayerId)
+                    .Sum(x => x.TerritoryScore);
+
+                if(particip.Score != totalParticipScore)
+                {
+                    particip.Score = totalParticipScore;
+                    defaultContext.Update(particip);
+                }
+            }
+
+            await defaultContext.SaveChangesAsync();
+
 
             foreach (var round in game.Rounds)
             {
@@ -63,6 +78,30 @@ namespace GameService.Services.GameTimerServices
 
             game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
             return game;
+        }
+
+        public static async Task<bool> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db)
+        {
+            var data = timerWrapper.Data;
+
+            // Check if there are any non-attacker territories left
+            var nonAttackerTerritoriesCount = await db.ObjectTerritory
+                .Where(x => x.GameInstanceId == data.GameInstanceId && x.TakenBy != round.AttackerId)
+                .CountAsync();
+
+
+            if (nonAttackerTerritoriesCount == 0)
+            {
+                return true;
+            }
+
+            // Check if last pvp round
+            if (data.CurrentGameRoundNumber > data.LastPvpRound)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static UserAttackOrder GenerateAttackOrder(List<int> userIds, int totalTerritories, int RequiredPlayers, bool excludeCapitals = true)

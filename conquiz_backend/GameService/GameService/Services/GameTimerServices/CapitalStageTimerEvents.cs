@@ -192,6 +192,7 @@ namespace GameService.Services.GameTimerServices
 
                             foreach (var terr in allDefenderTerritories)
                             {
+                                terr.IsCapital = false;
                                 terr.TakenBy = baseRound.PvpRound.AttackerId;
                                 terr.AttackedBy = null;
                                 db.Update(terr);
@@ -231,6 +232,7 @@ namespace GameService.Services.GameTimerServices
 
                                 foreach (var terr in allDefenderTerritories)
                                 {
+                                    terr.IsCapital = false;
                                     terr.TakenBy = baseRound.PvpRound.AttackerId;
                                     terr.AttackedBy = null;
                                     db.Update(terr);
@@ -293,10 +295,19 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
+            var isGameOver = await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, baseRound.PvpRound, db);
+            
+            if(isGameOver)
+            {
+                nextAction = ActionState.END_GAME;
+            }
+
             timerWrapper.Data.NextAction = nextAction;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
             timerWrapper.Start();
         }
+
+
 
         public async Task Capital_Show_Pvp_Number_Screen(TimerWrapper timerWrapper)
         {
@@ -474,6 +485,7 @@ namespace GameService.Services.GameTimerServices
 
                     foreach (var terr in allDefenderTerritories)
                     {
+                        terr.IsCapital = false;
                         terr.TakenBy = baseRound.PvpRound.AttackerId;
                         terr.AttackedBy = null;
                         db.Update(terr);
@@ -505,6 +517,14 @@ namespace GameService.Services.GameTimerServices
             await db.SaveChangesAsync();
 
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
+
+            // Check if there are any non-attacker territories left
+            var isGameOver = await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, baseRound.PvpRound, db);
+
+            if (isGameOver)
+            {
+                nextAction = ActionState.END_GAME;
+            }
 
             // Set next action
             timerWrapper.Data.NextAction = nextAction;

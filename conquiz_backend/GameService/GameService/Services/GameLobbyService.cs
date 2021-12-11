@@ -31,6 +31,9 @@ namespace GameService.Services
         private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
+        private const int DefaultTerritoryScore = 500;
+        private const int DefaultCapitalScore = 1000;
+
 
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
@@ -351,6 +354,7 @@ namespace GameService.Services
             {
                 gameTer.Add(new ObjectTerritory()
                 {
+                    TerritoryScore = DefaultTerritoryScore,
                     MapTerritoryId = ter.Id,
                     GameInstanceId = gameInstanceId,
                 });
@@ -376,6 +380,7 @@ namespace GameService.Services
 
                 if (borderWithOtherCapitals != null) continue;
 
+                randomTerritory.TerritoryScore = DefaultCapitalScore;
                 capitals.Add(randomTerritory);
             }
 

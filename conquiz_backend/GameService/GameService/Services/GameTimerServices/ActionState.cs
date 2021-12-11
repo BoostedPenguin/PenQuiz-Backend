@@ -45,5 +45,8 @@ namespace GameService.Services.GameTimerServices
         END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION,
         END_CAPITAL_PVP_NUMBER_QUESTION,
 
+
+        // Game end
+        END_GAME,
     }
 }

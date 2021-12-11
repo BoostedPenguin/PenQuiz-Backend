@@ -221,9 +221,17 @@ namespace GameService.Services.GameTimerServices
             {
                 // Create pvp question rounds if gm number neutral rounds are over
                 var rounds = await Create_Pvp_Rounds(db, timerWrapper, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
+
+
                 await db.AddRangeAsync(rounds);
                 await db.SaveChangesAsync();
 
+                data.LastPvpRound = db.Round
+                    .Where(x => x.GameInstanceId == data.GameInstanceId)
+                    .OrderByDescending(x => x.GameRoundNumber)
+                    .Select(x => x.GameRoundNumber)
+                    .First();
+                
                 CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
             }
 
@@ -359,6 +367,13 @@ namespace GameService.Services.GameTimerServices
             await db.AddRangeAsync(rounds);
             db.Update(gm);
             await db.SaveChangesAsync();
+
+
+            data.LastPvpRound = db.Round
+                .Where(x => x.GameInstanceId == data.GameInstanceId)
+                .OrderByDescending(x => x.GameRoundNumber)
+                .Select(x => x.GameRoundNumber)
+                .First();
 
             //CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
 

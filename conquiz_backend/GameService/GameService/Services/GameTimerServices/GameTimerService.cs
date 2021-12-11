@@ -179,6 +179,10 @@ namespace GameService.Services.GameTimerServices
                         return;
                     #endregion
 
+                    case ActionState.END_GAME:
+                        await Game_End(timer);
+                        return;
+
                 }
             }
             catch(Exception ex)
@@ -188,11 +192,24 @@ namespace GameService.Services.GameTimerServices
             }
         }
 
+        private async Task Game_End(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            using var db = contextFactory.CreateDbContext();
+            var data = timerWrapper.Data;
 
+            await hubContext.Clients.Group(data.GameLink)
+                .ShowGameMap(0);
+
+            var gm = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
+            await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
+            
+            GameTimers.Remove(timerWrapper);
+        }
 
         private async Task UnexpectedCriticalError(TimerWrapper timerWrapper, string message = "Unhandled game exception")
         {
-            var db = contextFactory.CreateDbContext();
+            using var db = contextFactory.CreateDbContext();
             var gm = await db.GameInstance.FirstOrDefaultAsync(x => x.Id == timerWrapper.Data.GameInstanceId);
             gm.GameState = GameState.CANCELED;
 

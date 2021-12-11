@@ -262,6 +262,13 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
+            var isGameOver = await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db);
+
+            if (isGameOver)
+            {
+                nextAction = ActionState.END_GAME;
+            }
+
             timerWrapper.Data.NextAction = nextAction;
 
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
@@ -449,7 +456,13 @@ namespace GameService.Services.GameTimerServices
             await db.SaveChangesAsync();
 
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
+            
+            var isGameOver = await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db);
 
+            if (isGameOver)
+            {
+                nextAction = ActionState.END_GAME;
+            }
             // Set next action
             timerWrapper.Data.NextAction = nextAction;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
