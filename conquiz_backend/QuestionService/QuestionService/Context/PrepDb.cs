@@ -83,6 +83,9 @@ namespace QuestionService.Context
                 new Questions("In which year was Tupac Shakur shot and killed?", "1996"),
                 new Questions("The British Raj lasted how many years in India?", "90"),
                 new Questions("When did the Eiffel Tower open?", "1889"),
+                new Questions("In which year before Christ was Julius Caesar assassinated by Roman senators?", "44"),
+                new Questions("How many years ago were horses domesticated?", "6000"),
+                new Questions("When did the USSR dissolve?", "1991"),
             };
 
             var result = questions.Where(x => !db.Questions.Any(y => y.Question.ToLower() == x.Question.ToLower())).ToList();

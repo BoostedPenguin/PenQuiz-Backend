@@ -86,10 +86,10 @@ namespace GameService.Services.GameTimerServices
                     case ActionState.GAME_START_PREVIEW_TIME:
 
                         // Send request to clients to stay on main screen for preview
-                        //await Game_Preview_Time(timer);
+                        await Game_Preview_Time(timer);
                         
                         // Debug
-                        await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        //await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
                         return;
 
                     #region Neutral Multiple Choice events
