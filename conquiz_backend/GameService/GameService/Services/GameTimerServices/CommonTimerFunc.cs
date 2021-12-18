@@ -39,7 +39,7 @@ namespace GameService.Services.GameTimerServices
         public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
         {
             var game = await defaultContext.GameInstance
-                .Include(x => x.Participants)
+                .Include(x => x.Participants)   
                 .ThenInclude(x => x.Player)
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.NeutralRound)
@@ -49,15 +49,16 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.PvpRoundAnswers)
                 .Include(x => x.ObjectTerritory)
                 .ThenInclude(x => x.MapTerritory)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 
-            foreach(var particip in game.Participants)
+            foreach (var particip in game.Participants)
             {
                 var totalParticipScore = game.ObjectTerritory
                     .Where(x => x.TakenBy == particip.PlayerId)
                     .Sum(x => x.TerritoryScore);
 
-                if(particip.Score != totalParticipScore)
+                if (particip.Score != totalParticipScore)
                 {
                     particip.Score = totalParticipScore;
                     defaultContext.Update(particip);
@@ -69,7 +70,7 @@ namespace GameService.Services.GameTimerServices
 
             foreach (var round in game.Rounds)
             {
-                if(round.AttackStage == AttackStage.MULTIPLE_NEUTRAL || round.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                if (round.AttackStage == AttackStage.MULTIPLE_NEUTRAL || round.AttackStage == AttackStage.NUMBER_NEUTRAL)
                 {
                     round.NeutralRound.TerritoryAttackers =
                         round.NeutralRound.TerritoryAttackers.OrderBy(x => x.AttackOrderNumber).ToList();

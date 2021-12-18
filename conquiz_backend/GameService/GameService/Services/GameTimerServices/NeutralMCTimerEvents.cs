@@ -53,6 +53,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.TerritoryAttackers)
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
@@ -142,6 +143,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
 
@@ -266,6 +268,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.TerritoryAttackers)
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             // Open this round for territory voting
@@ -312,6 +315,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
                     x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
 

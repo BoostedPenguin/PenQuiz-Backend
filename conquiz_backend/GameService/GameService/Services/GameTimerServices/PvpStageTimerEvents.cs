@@ -69,6 +69,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
                     x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
 
@@ -87,17 +88,12 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
                     x.Round.GameInstanceId == data.GameInstanceId)
-                .Select(x => new
-                {
-                    Participants = x.Round.GameInstance.Participants
-                        .Where(y => y.PlayerId == x.AttackerId || y.PlayerId == x.DefenderId)
-                        .ToArray(),
-                    x.AttackerId,
-                    x.DefenderId,
-                })
                 .FirstOrDefaultAsync();
 
-            response.Participants = participants.Participants;
+            response.Participants = participants.Round.GameInstance.Participants
+                        .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
+                        .ToArray();
+
             response.AttackerId = participants.AttackerId;
             response.DefenderId = participants.DefenderId ?? 0;
 
@@ -129,6 +125,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             currentRound.IsQuestionVotingOpen = false;
@@ -290,6 +287,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.PvpRoundNum.Round.GameInstanceId == data.GameInstanceId &&
                     x.PvpRoundNum.Round.GameRoundNumber == data.CurrentGameRoundNumber)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             question.PvpRoundNum.Round.IsQuestionVotingOpen = true;
@@ -340,6 +338,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             currentRound.IsQuestionVotingOpen = false;
@@ -480,6 +479,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.PvpRoundAnswers)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             currentRound.IsTerritoryVotingOpen = true;
@@ -539,6 +539,7 @@ namespace GameService.Services.GameTimerServices
                 .Include(x => x.PvpRound)
                 .ThenInclude(x => x.CapitalRounds)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             // Player didn't select anything, assign him a random UNSELECTED territory

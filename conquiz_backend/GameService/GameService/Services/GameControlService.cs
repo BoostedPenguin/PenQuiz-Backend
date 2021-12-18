@@ -53,6 +53,7 @@ namespace GameService.Services
                     x.IsTerritoryVotingOpen,
                     x.GameInstanceId
                 })
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             if (currentRoundOverview == null)
@@ -244,54 +245,46 @@ namespace GameService.Services
             var userId = httpContextAccessor.GetCurrentUserId();
 
             // Not sure about performanec wise, also what happens if you include a null of null
-            var gm = await db.GameInstance
-                .Include(x => x.Participants)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
+            var currentRound = await db.Round
+                .Include(x => x.GameInstance)
+                .ThenInclude(x => x.Participants)
+                .Include(x => x.PvpRound)
                 .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
+                .Include(x => x.PvpRound)
                 .ThenInclude(x => x.CapitalRounds)
                 .ThenInclude(x => x.CapitalRoundUserAnswers)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
+                .Include(x => x.PvpRound)
                 .ThenInclude(x => x.CapitalRounds)
                 .ThenInclude(x => x.CapitalRoundMultipleQuestion)
                 .ThenInclude(x => x.Answers)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
+                .Include(x => x.PvpRound)
                 .ThenInclude(x => x.CapitalRounds)
                 .ThenInclude(x => x.CapitalRoundNumberQuestion)
                 .ThenInclude(x => x.Answers)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.NeutralRound)
+                .Include(x => x.NeutralRound)
                 .ThenInclude(x => x.TerritoryAttackers)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.Question)
+                .Include(x => x.Question)
                 .ThenInclude(x => x.Answers)
-                .Where(x => x.GameState == GameState.IN_PROGRESS && x.Participants
+                .Where(x => x.GameRoundNumber == x.GameInstance.GameRoundNumber && x.GameInstance.GameState == GameState.IN_PROGRESS && x.GameInstance.Participants
                     .Any(y => y.PlayerId == userId))
-                .Select(x => new
-                {
-                    CurrentRound = x.Rounds.First(y => y.GameRoundNumber == x.GameRoundNumber),
-                })
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
-            if (gm == null || gm.CurrentRound == null)
+            if (currentRound == null)
                 throw new AnswerSubmittedGameException("User isn't participating in any in progress games.");
 
             // Capital stage
             // Skip every check here and check externally
-            if(gm.CurrentRound.PvpRound?.IsCurrentlyCapitalStage == true)
+            if(currentRound.PvpRound?.IsCurrentlyCapitalStage == true)
             {
-                await CapitalStageAnswer(db, answerIdString, gm.CurrentRound, answeredAt, userId);
+                await CapitalStageAnswer(db, answerIdString, currentRound, answeredAt, userId);
                 return;
             }
 
-            if (!gm.CurrentRound.IsQuestionVotingOpen)
+            if (!currentRound.IsQuestionVotingOpen)
                 throw new AnswerSubmittedGameException("The voting stage for this question is either over or not started.");
 
-            switch (gm.CurrentRound.AttackStage)
+            switch (currentRound.AttackStage)
             {
                 case AttackStage.MULTIPLE_NEUTRAL:
 
@@ -299,10 +292,10 @@ namespace GameService.Services
                     if (!successMNeutral)
                         throw new AnswerSubmittedGameException("You didn't provide a valid number");
 
-                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerIdMNeutral))
+                    if (!currentRound.Question.Answers.Any(x => x.Id == answerIdMNeutral))
                         throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
 
-                    var playerAttacking = gm.CurrentRound
+                    var playerAttacking = currentRound
                         .NeutralRound
                         .TerritoryAttackers
                         .First(x => x.AttackerId == userId);
@@ -319,7 +312,7 @@ namespace GameService.Services
                     if (!successNNeutral)
                         throw new AnswerSubmittedGameException("You didn't provide a valid number");
 
-                    var pAttacker = gm.CurrentRound
+                    var pAttacker = currentRound
                         .NeutralRound
                         .TerritoryAttackers
                         .First(x => x.AttackerId == userId);
@@ -338,13 +331,13 @@ namespace GameService.Services
                         throw new AnswerSubmittedGameException("You didn't provide a valid number");
 
                     // Requesting user is the attacker
-                    if (!gm.CurrentRound.Question.Answers.Any(x => x.Id == answerIdMPvp))
+                    if (!currentRound.Question.Answers.Any(x => x.Id == answerIdMPvp))
                         throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
                     
-                    if (userId != gm.CurrentRound.PvpRound.AttackerId && userId != gm.CurrentRound.PvpRound.DefenderId)
+                    if (userId != currentRound.PvpRound.AttackerId && userId != currentRound.PvpRound.DefenderId)
                         throw new AnswerSubmittedGameException("You can't vote for this question");
                     
-                    var userAttacking = gm.CurrentRound
+                    var userAttacking = currentRound
                         .PvpRound
                         .PvpRoundAnswers
                         .FirstOrDefault(x => x.UserId == userId);
@@ -357,7 +350,7 @@ namespace GameService.Services
                         MChoiceQAnswerId = answerIdMPvp,
                         UserId = userId
                     };
-                    gm.CurrentRound.PvpRound.PvpRoundAnswers.Add(result);
+                    currentRound.PvpRound.PvpRoundAnswers.Add(result);
                     break;
 
                 case AttackStage.NUMBER_PVP:
@@ -365,7 +358,7 @@ namespace GameService.Services
                     if (!successNPvp)
                         throw new AnswerSubmittedGameException("You didn't provide a valid number");
 
-                    var pvpAttacker = gm.CurrentRound
+                    var pvpAttacker = currentRound
                         .PvpRound
                         .PvpRoundAnswers
                         .First(x => x.UserId == userId);
@@ -378,7 +371,7 @@ namespace GameService.Services
                     break;
             }
 
-            db.Update(gm.CurrentRound);
+            db.Update(currentRound);
 
             await db.SaveChangesAsync();
         }

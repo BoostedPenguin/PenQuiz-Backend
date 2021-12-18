@@ -60,9 +60,9 @@ namespace QuestionService
             })
             .AddJwtBearer(options =>
             {
-                            //options.Authority = /* TODO: Insert Authority URL here */;
+                //options.Authority = /* TODO: Insert Authority URL here */;
 
-                            options.RequireHttpsMetadata = false;
+                options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
 
                 var b = Configuration.GetSection("AppSettings").GetValue<string>("Issuer");
@@ -90,15 +90,15 @@ namespace QuestionService
             }
             else
             {
-                Console.WriteLine("--> Using in memory database");
+                Console.WriteLine("--> Using development sql database");
                 services.AddDbContextFactory<DefaultContext>(options =>
                 {
-                    options.UseInMemoryDatabase("InMemoryTest");
+                    options.UseSqlServer(Configuration.GetConnectionString("QuestionsConn"));
                 });
             }
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
-            
+
             services.AddSingleton<IEventProcessor, EventProcessor>();
 
             services.AddSingleton<IOpenDBService, OpenDBService>();
@@ -118,7 +118,7 @@ namespace QuestionService
             });
 
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
-            
+
             services.AddHostedService<MessageBusSubscriber>();
         }
 

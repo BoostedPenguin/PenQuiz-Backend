@@ -20,6 +20,7 @@ using GameService.EventProcessing;
 using GameService.MessageBus;
 using GameService.Grpc;
 using GameService.Services.GameTimerServices;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace GameService
 {
@@ -54,7 +55,8 @@ namespace GameService
                 services.AddDbContextFactory<DefaultContext>(options =>
                 {
                     Console.WriteLine("--> Using production sql database");
-                    options.UseSqlServer("Server=localhost,1433;Initial Catalog=gamesdb;User ID=sa;Password=pass00word!;");
+                    options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
+                    //options.ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
                 });
             }
             services.AddSingleton<IExampleService, ExampleService>();
@@ -158,7 +160,7 @@ namespace GameService
             {
                 x.PayloadSerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
             });
-            
+
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
             //services.AddHostedService<BackgroundTaskService>();
@@ -199,7 +201,7 @@ namespace GameService
                 endpoints.MapHub<ChatHub>("/chathubs");
                 endpoints.MapHub<GameHub>("/gamehubs");
             });
-            
+
             PrepDb.PrepMigration(app, env.IsProduction());
         }
     }

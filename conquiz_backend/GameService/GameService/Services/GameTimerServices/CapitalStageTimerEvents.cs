@@ -64,6 +64,7 @@ namespace GameService.Services.GameTimerServices
                     x.CapitalRoundMultiple.PvpRound.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
                     !x.CapitalRoundMultiple.IsCompleted &&
                     x.CapitalRoundMultiple.CapitalRoundAttackStage == CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             question.CapitalRoundMultiple.IsQuestionVotingOpen = true;
@@ -80,17 +81,13 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
                     x.Round.GameInstanceId == data.GameInstanceId)
-                .Select(x => new
-                {
-                    Participants = x.Round.GameInstance.Participants
-                        .Where(y => y.PlayerId == x.AttackerId || y.PlayerId == x.DefenderId)
-                        .ToArray(),
-                    x.AttackerId,
-                    x.DefenderId,
-                })
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
-            response.Participants = participants.Participants;
+            response.Participants = participants.Round.GameInstance.Participants
+                        .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
+                        .ToArray();
+
             response.AttackerId = participants.AttackerId;
             response.DefenderId = participants.DefenderId ?? 0;
 
@@ -122,6 +119,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             var capitalRound = baseRound.PvpRound.CapitalRounds.FirstOrDefault(x => !x.IsCompleted &&
@@ -326,6 +324,7 @@ namespace GameService.Services.GameTimerServices
                     x.CapitalRoundNumber.PvpRound.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
                     !x.CapitalRoundNumber.IsCompleted &&
                     x.CapitalRoundNumber.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             question.CapitalRoundNumber.IsQuestionVotingOpen = true;
@@ -377,6 +376,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             var capitalRound = baseRound.PvpRound.CapitalRounds.FirstOrDefault(x => !x.IsCompleted &&

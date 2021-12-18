@@ -110,18 +110,28 @@ namespace GameService.Services
             var borderTerritories = await a.MapTerritory
                 .Include(x => x.Map)
                 .Include(x => x.BordersNextToTerritoryNavigation)
+                .ThenInclude(x => x.ThisTerritoryNavigation)
+                .Include(x => x.BordersNextToTerritoryNavigation)
+                .ThenInclude(x => x.NextToTerritoryNavigation)
+
                 .Include(x => x.BordersThisTerritoryNavigation)
+                .ThenInclude(x => x.ThisTerritoryNavigation)
+                .Include(x => x.BordersThisTerritoryNavigation)
+                .ThenInclude(x => x.NextToTerritoryNavigation)
+
                 .Where(x => x.Id == territoryId)
-                .Select(x => new
-                {
-                    left = x.BordersNextToTerritoryNavigation
-                        .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList(),
-                    right = x.BordersThisTerritoryNavigation
-                        .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList()
-                })
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
-            return borderTerritories.left.Concat(borderTerritories.right).ToArray();
+            var btRelations = new
+            {
+                left = borderTerritories.BordersNextToTerritoryNavigation
+                        .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList(),
+                right = borderTerritories.BordersThisTerritoryNavigation
+                        .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList()
+            };
+
+            return btRelations.left.Concat(btRelations.right).ToArray();
         }
 
         /// <summary>

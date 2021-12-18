@@ -82,6 +82,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.AttackedTerritory)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
                     && x.GameInstanceId == data.GameInstanceId)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
             currentRound.IsQuestionVotingOpen = false;
@@ -272,6 +273,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
                     x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
 
@@ -307,6 +309,7 @@ namespace GameService.Services.GameTimerServices
             var gm = db.GameInstance
                 .Include(x => x.Participants)
                 .Include(x => x.ObjectTerritory)
+                .AsSplitQuery()
                 .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
 
             var untakenTer = gm.ObjectTerritory.Where(x => x.TakenBy == null).ToList();

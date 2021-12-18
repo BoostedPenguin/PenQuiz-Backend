@@ -82,10 +82,10 @@ namespace AccountService
             }
             else
             {
-                Console.WriteLine("--> Using in memory database");
+                Console.WriteLine("--> Using development sql database");
                 services.AddDbContextFactory<AppDbContext>(options =>
                 {
-                    options.UseInMemoryDatabase("InMemoryTest");
+                    options.UseSqlServer(Configuration.GetConnectionString("AccountsConn"));
                 });
             }
 
@@ -139,10 +139,8 @@ namespace AccountService
                 });
             });
 
-            if(env.IsProduction())
-            {
-                PrepDb.PrepMigration(app);
-            }
+            PrepDb.PrepMigration(app);
+
         }
     }
 }
