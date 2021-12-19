@@ -26,19 +26,26 @@ namespace GameService.Controllers
     /// 
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class GameController : ControllerBase
     {
         private readonly IExampleService context;
         private readonly IHttpClientFactory clientFactory;
         private readonly IMessageBusClient messageBus;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
+        private readonly IStatisticsService statisticsService;
 
-        public GameController(IExampleService _context, IHttpClientFactory clientFactory, IMessageBusClient messageBus, IDbContextFactory<DefaultContext> contextFactory)
+        public GameController(IExampleService _context, 
+            IHttpClientFactory clientFactory, 
+            IMessageBusClient messageBus, 
+            IDbContextFactory<DefaultContext> contextFactory, 
+            IStatisticsService statisticsService)
         {
             context = _context;
             this.clientFactory = clientFactory;
             this.messageBus = messageBus;
             this.contextFactory = contextFactory;
+            this.statisticsService = statisticsService;
         }
 
         [HttpGet("contact")]
@@ -76,5 +83,19 @@ namespace GameService.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetUserStatistics()
+        {
+            try
+            {
+                var result = await statisticsService.GetUserGameStatistics();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        } 
     }
 }

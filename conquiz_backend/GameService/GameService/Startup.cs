@@ -61,6 +61,8 @@ namespace GameService
             }
             services.AddSingleton<IExampleService, ExampleService>();
 
+            services.AddSingleton<IStatisticsService, StatisticsService>();
+
             services.AddSingleton<IEventProcessor, EventProcessor>();
 
             services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
