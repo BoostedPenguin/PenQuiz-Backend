@@ -198,6 +198,15 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var data = timerWrapper.Data;
 
+            var gi = await db.GameInstance
+                .Where(x => x.Id == data.GameInstanceId)
+                .FirstOrDefaultAsync();
+
+            // Game is finished
+            gi.GameState = GameState.FINISHED;
+            db.Update(gi);
+            await db.SaveChangesAsync();
+
             await hubContext.Clients.Group(data.GameLink)
                 .ShowGameMap(0);
 
