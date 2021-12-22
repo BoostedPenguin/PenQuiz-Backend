@@ -18,17 +18,16 @@ namespace GameServiceUnitTests
         MapGeneratorService service;
         public MapGeneratorServiceTest()
         {
-            mockContextFactory = new TestDbContextFactory();
+            mockContextFactory = new TestDbContextFactory("MapGenService");
             context = mockContextFactory.CreateDbContext();
-            
+
             service = new MapGeneratorService(mockContextFactory);
+            _ = service.ValidateMap();
         }
 
         [Fact]
         public async Task TestBorderingTerritories()
         {
-            await service.ValidateMap();
-
             var result = await service.AreTheyBorders("Vibri", "Ranku", "Antarctica");
 
             Assert.True(result);
@@ -37,8 +36,6 @@ namespace GameServiceUnitTests
         [Fact]
         public async Task TestNonBorderingTerritories()
         {
-            await service.ValidateMap();
-
             var result = await service.AreTheyBorders("Dager", "Lisu", "Antarctica");
 
             Assert.False(result);
@@ -47,8 +44,6 @@ namespace GameServiceUnitTests
         [Fact]
         public async Task TestNumberOfTerritories()
         {
-            await service.ValidateMap();
-
             var mapId = await context.Maps.Select(x => x.Id).FirstAsync();
 
             var amount = await service.GetAmountOfTerritories(mapId);
