@@ -15,11 +15,11 @@ namespace GameService.Services.GameTimerServices
             return actionState switch
             {
                 ActionState.GAME_START_PREVIEW_TIME => 3000,
-                ActionState.OPEN_PLAYER_ATTACK_VOTING => 8000,
-                ActionState.SHOW_MULTIPLE_CHOICE_QUESTION => 8000,
-                ActionState.SHOW_NUMBER_QUESTION => 8000,
-                ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING => 8000,
-                ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION => 8000,
+                ActionState.OPEN_PLAYER_ATTACK_VOTING => 10000,
+                ActionState.SHOW_MULTIPLE_CHOICE_QUESTION => 16000,
+                ActionState.SHOW_NUMBER_QUESTION => 16000,
+                ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING => 10000,
+                ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION => 16000,
                 _ => throw new NotImplementedException(),
             };
         }
