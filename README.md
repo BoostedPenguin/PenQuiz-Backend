@@ -40,10 +40,13 @@ In the K8S Folder run this command:
 ```
 kubectl apply -f .
 ```
-This will generate all services, deployments, a persistant volume claim and an nginx ingress controller.
+This will generate all services, deployments, keel.sh, a persistant volume claim and an nginx ingress controller.
 
 You can then access the backend production web server on https://localhost/api/account
 If you issued a self-signed SSL certificate you'd be prompted to allow access to this URL
+
+## Add ConfigMaps for deployment environmental variables
+Each microservice has multiple environmental variables which are usually stored in an appsettings.json, however for docker we inject them through a ConfigMap. There are 3 example configmaps in the K8S directory. Add your own secrets, endpoints etc. and apply them.
 
 ## Microservices endpoints
 There are currently 3 microservices running on a single node:
