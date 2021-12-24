@@ -1,0 +1,17 @@
+# This file is for example only
+# Replace all key-string values with your actual env secrets
+# Rename metadata-name: to questions-config
+# Remove the example extension in the filename
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: questions-example-config
+data:
+  # property-like keys; each key maps to a simple value
+  ConnectionStrings__QuestionsConn: "CONNECTION_STRING_HERE"
+  AppSettings__Secret: "JWT_SECRET_HERE"
+  AppSettings__Issuer: "ISSUER_AUTHORITY_HERE"
+  AppSettings__Audience: "PRIMARY_AUDIENCE_HERE"
+  AppSettings__RabbitMQHost: "RABBITMQ_HOST_IP"
+  AppSettings__RabbitMQPort: "RABBITMQ_HOST_PORT"
+  AppSettings__GrpcAccount: "ACCOUNT_SERVICE_GRPC_URL_WITH_PORT"

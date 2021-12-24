@@ -1,0 +1,20 @@
+# This file is for example only
+# Replace all key-string values with your actual env secrets
+# Rename metadata-name: to accounts-config
+# Remove the example extension in the filename
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: accounts-example-config
+data:
+  # property-like keys; each key maps to a simple value
+  ConnectionStrings__AccountsConn: "CONNECTION_STRING_HERE"
+  AppSettings__Secret: "JWT_SECRET_HERE"
+  AppSettings__Issuer: "ISSUER_AUTHORITY_HERE"
+  AppSettings__Audience: "PRIMARY_AUDIENCE_HERE"
+  AppSettings__RabbitMQHost: "RABBITMQ_HOST_IP"
+  AppSettings__RabbitMQPort: "RABBITMQ_HOST_PORT"
+  Kestrel__Endpoints__Grpc__Protocols: "Http2"
+  Kestrel__Endpoints__Grpc__Url: "GRPC_URL"
+  Kestrel__Endpoints__webApi__Protocols: "Http1"
+  Kestrel__Endpoints__webApi__Url: "HTTP_REST_URL"
