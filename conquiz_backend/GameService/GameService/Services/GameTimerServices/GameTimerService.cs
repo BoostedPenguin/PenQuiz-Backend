@@ -30,7 +30,7 @@ namespace GameService.Services.GameTimerServices
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory,
             IPvpStageTimerEvents pvpStageTimerEvents,
             IHubContext<GameHub, IGameHub> hubContext,
-            INeutralMCTimerEvents neutralMCTimerEvents, 
+            INeutralMCTimerEvents neutralMCTimerEvents,
             ICapitalStageTimerEvents capitalStageTimerEvents,
             INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
@@ -86,10 +86,10 @@ namespace GameService.Services.GameTimerServices
                     case ActionState.GAME_START_PREVIEW_TIME:
 
                         // Send request to clients to stay on main screen for preview
-                        await Game_Preview_Time(timer);
-                        
+                        //await Game_Preview_Time(timer);
+
                         // Debug
-                        //await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
                         return;
 
                     #region Neutral Multiple Choice events
@@ -185,7 +185,7 @@ namespace GameService.Services.GameTimerServices
 
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await UnexpectedCriticalError(timer, ex.Message);
                 Console.WriteLine(ex);
@@ -212,7 +212,7 @@ namespace GameService.Services.GameTimerServices
 
             var gm = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
-            
+
             GameTimers.Remove(timerWrapper);
         }
 

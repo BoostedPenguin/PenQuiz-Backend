@@ -17,6 +17,7 @@ namespace GameService.MessageBus
     {
         void RequestQuestions(RequestQuestionsDto requestQuestionsDto);
         void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto);
+        void RequestFinalNumberQuestion(RequestFinalNumberQuestionDto requestFinalNumberDto);
     }
 
     public class MessageBusClient : IMessageBusClient, IDisposable
@@ -95,6 +96,11 @@ namespace GameService.MessageBus
         }
 
         public void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto)
+        {
+            QRequest(requestQuestionsDto);
+        }
+
+        public void RequestFinalNumberQuestion(RequestFinalNumberQuestionDto requestQuestionsDto)
         {
             QRequest(requestQuestionsDto);
         }

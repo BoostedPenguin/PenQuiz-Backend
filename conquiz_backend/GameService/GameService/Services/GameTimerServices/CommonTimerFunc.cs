@@ -93,6 +93,55 @@ namespace GameService.Services.GameTimerServices
 
             if (nonAttackerTerritoriesCount == 0)
             {
+                var allPlayerTerritoriesWoCapital = db.ObjectTerritory
+                    .Where(x => x.GameInstanceId == data.GameInstanceId && !x.IsCapital).ToList();
+
+                var groupedBy = allPlayerTerritoriesWoCapital
+                    .GroupBy(x => x.TakenBy)
+                    .OrderBy(x => x.Count())
+                    .ToList();
+
+                var identicalScores = groupedBy
+                    .Where(x => groupedBy
+                        .Where(y => y != x)
+                        .Any(y => x.Count() == y.Count()));
+
+                // All 3 players have same score
+                // Ask everyone a question
+                if(identicalScores.Count() == 3)
+                {
+                    var baseRound = new Round()
+                    {
+                        GameRoundNumber = data.CurrentGameRoundNumber,
+                        AttackStage = AttackStage.NUMBER_NEUTRAL,
+                        Description = $"Number question. Attacker vs NEUTRAL territory",
+                        IsQuestionVotingOpen = false,
+                        IsTerritoryVotingOpen = false,
+                        GameInstanceId = data.GameInstanceId,
+                    };
+
+                    baseRound.NeutralRound = new NeutralRound()
+                    {
+                        AttackOrderNumber = 0
+                    };
+
+                    foreach(var person in identicalScores)
+                    {
+                        baseRound.NeutralRound.TerritoryAttackers.Add(new AttackingNeutralTerritory()
+                        {
+                            //AttackerId = person.Select(x => x.TakenBy) ?? 0,
+                            AttackOrderNumber = 0,
+                        });
+                    }
+                }
+                
+                // 2 players have same score
+                if(identicalScores.Count() == 2)
+                {
+
+                }
+
+
                 return true;
             }
 
@@ -149,6 +198,17 @@ namespace GameService.Services.GameTimerServices
                 Event = "Capital_Question_Request",
                 GameInstanceId = gameInstanceId,
                 QuestionsCapitalRoundId = capitalRoundsIds,
+            });
+        }
+
+        public static void RequestFinalNumberQuestion(IMessageBusClient messageBus, int gameInstanceId, int finalRoundId)
+        {
+            // Request final score determining number question
+            messageBus.RequestFinalNumberQuestion(new RequestFinalNumberQuestionDto()
+            {
+                Event = "FinalNumber_Question_Request",
+                GameInstanceId = gameInstanceId,
+                QuestionFinalRoundId = finalRoundId,
             });
         }
 

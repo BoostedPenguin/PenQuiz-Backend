@@ -232,7 +232,7 @@ namespace GameService.Services.GameTimerServices
                     .OrderByDescending(x => x.GameRoundNumber)
                     .Select(x => x.GameRoundNumber)
                     .First();
-                
+
                 CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
             }
 
@@ -312,20 +312,28 @@ namespace GameService.Services.GameTimerServices
                 .AsSplitQuery()
                 .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
 
+            var particip = gm.Participants.ToList();
+
             var untakenTer = gm.ObjectTerritory.Where(x => x.TakenBy == null).ToList();
+
+            for(var i = 0; i < 5; i++)
+            {
+                untakenTer.First(x => x.TakenBy == null).TakenBy = particip[0].PlayerId;
+                untakenTer.First(x => x.TakenBy == null).TakenBy = particip[1].PlayerId;
+            }
 
             untakenTer.ForEach(x =>
             {
-                var particip = gm.Participants.ToList();
-                var randomIndex = r.Next(0, gm.Participants.Count());
-                x.TakenBy = particip[randomIndex].PlayerId;
+                if (x.TakenBy != null) return;
+                x.TakenBy = particip[2].PlayerId;
             });
+
             data.CurrentGameRoundNumber = 40;
             gm.GameRoundNumber = 41;
 
             var rounds = await Create_Pvp_Rounds(db, timerWrapper, gm.Participants.Select(x => x.PlayerId).ToList());
 
-            foreach(var round in rounds)
+            foreach (var round in rounds)
             {
                 // Multiple
                 round.Question = new Questions()
@@ -366,6 +374,10 @@ namespace GameService.Services.GameTimerServices
                     Answer = "2019"
                 });
             }
+
+            data.CurrentGameRoundNumber = 55;
+            gm.GameRoundNumber = 56;
+
             data.CurrentGameRoundNumber++;
             await db.AddRangeAsync(rounds);
             db.Update(gm);
