@@ -40,9 +40,35 @@ namespace GameService.EventProcessing
                 case EventType.CapitalQuestionResponse:
                     AddCapitalQuestions(message);
                     break;
+                case EventType.FinalQuestionResponse:
+                    AddFinalQuestionResponse(message);
+                    break;
                 default:
                     break;
             }
+        }
+
+        private void AddFinalQuestionResponse(string message)
+        {
+            var result = JsonSerializer.Deserialize<QResponse>(message);
+            using var db = contextFactory.CreateDbContext();
+
+            var finalRound = db.Round
+                .Where(x => x.GameInstanceId == result.GameInstanceId && 
+                    x.Id == result.QuestionResponses.First().RoundId && 
+                    x.AttackStage == AttackStage.FINAL_NUMBER_PVP)
+                .FirstOrDefault();
+
+
+            if (finalRound == null)
+            {
+                Console.WriteLine($"--> Capital Round with ID: {result.QuestionResponses.First().RoundId}. Doesn't exist.");
+                return;
+            }
+            var mapped = mapper.Map<Questions>(result.QuestionResponses.First());
+            db.AddAsync(mapped);
+
+            db.SaveChanges();
         }
 
         private void AddCapitalQuestions(string message)
@@ -170,6 +196,9 @@ namespace GameService.EventProcessing
 
             switch (eventType.Event)
             {
+                case "FinalNumber_Question_Response":
+                    Console.WriteLine("Final question Response Event Detected");
+                    return EventType.FinalQuestionResponse;
                 case "Questions_MultipleChoice_Neutral_Response":
                     Console.WriteLine("Question Response Event Detected");
                     return EventType.QuestionsReceived;
@@ -188,6 +217,7 @@ namespace GameService.EventProcessing
 
     enum EventType
     {
+        FinalQuestionResponse,
         CapitalQuestionResponse,
         QuestionsReceived,
         UserPublished,

@@ -259,11 +259,20 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
-            var isGameOver = await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db);
+            var isGameOver = await CommonTimerFunc
+                .PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db, messageBus);
 
-            if (isGameOver)
+            switch (isGameOver)
             {
-                nextAction = ActionState.END_GAME;
+                case CommonTimerFunc.PvpStageIsGameOver.GAME_OVER:
+                    nextAction = ActionState.END_GAME;
+                    break;
+                case CommonTimerFunc.PvpStageIsGameOver.GAME_CONTINUING:
+                    // Do nothing, game continues
+                    break;
+                case CommonTimerFunc.PvpStageIsGameOver.REQUEST_FINAL_QUESTION:
+                    nextAction = ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION;
+                    break;
             }
 
             timerWrapper.Data.NextAction = nextAction;
@@ -455,13 +464,23 @@ namespace GameService.Services.GameTimerServices
             await db.SaveChangesAsync();
 
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
-            
-            var isGameOver = await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db);
 
-            if (isGameOver)
+            var isGameOver = await CommonTimerFunc
+                .PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db, messageBus);
+
+            switch (isGameOver)
             {
-                nextAction = ActionState.END_GAME;
+                case CommonTimerFunc.PvpStageIsGameOver.GAME_OVER:
+                    nextAction = ActionState.END_GAME;
+                    break;
+                case CommonTimerFunc.PvpStageIsGameOver.GAME_CONTINUING:
+                    // Do nothing, game continues
+                    break;
+                case CommonTimerFunc.PvpStageIsGameOver.REQUEST_FINAL_QUESTION:
+                    nextAction = ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION;
+                    break;
             }
+
             // Set next action
             timerWrapper.Data.NextAction = nextAction;
             timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;

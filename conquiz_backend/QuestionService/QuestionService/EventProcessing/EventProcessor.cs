@@ -77,11 +77,35 @@ namespace QuestionService.EventProcessing
                     break;
                 case EventType.CapitalQuestionRequest:
                     await CapitalRequest(message);
-
+                    break;
+                case EventType.FinalQuestionRequest:
+                    await FinalQuestionRequest(message);
                     break;
                 default:
                     break;
             }
+        }
+
+        private async Task FinalQuestionRequest(string message)
+        {
+            var questionRequest = JsonSerializer.Deserialize<RequestFinalNumberQuestionDto>(message);
+
+            var sessionToken =
+                await openDBService.GenerateSessionToken(questionRequest.GameInstanceId);
+            
+            var numberQuestions =
+                await numberQuestionsService.GetNumberQuestions(new List<int> { questionRequest.QuestionFinalRoundId }, sessionToken.Token, sessionToken.InternalGameInstanceId);
+            
+            var mappedQuestions = mapper.Map<QuestionResponse[]>(numberQuestions);
+
+            var response = new QResponse()
+            {
+                GameInstanceId = questionRequest.GameInstanceId,
+                QuestionResponses = mappedQuestions,
+                Event = "FinalNumber_Question_Response",
+            };
+
+            messageBus.PublishRequestedQuestions(response);
         }
 
         private async Task CapitalRequest(string message)
@@ -126,6 +150,8 @@ namespace QuestionService.EventProcessing
                 case "Question_Request":
                     Console.WriteLine("Question Request Event Detected");
                     return EventType.QuestionRequest;
+                case "FinalNumber_Question_Request":
+                    return EventType.FinalQuestionRequest;
                 default:
                     Console.WriteLine("--> Could not determine the event type");
                     return EventType.Undetermined;
@@ -135,6 +161,7 @@ namespace QuestionService.EventProcessing
 
     enum EventType
     {
+        FinalQuestionRequest,
         CapitalQuestionRequest,
         QuestionRequest,
         Undetermined

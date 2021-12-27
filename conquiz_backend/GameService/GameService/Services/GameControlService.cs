@@ -236,6 +236,27 @@ namespace GameService.Services
             await db.SaveChangesAsync();
         }
 
+        public void AnswerFinalQuestion(DefaultContext db, string answerIdString, Round currentRound, int userId)
+        {
+
+            bool successNNeutral = long.TryParse(answerIdString, out long answerIdNNeutral);
+            if (!successNNeutral)
+                throw new AnswerSubmittedGameException("You didn't provide a valid number");
+
+            var pAttacker = currentRound
+                .NeutralRound
+                .TerritoryAttackers
+                .First(x => x.AttackerId == userId);
+
+            if (pAttacker.AttackerNumberQAnswer != null)
+                throw new AnswerSubmittedGameException("You already voted for this question");
+
+            pAttacker.AnsweredAt = DateTime.Now;
+            pAttacker.AttackerNumberQAnswer = answerIdNNeutral;
+
+            db.Update(currentRound);
+        }
+
         public async Task AnswerQuestion(string answerIdString)
         {
             var answeredAt = DateTime.Now;
@@ -368,6 +389,9 @@ namespace GameService.Services
 
                     pvpAttacker.NumberQAnsweredAt = DateTime.Now;
                     pvpAttacker.NumberQAnswer = answerIdNPvp;
+                    break;
+                case AttackStage.FINAL_NUMBER_PVP:
+                    AnswerFinalQuestion(db, answerIdString, currentRound, userId);
                     break;
             }
 

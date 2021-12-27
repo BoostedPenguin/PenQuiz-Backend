@@ -83,6 +83,8 @@ namespace GameService
             // Pvp stage
             services.AddSingleton<IPvpStageTimerEvents, PvpStageTimerEvents>();
 
+            services.AddSingleton<IFinalPvpQuestionService, FinalPvpQuestionService>();
+
             // Capital stage events
             services.AddSingleton<ICapitalStageTimerEvents, CapitalStageTimerEvents>();
 

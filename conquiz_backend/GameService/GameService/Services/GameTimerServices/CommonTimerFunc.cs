@@ -35,6 +35,13 @@ namespace GameService.Services.GameTimerServices
 
     public class CommonTimerFunc
     {
+        public enum PvpStageIsGameOver
+        {
+            GAME_OVER,
+            GAME_CONTINUING,
+            REQUEST_FINAL_QUESTION,
+        }
+
         private static readonly Random r = new Random();
         public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
         {
@@ -58,6 +65,8 @@ namespace GameService.Services.GameTimerServices
                     .Where(x => x.TakenBy == particip.PlayerId)
                     .Sum(x => x.TerritoryScore);
 
+                totalParticipScore += particip.FinalQuestionScore;
+
                 if (particip.Score != totalParticipScore)
                 {
                     particip.Score = totalParticipScore;
@@ -80,8 +89,7 @@ namespace GameService.Services.GameTimerServices
             game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
             return game;
         }
-
-        public static async Task<bool> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db)
+        public static async Task<PvpStageIsGameOver> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db, IMessageBusClient messageBus)
         {
             var data = timerWrapper.Data;
 
@@ -91,8 +99,16 @@ namespace GameService.Services.GameTimerServices
                 .CountAsync();
 
 
+            // This attacker controls all territories. Skip any other rounds and declare him winner.
             if (nonAttackerTerritoriesCount == 0)
             {
+                return PvpStageIsGameOver.GAME_OVER;
+            }
+
+            // Check if last pvp round
+            if (data.CurrentGameRoundNumber > data.LastPvpRound)
+            {
+
                 var allPlayerTerritoriesWoCapital = db.ObjectTerritory
                     .Where(x => x.GameInstanceId == data.GameInstanceId && !x.IsCapital).ToList();
 
@@ -106,15 +122,15 @@ namespace GameService.Services.GameTimerServices
                         .Where(y => y != x)
                         .Any(y => x.Count() == y.Count()));
 
-                // All 3 players have same score
-                // Ask everyone a question
-                if(identicalScores.Count() == 3)
+                // On final pvp round and there are at least 2 people with the same score
+                // Request additional number question to make sure scoring for each user is unique
+                if (identicalScores.Count() >= 2)
                 {
                     var baseRound = new Round()
                     {
                         GameRoundNumber = data.CurrentGameRoundNumber,
-                        AttackStage = AttackStage.NUMBER_NEUTRAL,
-                        Description = $"Number question. Attacker vs NEUTRAL territory",
+                        AttackStage = AttackStage.FINAL_NUMBER_PVP,
+                        Description = $"Final Number question. Attacker vs other attackers",
                         IsQuestionVotingOpen = false,
                         IsTerritoryVotingOpen = false,
                         GameInstanceId = data.GameInstanceId,
@@ -125,33 +141,27 @@ namespace GameService.Services.GameTimerServices
                         AttackOrderNumber = 0
                     };
 
-                    foreach(var person in identicalScores)
+                    foreach (var person in identicalScores)
                     {
                         baseRound.NeutralRound.TerritoryAttackers.Add(new AttackingNeutralTerritory()
                         {
-                            //AttackerId = person.Select(x => x.TakenBy) ?? 0,
+                            AttackerId = person.Key.Value,
                             AttackOrderNumber = 0,
                         });
                     }
+
+                    await db.AddAsync(baseRound);
+                    await db.SaveChangesAsync();
+
+                    RequestFinalNumberQuestion(messageBus, data.GameInstanceId, baseRound.Id);
+
+                    return PvpStageIsGameOver.REQUEST_FINAL_QUESTION;
                 }
-                
-                // 2 players have same score
-                if(identicalScores.Count() == 2)
-                {
 
-                }
-
-
-                return true;
+                return PvpStageIsGameOver.GAME_OVER;
             }
 
-            // Check if last pvp round
-            if (data.CurrentGameRoundNumber > data.LastPvpRound)
-            {
-                return true;
-            }
-
-            return false;
+            return PvpStageIsGameOver.GAME_CONTINUING;
         }
 
         public static UserAttackOrder GenerateAttackOrder(List<int> userIds, int totalTerritories, int RequiredPlayers, bool excludeCapitals = true)

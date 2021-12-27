@@ -22,6 +22,7 @@ namespace GameService.Services.GameTimerServices
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly INeutralMCTimerEvents neutralMCTimerEvents;
         private readonly ICapitalStageTimerEvents capitalStageTimerEvents;
+        private readonly IFinalPvpQuestionService finalPvpQuestionService;
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
@@ -32,6 +33,7 @@ namespace GameService.Services.GameTimerServices
             IHubContext<GameHub, IGameHub> hubContext,
             INeutralMCTimerEvents neutralMCTimerEvents,
             ICapitalStageTimerEvents capitalStageTimerEvents,
+            IFinalPvpQuestionService finalPvpQuestionService,
             INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
             contextFactory = _contextFactory;
@@ -39,6 +41,7 @@ namespace GameService.Services.GameTimerServices
             this.hubContext = hubContext;
             this.neutralMCTimerEvents = neutralMCTimerEvents;
             this.capitalStageTimerEvents = capitalStageTimerEvents;
+            this.finalPvpQuestionService = finalPvpQuestionService;
             this.neutralNumberTimerEvents = neutralNumberTimerEvents;
         }
 
@@ -176,6 +179,16 @@ namespace GameService.Services.GameTimerServices
 
                     case ActionState.END_CAPITAL_PVP_NUMBER_QUESTION:
                         await capitalStageTimerEvents.Capital_Close_Pvp_Number_Question_Voting(timer);
+                        return;
+                    #endregion
+
+                    #region FinalPvpStageQuestion
+                    case ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION:
+                        await finalPvpQuestionService.Final_Show_Pvp_Number_Screen(timer);
+                        return;
+
+                    case ActionState.END_FINAL_PVP_NUMBER_QUESTION:
+                        await finalPvpQuestionService.Final_Close_Pvp_Number_Question_Voting(timer);
                         return;
                     #endregion
 

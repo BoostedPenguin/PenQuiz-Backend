@@ -13,7 +13,8 @@ namespace GameService.Models
         MULTIPLE_NEUTRAL,
         NUMBER_NEUTRAL,
         MULTIPLE_PVP,
-        NUMBER_PVP
+        NUMBER_PVP,
+        FINAL_NUMBER_PVP
     }
 
     public class Round

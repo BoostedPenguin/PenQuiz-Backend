@@ -15,6 +15,7 @@ namespace GameService.Models
         public int GameId { get; set; }
         public bool IsBot { get; set; }
         public int Score { get; set; }
+        public int FinalQuestionScore { get; set; }
 
         public virtual GameInstance Game { get; set; }
         public virtual Users Player { get; set; }
