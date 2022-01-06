@@ -29,7 +29,7 @@ namespace AccountService.Controllers
         {
             try
             {
-                return Ok("Successfully contacted me. Version 1.1");
+                return Ok("Successfully contacted me. Version 1.2");
             }
             catch(Exception ex)
             {
