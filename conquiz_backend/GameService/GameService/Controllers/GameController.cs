@@ -67,6 +67,7 @@ namespace GameService.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult PingService()
         {
             try
