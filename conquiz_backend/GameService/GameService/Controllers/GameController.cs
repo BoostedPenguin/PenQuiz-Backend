@@ -67,16 +67,11 @@ namespace GameService.Controllers
         }
 
         [HttpGet]
-        public IActionResult DoSomething()
+        public IActionResult PingService()
         {
             try
             {
-                CommonTimerFunc.RequestCapitalQuestions(messageBus, 90000, new List<int>()
-                {
-                    1,5,2,3,12,65,
-                });
-
-                return Ok($"Game controller version 1.3");
+                return Ok($"Successfully contacted ConQuiz question service. Version 1.3");
             }
             catch (Exception ex)
             {
