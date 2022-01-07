@@ -25,7 +25,7 @@ namespace QuestionService.Controllers
         {
             try
             {
-                return Ok("Successfully contacted ConQuiz question service. Version 1.0");
+                return Ok("Successfully contacted ConQuiz question service. Version 1.1");
             }
             catch(Exception ex)
             {
