@@ -71,7 +71,7 @@ namespace GameService.Controllers
         {
             try
             {
-                return Ok($"Successfully contacted ConQuiz question service. Version 1.5");
+                return Ok($"Successfully contacted ConQuiz question service. Version 1.5.1");
             }
             catch (Exception ex)
             {
