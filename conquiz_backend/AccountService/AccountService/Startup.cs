@@ -95,6 +95,8 @@ namespace AccountService
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
+            services.AddHttpClient();
+
             services.AddGrpc();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace AccountService.Controllers
@@ -17,18 +19,24 @@ namespace AccountService.Controllers
     public class AccountController : ControllerBase
     {
         private readonly IAccountService accountService;
+        private readonly IHttpClientFactory clientFactory;
+        private readonly IOptions<AppSettings> appSettings;
 
-        public AccountController(IAccountService accountService)
+        public AccountController(IAccountService accountService, IHttpClientFactory clientFactory, IOptions<AppSettings> appSettings)
         {
             this.accountService = accountService;
+            this.clientFactory = clientFactory;
+            this.appSettings = appSettings;
         }
 
         [AllowAnonymous]
         [HttpGet]
-        public IActionResult ExamplePing()
+        public async Task<IActionResult> ExamplePing()
         {
             try
             {
+                await PingRequiredServices();
+
                 return Ok("Successfully contacted me. Version 1.4");
             }
             catch(Exception ex)
@@ -43,6 +51,8 @@ namespace AccountService.Controllers
         {
             try
             {
+                await PingRequiredServices();
+
                 var payload = GoogleJsonWebSignature.ValidateAsync(userView.TokenId, new GoogleJsonWebSignature.ValidationSettings()).Result;
                 var response = await accountService.Authenticate(payload, ipAddress());
 
@@ -59,12 +69,39 @@ namespace AccountService.Controllers
             }
         }
 
+        /// <summary>
+        /// Azure app services free plan sleeps idled services. Wake them up on authentication
+        /// </summary>
+        /// <returns></returns>
+        private async Task PingRequiredServices()
+        {
+            // Activate only in production
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != Environments.Production)
+                return;
+
+            // Activate only in azure production
+            if (appSettings.Value.AzureProduction == "")
+                return;
+
+            var client = clientFactory.CreateClient();
+            using var questionServerResponse = await client.GetAsync($"https://conquiz-question-api.azurewebsites.net/api/question");
+            using var gameServerResponse = await client.GetAsync($"https://conquiz-game-api.azurewebsites.net/api/game");
+
+            if (!questionServerResponse.IsSuccessStatusCode)
+                throw new ArgumentException("Our question server is down. Please, try again later.");
+
+            if (!gameServerResponse.IsSuccessStatusCode)
+                throw new ArgumentException("Our game server is down. Please, try again later.");
+        }
+
         [AllowAnonymous]
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken()
         {
             try
             {
+                await PingRequiredServices();
+
                 var refreshToken = Request.Cookies["refreshToken"];
 
                 if (refreshToken == null)

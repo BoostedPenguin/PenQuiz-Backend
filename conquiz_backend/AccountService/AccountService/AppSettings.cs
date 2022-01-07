@@ -15,5 +15,6 @@ namespace AccountService
         public string RabbitMQUserName { get; set; }
         public string RabbitMQPassword { get; set; }
         public string RabbitMQUri { get; set; }
+        public string AzureProduction { get; set; }
     }
 }
