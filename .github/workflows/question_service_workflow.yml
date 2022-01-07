@@ -81,7 +81,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     environment:
-      name: 'production'
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
@@ -95,6 +95,6 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'conquiz-question-api'
-          slot-name: 'production'
-          publish-profile: ${{ secrets.AzureAppService_PublishProfile_103fe7d08a134fa08ce55aed6ff8ce90 }}
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_408C7E45AAFF485395FF3469F2D310C6 }}
           package: .
