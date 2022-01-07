@@ -42,7 +42,7 @@ jobs:
 
     - name: Test
       working-directory: ./conquiz_backend/GameService
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --verbosity normal
       
     - name: dotnet publish
       working-directory: ./conquiz_backend/GameService
