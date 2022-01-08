@@ -87,6 +87,12 @@ namespace AccountService.Controllers
             using var questionServerResponse = await client.GetAsync($"https://conquiz-question-api.azurewebsites.net/api/question");
             using var gameServerResponse = await client.GetAsync($"https://conquiz-game-api.azurewebsites.net/api/game");
 
+            System.Diagnostics.Trace.TraceInformation("--> Question service response:");
+            System.Diagnostics.Trace.TraceInformation(await questionServerResponse.Content.ReadAsStringAsync());
+
+            System.Diagnostics.Trace.TraceInformation("--> Game service response:");
+            System.Diagnostics.Trace.TraceInformation(await gameServerResponse.Content.ReadAsStringAsync());
+
             if (!questionServerResponse.IsSuccessStatusCode)
                 throw new ArgumentException("Our question server is down. Please, try again later.");
 
