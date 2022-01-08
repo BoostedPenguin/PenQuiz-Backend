@@ -97,11 +97,7 @@ namespace GameService.Services.GameTimerServices
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);
 
-                    // Set the next timer event
-                    timerWrapper.Data.NextAction = ActionState.CLOSE_PLAYER_ATTACK_VOTING;
-                    timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING);
-
-                    timerWrapper.Start();
+                    timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
 
                     break;
 
@@ -114,10 +110,7 @@ namespace GameService.Services.GameTimerServices
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);
 
-
-                    timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-                    timerWrapper.Data.NextAction = ActionState.SHOW_MULTIPLE_CHOICE_QUESTION;
-                    timerWrapper.Start();
+                    timerWrapper.StartTimer(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION);
                     break;
                 //throw new NotImplementedException();
 
@@ -247,15 +240,12 @@ namespace GameService.Services.GameTimerServices
             if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
             {
                 // Next action should be a number question related one
-                timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
+                timerWrapper.StartTimer(ActionState.OPEN_PLAYER_ATTACK_VOTING);
             }
             else
             {
-                timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
+                timerWrapper.StartTimer(ActionState.OPEN_PLAYER_ATTACK_VOTING);
             }
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-
-            timerWrapper.Start();
         }
 
         public async Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
@@ -291,11 +281,7 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(fullGame);
 
-            // Set next action and interval
-            timerWrapper.Data.NextAction = ActionState.CLOSE_PLAYER_ATTACK_VOTING;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING);
-
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
         }
 
         public async Task Show_Neutral_MultipleChoice_Screen(TimerWrapper timerWrapper)
@@ -333,10 +319,7 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
                 GameActionsTime.GetServerActionsTime(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION));
 
-
-            timerWrapper.Data.NextAction = ActionState.END_MULTIPLE_CHOICE_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_MULTIPLE_CHOICE_QUESTION);
         }
 
         private async Task<Round[]> Create_Neutral_Number_Rounds(DefaultContext db, TimerWrapper timerWrapper)

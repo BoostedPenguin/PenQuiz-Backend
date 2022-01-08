@@ -55,6 +55,7 @@ namespace GameService.Services.GameTimerServices
                 AutoReset = false,
                 Interval = 500,
             };
+            actionTimer.Data.CountDownTimer = new TimerWrapper.CountDownTimer(hubContext, actionTimer.Data.GameLink);
 
             // Set the last neutral mc round 
             using var db = contextFactory.CreateDbContext();
@@ -208,6 +209,7 @@ namespace GameService.Services.GameTimerServices
         private async Task Game_End(TimerWrapper timerWrapper)
         {
             timerWrapper.Stop();
+            timerWrapper.Data.CountDownTimer.Stop();
             using var db = contextFactory.CreateDbContext();
             var data = timerWrapper.Data;
 
@@ -227,11 +229,16 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
 
             GameTimers.Remove(timerWrapper);
+            timerWrapper.Data.CountDownTimer.Dispose();
+            timerWrapper.Dispose();
         }
 
         private async Task UnexpectedCriticalError(TimerWrapper timerWrapper, string message = "Unhandled game exception")
         {
             using var db = contextFactory.CreateDbContext();
+            timerWrapper.Stop();
+            timerWrapper.Data.CountDownTimer.Stop();
+            timerWrapper.Data.CountDownTimer.Dispose();
             var gm = await db.GameInstance.FirstOrDefaultAsync(x => x.Id == timerWrapper.Data.GameInstanceId);
             gm.GameState = GameState.CANCELED;
 
@@ -239,6 +246,7 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Group(timerWrapper.Data.GameLink).LobbyCanceled($"Unexpected error occured. Game closed.\n{message}");
             GameTimers.Remove(timerWrapper);
+            timerWrapper.Dispose();
         }
 
 
@@ -264,7 +272,10 @@ namespace GameService.Services.GameTimerServices
             if (gameTimer == null) return;
 
             gameTimer.Stop();
+            gameTimer.Data.CountDownTimer.Stop();
+            gameTimer.Data.CountDownTimer.Dispose();
             GameTimers.Remove(gameTimer);
+            gameTimer.Dispose();
         }
     }
 }

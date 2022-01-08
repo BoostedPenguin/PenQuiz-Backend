@@ -49,7 +49,7 @@ namespace GameService.Hubs
         Task MCQuestionPreviewResult(MCPlayerQuestionAnswers previewResult);
         Task NumberQuestionPreviewResult(NumberPlayerQuestionAnswers previewResult);
         Task GetRoundQuestion(QuestionClientResponse question, int msTimeForAction);
-
+        Task GameSendCountDownSeconds(int msTimeForAction);
         Task TESTING(string message);
     }
     [Authorize]
