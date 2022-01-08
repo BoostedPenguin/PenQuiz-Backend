@@ -92,12 +92,9 @@ namespace GameService.Services.GameTimerServices
             response.DefenderId = participants.DefenderId ?? 0;
 
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
-            timerWrapper.Data.NextAction = ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION);
         }
 
         public async Task Capital_Close_Pvp_MultipleChoice_Question_Voting(TimerWrapper timerWrapper)
@@ -309,9 +306,7 @@ namespace GameService.Services.GameTimerServices
                     break;
             }
 
-            timerWrapper.Data.NextAction = nextAction;
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-            timerWrapper.Start();
+            timerWrapper.StartTimer(nextAction);
         }
 
 
@@ -357,13 +352,9 @@ namespace GameService.Services.GameTimerServices
             response.AttackerId = question.CapitalRoundNumber.PvpRound.AttackerId;
             response.DefenderId = question.CapitalRoundNumber.PvpRound.DefenderId ?? 0;
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
-
-            timerWrapper.Data.NextAction = ActionState.END_CAPITAL_PVP_NUMBER_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_CAPITAL_PVP_NUMBER_QUESTION);
         }
 
         public async Task Capital_Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper)
@@ -545,9 +536,7 @@ namespace GameService.Services.GameTimerServices
             }
 
             // Set next action
-            timerWrapper.Data.NextAction = nextAction;
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-            timerWrapper.Start();
+            timerWrapper.StartTimer(nextAction);
         }
     }
 }

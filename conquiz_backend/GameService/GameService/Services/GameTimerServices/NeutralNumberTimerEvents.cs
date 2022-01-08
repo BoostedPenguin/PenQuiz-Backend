@@ -55,15 +55,13 @@ namespace GameService.Services.GameTimerServices
             var db = contextFactory.CreateDbContext();
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowGameMap(GameActionsTime.NumberQuestionPreviewTime);
+                .ShowGameMap();
 
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(fullGame);
 
-            timerWrapper.Data.NextAction = ActionState.SHOW_NUMBER_QUESTION;
-            timerWrapper.Interval = GameActionsTime.NumberQuestionPreviewTime;
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.SHOW_NUMBER_QUESTION);
         }
 
         public async Task Close_Neutral_Number_Question_Voting(TimerWrapper timerWrapper)
@@ -243,17 +241,12 @@ namespace GameService.Services.GameTimerServices
             if (data.CurrentGameRoundNumber > data.LastNeutralNumberRound)
             {
                 // Next action should be a pvp question related one
-                timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
+                timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
             }
             else
             {
-                timerWrapper.Data.NextAction = ActionState.SHOW_PREVIEW_GAME_MAP;
+                timerWrapper.StartTimer(ActionState.SHOW_PREVIEW_GAME_MAP);
             }
-
-            // Set next action
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-
-            timerWrapper.Start();
         }
 
         public async Task Show_Neutral_Number_Screen(TimerWrapper timerWrapper)
@@ -290,13 +283,9 @@ namespace GameService.Services.GameTimerServices
             response.IsNeutral = true;
             response.Participants = question.Round.GameInstance.Participants.ToArray();
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
-
-            timerWrapper.Data.NextAction = ActionState.END_NUMBER_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_NUMBER_QUESTION);
         }
 
         public async Task Debug_Assign_All_Territories_Start_Pvp(TimerWrapper timerWrapper)
@@ -390,11 +379,7 @@ namespace GameService.Services.GameTimerServices
                 .Select(x => x.GameRoundNumber)
                 .First();
 
-            //CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
-
-            timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
-            timerWrapper.Interval = 3000;
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
         }
 
         private async Task<Round[]> Create_Pvp_Rounds(DefaultContext db, TimerWrapper timerWrapper, List<int> userIds)

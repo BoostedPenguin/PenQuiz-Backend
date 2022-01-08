@@ -23,8 +23,6 @@ namespace GameService.Services.GameTimerServices
         SHOW_NUMBER_QUESTION,
         END_NUMBER_QUESTION,
 
-        SHOW_MAP_NUMBER_QUESTION,
-
         // Pvp rounding
         OPEN_PVP_PLAYER_ATTACK_VOTING,
         CLOSE_PVP_PLAYER_ATTACK_VOTING,

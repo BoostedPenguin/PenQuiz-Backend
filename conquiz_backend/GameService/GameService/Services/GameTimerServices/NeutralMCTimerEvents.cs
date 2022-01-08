@@ -17,6 +17,7 @@ namespace GameService.Services.GameTimerServices
     {
         Task Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
         Task Close_Neutral_MultipleChoice_Question_Voting(TimerWrapper timerWrapper);
+        Task Debug_Start_Number_Neutral(TimerWrapper timerWrapper);
         Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper);
         Task Show_Neutral_MultipleChoice_Screen(TimerWrapper timerWrapper);
     }
@@ -91,8 +92,8 @@ namespace GameService.Services.GameTimerServices
                         .GetAvailableAttackTerritoriesNames(db, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
 
                     // Notify the group who is the next attacker
-                    await hubContext.Clients.Group(data.GameLink).ShowRoundingAttacker(nextAttacker.AttackerId,
-                        GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING), availableTerritories);
+                    await hubContext.Clients.Group(data.GameLink)
+                        .ShowRoundingAttacker(nextAttacker.AttackerId, availableTerritories);
 
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(fullGame);
@@ -240,7 +241,7 @@ namespace GameService.Services.GameTimerServices
             if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
             {
                 // Next action should be a number question related one
-                timerWrapper.StartTimer(ActionState.OPEN_PLAYER_ATTACK_VOTING);
+                timerWrapper.StartTimer(ActionState.SHOW_PREVIEW_GAME_MAP);
             }
             else
             {
@@ -274,8 +275,7 @@ namespace GameService.Services.GameTimerServices
                 .GetAvailableAttackTerritoriesNames(db, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowRoundingAttacker(currentAttacker.AttackerId,
-                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PLAYER_ATTACK_VOTING), availableTerritories);
+                .ShowRoundingAttacker(currentAttacker.AttackerId, availableTerritories);
 
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
@@ -316,8 +316,7 @@ namespace GameService.Services.GameTimerServices
             response.IsNeutral = true;
             response.Participants = question.Round.GameInstance.Participants.ToArray();
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
             timerWrapper.StartTimer(ActionState.END_MULTIPLE_CHOICE_QUESTION);
         }
@@ -366,6 +365,42 @@ namespace GameService.Services.GameTimerServices
             }
 
             return numberQuestionRounds.ToArray();
+        }
+
+
+        public async Task Debug_Start_Number_Neutral(TimerWrapper timerWrapper)
+        {
+            timerWrapper.Stop();
+            using var db = contextFactory.CreateDbContext();
+            var data = timerWrapper.Data;
+
+            var gm = db.GameInstance
+                .Include(x => x.Participants)
+                .Include(x => x.ObjectTerritory)
+                .AsSplitQuery()
+                .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
+
+            data.CurrentGameRoundNumber = data.LastNeutralMCRound + 1;
+
+            // Go to next round
+            gm.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+
+            // Create number question rounds if gm multiple choice neutral rounds are over
+            var rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
+            await db.AddRangeAsync(rounds);
+            await db.SaveChangesAsync();
+
+            data.LastNeutralNumberRound = db.Round
+                .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                .OrderByDescending(x => x.GameRoundNumber)
+                .Select(x => x.GameRoundNumber)
+                .First();
+
+
+            CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, true);
+
+            // Next action should be a number question related one
+            timerWrapper.StartTimer(ActionState.SHOW_PREVIEW_GAME_MAP);
         }
     }
 }

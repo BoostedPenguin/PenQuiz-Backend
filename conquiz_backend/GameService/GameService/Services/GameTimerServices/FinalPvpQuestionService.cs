@@ -94,13 +94,9 @@ namespace GameService.Services.GameTimerServices
                 response.Participants = question.Round.GameInstance.Participants.ToArray();
             }
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
-
-            timerWrapper.Data.NextAction = ActionState.END_FINAL_PVP_NUMBER_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_FINAL_PVP_NUMBER_QUESTION);
         }
         private Random r = new Random();
         public async Task Final_Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper)
@@ -262,11 +258,7 @@ namespace GameService.Services.GameTimerServices
             // Tell clients
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
-            timerWrapper.Data.NextAction = ActionState.END_GAME;
-            // Set next action
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_GAME);
         }
     }
 }

@@ -12,14 +12,21 @@ namespace GameService.Services.GameTimerServices
     {
         public TimerData Data { get; set; }
 
-        
-        public void StartTimer(ActionState nextAction)
+        public void StartTimer(ActionState nextAction, int? overrideIntervalTime = null)
         {
             Data.NextAction = nextAction;
             var intervalTime = GameActionsTime.GetTime(Data.NextAction);
 
-            Interval = intervalTime;
-            Data.CountDownTimer.StartCountDownTimer(intervalTime);
+
+
+            Interval = overrideIntervalTime ?? intervalTime;
+            
+            //Temp
+            if (intervalTime != GameActionsTime.DefaultPreviewTime)
+            {
+                Data.CountDownTimer.StartCountDownTimer(overrideIntervalTime ?? intervalTime);
+            }
+            
             this.Start();
         }
 
@@ -44,6 +51,9 @@ namespace GameService.Services.GameTimerServices
 
             public void StartCountDownTimer(int maxTimeMs)
             {
+                // Prevent timer if maxtimems is less than 1 second
+                if (maxTimeMs < 1000) return;
+
                 Interval = 1000;
                 AutoReset = true;
                 MaxTime = maxTimeMs / 1000;

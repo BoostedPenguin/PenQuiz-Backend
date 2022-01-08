@@ -64,14 +64,14 @@ namespace GameService.Services.GameTimerServices
                 .Count();
 
             // Default starter values
-            actionTimer.Data.NextAction = ActionState.GAME_START_PREVIEW_TIME;
             actionTimer.Data.CurrentGameRoundNumber = 1;
 
             GameTimers.Add(actionTimer);
 
             // Start timer
             actionTimer.Elapsed += ActionTimer_Elapsed;
-            actionTimer.Start();
+
+            actionTimer.StartTimer(ActionState.GAME_START_PREVIEW_TIME, 50);
         }
 
         private async void ActionTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -94,6 +94,7 @@ namespace GameService.Services.GameTimerServices
 
                         // Debug
                         //await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        //await neutralMCTimerEvents.Debug_Start_Number_Neutral(timer);
                         return;
 
                     #region Neutral Multiple Choice events
@@ -223,7 +224,7 @@ namespace GameService.Services.GameTimerServices
             await db.SaveChangesAsync();
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowGameMap(0);
+                .ShowGameMap();
 
             var gm = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
@@ -256,14 +257,8 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink)
                 .Game_Show_Main_Screen();
 
-            // Set next action
-            timerWrapper.Data.NextAction = ActionState.OPEN_PLAYER_ATTACK_VOTING;
-
-            // Set time until next action *call case state*
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.GAME_START_PREVIEW_TIME);
-
             // Restart timer
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.OPEN_PLAYER_ATTACK_VOTING);
         }
 
         public void CancelGameTimer(GameInstance gm)

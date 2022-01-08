@@ -98,12 +98,9 @@ namespace GameService.Services.GameTimerServices
             response.DefenderId = participants.DefenderId ?? 0;
 
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
-            timerWrapper.Data.NextAction = ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION);
         }
 
         ///TODO
@@ -275,11 +272,7 @@ namespace GameService.Services.GameTimerServices
                     break;
             }
 
-            timerWrapper.Data.NextAction = nextAction;
-
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-
-            timerWrapper.Start();
+            timerWrapper.StartTimer(nextAction);
         }
 
         public async Task Show_Pvp_Number_Screen(TimerWrapper timerWrapper)
@@ -320,13 +313,9 @@ namespace GameService.Services.GameTimerServices
             response.AttackerId = question.PvpRoundNum.AttackerId;
             response.DefenderId = question.PvpRoundNum.DefenderId ?? 0;
 
-            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response,
-                GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION));
+            await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
-
-            timerWrapper.Data.NextAction = ActionState.END_PVP_NUMBER_QUESTION;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.SHOW_NUMBER_QUESTION);
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.END_PVP_NUMBER_QUESTION);
         }
 
         public async Task Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper)
@@ -482,9 +471,7 @@ namespace GameService.Services.GameTimerServices
             }
 
             // Set next action
-            timerWrapper.Data.NextAction = nextAction;
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-            timerWrapper.Start();
+            timerWrapper.StartTimer(nextAction);
         }
 
         public async Task Open_Pvp_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
@@ -521,9 +508,7 @@ namespace GameService.Services.GameTimerServices
                 db.Update(currentRound);
                 await db.SaveChangesAsync();
 
-                timerWrapper.Data.NextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
-                timerWrapper.Interval = 50;
-                timerWrapper.Start();
+                timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING, 50);
                 return;
             }
 
@@ -531,18 +516,13 @@ namespace GameService.Services.GameTimerServices
                 .GetAvailableAttackTerritoriesNames(db, currentAttacker, data.GameInstanceId, false);
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowRoundingAttacker(currentAttacker,
-                    GameActionsTime.GetServerActionsTime(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING), availableTerritories);
+                .ShowRoundingAttacker(currentAttacker, availableTerritories);
 
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(fullGame);
 
-            // Set next action and interval
-            timerWrapper.Data.NextAction = ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING;
-            timerWrapper.Interval = GameActionsTime.GetServerActionsTime(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
-
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING);
         }
 
         public async Task Close_Pvp_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
@@ -601,14 +581,10 @@ namespace GameService.Services.GameTimerServices
                     currentRound.PvpRound.CapitalRounds.Select(x => x.Id).ToList());
             }
 
-
-
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(fullGame);
 
-            timerWrapper.Interval = GameActionsTime.DefaultPreviewTime;
-            timerWrapper.Data.NextAction = ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION;
-            timerWrapper.Start();
+            timerWrapper.StartTimer(ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION);
         }
     }
 }
