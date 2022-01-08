@@ -28,15 +28,16 @@ namespace AccountService.MessageBus
                 Port = int.Parse(appSettings.Value.RabbitMQPort),
             };
 
-            if(appSettings.Value.RabbitMQPassword != "")
+
+            if (!string.IsNullOrWhiteSpace(appSettings.Value.RabbitMQPassword))
             {
                 factory.Password = appSettings.Value.RabbitMQPassword;
             }
-            if (appSettings.Value.RabbitMQUserName != "")
+            if (!string.IsNullOrWhiteSpace(appSettings.Value.RabbitMQUserName))
             {
                 factory.UserName = appSettings.Value.RabbitMQUserName;
             }
-            if (appSettings.Value.RabbitMQUri != "")
+            if (!string.IsNullOrWhiteSpace(appSettings.Value.RabbitMQUri))
             {
                 factory.Uri = new Uri(appSettings.Value.RabbitMQUri);
             }

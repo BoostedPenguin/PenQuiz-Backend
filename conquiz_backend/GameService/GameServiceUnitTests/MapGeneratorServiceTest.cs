@@ -1,5 +1,6 @@
 ﻿using GameService.Context;
 using GameService.Services;
+using GameService.Services.GameTimerServices;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using System;
@@ -49,6 +50,16 @@ namespace GameServiceUnitTests
             var amount = await service.GetAmountOfTerritories(mapId);
 
             Assert.Equal(20, amount);
+        }
+
+        [Fact]
+        public async Task Testing()
+        {
+            // Now || 15 seconds in the pass
+            TimeSpan elapsedTime = DateTime.Now - DateTime.Now.AddSeconds(-2);
+
+            var timeRemaining = 5 - (int)Math.Round(elapsedTime.TotalSeconds);
+            var c = timeRemaining;
         }
     }
 }
