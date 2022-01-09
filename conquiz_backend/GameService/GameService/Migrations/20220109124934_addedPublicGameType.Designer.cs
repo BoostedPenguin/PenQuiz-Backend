@@ -4,14 +4,16 @@ using GameService.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace GameService.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20220109124934_addedPublicGameType")]
+    partial class addedPublicGameType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -206,8 +208,11 @@ namespace GameService.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("IN_LOBBY");
 
-                    b.Property<int>("GameType")
-                        .HasColumnType("int");
+                    b.Property<string>("GameType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("PRIVATE");
 
                     b.Property<string>("InvitationLink")
                         .HasMaxLength(1500)

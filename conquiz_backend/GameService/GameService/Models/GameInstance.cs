@@ -10,6 +10,13 @@ namespace GameService.Models
         FINISHED,
         CANCELED
     }
+
+    public enum GameType
+    {
+        PUBLIC,
+        PRIVATE
+    }
+
     public partial class GameInstance
     {
         public GameInstance()
@@ -22,6 +29,7 @@ namespace GameService.Models
         public int Id { get; set; }
         public int ResultId { get; set; }
         public int QuestionTimerSeconds { get; set; }
+        public GameType GameType { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public int Mapid { get; set; }

@@ -16,8 +16,9 @@ namespace GameService.Services
     public interface IGameLobbyService
     {
         Task<GameInstance> CreateGameLobby();
+        Task<GameInstance> FindPublicMatch();
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
-        Task<GameInstance> StartGame();
+        Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
 
     /// <summary>
@@ -62,11 +63,8 @@ namespace GameService.Services
             return null;
         }
 
-        public async Task<GameInstance> CreateGameLobby()
+        public async Task<GameInstance> FindPublicMatch()
         {
-            // Create url-link for people to join // Random string in header?
-            // CLOSE ALL OTHER IN_LOBBY OPEN INSTANCES BY THIS PLAYER
-
             using var db = contextFactory.CreateDbContext();
             var userId = httpContextAccessor.GetCurrentUserId();
             try
@@ -78,8 +76,52 @@ namespace GameService.Services
                 return game.ExistingGame;
             }
 
-            var map = await db.Maps.Where(x => x.Name == DefaultMap).FirstOrDefaultAsync();
+            var openPublicGames = await db.GameInstance
+                .Include(x => x.Participants)
+                .Where(x => x.GameType == GameType.PUBLIC && x.GameState == GameState.IN_LOBBY && x.Participants.Count() < RequiredPlayers)
+                .ToListAsync();
 
+            // No open public games
+            // Create a new public lobby
+            if(openPublicGames.Count() == 0)
+            {
+                var gameInstance = await CreateGameInstance(db, GameType.PUBLIC, userId);
+
+                await db.AddAsync(gameInstance);
+                await db.SaveChangesAsync();
+
+                return await db.GameInstance
+                    .Include(x => x.Participants)
+                    .ThenInclude(x => x.Player)
+                    .Where(x => x.Id == gameInstance.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            // Add player to a random lobby
+            var randomGameIndex = r.Next(0, openPublicGames.Count());
+            var chosenLobby = openPublicGames[randomGameIndex];
+
+            chosenLobby.Participants.Add(new Participants()
+            {
+                PlayerId = userId,
+                Score = 0,
+                AvatarName = GetRandomAvatar(chosenLobby)
+            });
+
+
+            db.Update(chosenLobby);
+            await db.SaveChangesAsync();
+
+            return await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.Id == chosenLobby.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task<GameInstance> CreateGameInstance(DefaultContext db, GameType gameType, int userId)
+        {
+            var map = await db.Maps.Where(x => x.Name == DefaultMap).FirstOrDefaultAsync();
 
             if (map == null)
             {
@@ -98,6 +140,7 @@ namespace GameService.Services
 
             var gameInstance = new GameInstance()
             {
+                GameType = gameType,
                 GameState = GameState.IN_LOBBY,
                 InvitationLink = invitationLink,
                 GameCreatorId = userId,
@@ -112,6 +155,27 @@ namespace GameService.Services
                 Score = 0,
                 AvatarName = GetRandomAvatar(gameInstance)
             });
+
+            return gameInstance;
+        }
+
+        public async Task<GameInstance> CreateGameLobby()
+        {
+            // Create url-link for people to join // Random string in header?
+            // CLOSE ALL OTHER IN_LOBBY OPEN INSTANCES BY THIS PLAYER
+
+            using var db = contextFactory.CreateDbContext();
+            var userId = httpContextAccessor.GetCurrentUserId();
+            try
+            {
+                await CanPersonJoin(userId);
+            }
+            catch (ExistingLobbyGameException game)
+            {
+                return game.ExistingGame;
+            }
+
+            var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, userId);
 
             await db.AddAsync(gameInstance);
             await db.SaveChangesAsync();
@@ -184,7 +248,7 @@ namespace GameService.Services
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
-                .Where(x => x.InvitationLink == lobbyUrl && x.GameState == GameState.IN_LOBBY)
+                .Where(x => x.InvitationLink == lobbyUrl && x.GameState == GameState.IN_LOBBY && x.GameType == GameType.PRIVATE)
                 .FirstOrDefaultAsync();
 
             if (gameInstance == null)
@@ -223,18 +287,20 @@ namespace GameService.Services
 
 
 
-        public async Task<GameInstance> StartGame()
+        public async Task<GameInstance> StartGame(GameInstance gameInstance = null)
         {
             using var a = contextFactory.CreateDbContext();
             var userId = httpContextAccessor.GetCurrentUserId();
 
 
-
-            var gameInstance = await a.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
+            if(gameInstance == null)
+            {
+                gameInstance = await a.GameInstance
+                    .Include(x => x.Participants)
+                    .ThenInclude(x => x.Player)
+                    .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
+                    .FirstOrDefaultAsync();
+            }
 
             if (gameInstance == null)
                 throw new ArgumentException("Game instance is null or has completed already");

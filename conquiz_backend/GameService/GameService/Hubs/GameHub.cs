@@ -201,6 +201,37 @@ namespace GameService.Hubs
 
         }
 
+        public async Task FindPublicMatch()
+        {
+            try
+            {
+                var result = await gameLobbyService.FindPublicMatch();
+
+                await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
+                await Clients.Group(result.InvitationLink).GetGameInstance(result);
+                await Clients.Caller.NavigateToLobby();
+
+
+                // If lobby is full automatically start
+                // Public lobbies don't have a "host"
+                // To prevent stale lobbies
+                if(result.Participants.Count() == 3)
+                {
+                    var gameInstance = await gameLobbyService.StartGame(result);
+
+                    await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
+
+                    await Clients.Group(gameInstance.InvitationLink).GameStarting();
+
+                    timer.OnGameStart(gameInstance);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
         public async Task CreateGameLobby()
         {
             try
