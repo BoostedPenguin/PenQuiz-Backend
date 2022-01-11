@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace QuestionService.Models
+namespace QuestionService.Data.Models
 {
     public partial class Questions
     {

@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using QuestionService.Models;
+using QuestionService.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace QuestionService.Context
+namespace QuestionService.Data
 {
     public class DefaultContext : DbContext
     {

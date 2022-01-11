@@ -58,19 +58,12 @@ namespace GameService.Context
         private static void ApplyMigrations(IDbContextFactory<DefaultContext> contextFactory)
         {
             Console.WriteLine("--> Attempting to apply migrations...");
-            try
-            {
-                using var context = contextFactory.CreateDbContext();
+            
+            using var context = contextFactory.CreateDbContext();
 
-                context.Database.Migrate();
+            context.Database.Migrate();
 
-                Console.WriteLine("--> Migrations added");
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not run migrations: {ex.Message}");
-            }
+            Console.WriteLine("--> Migrations added");
         }
 
         private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService)

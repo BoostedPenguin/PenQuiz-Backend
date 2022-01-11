@@ -2,16 +2,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using QuestionService.Context;
 using QuestionService.Data;
 
-namespace QuestionService.Migrations
+namespace QuestionService.SqlServerMigrations.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20211104103604_updated-main-tables")]
+    partial class updatedmaintables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,6 +60,10 @@ namespace QuestionService.Migrations
                     b.Property<int>("ExternalId")
                         .HasColumnType("int")
                         .HasColumnName("externalId");
+
+                    b.Property<string>("GameState")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OpentDbSessionToken")
                         .IsRequired()

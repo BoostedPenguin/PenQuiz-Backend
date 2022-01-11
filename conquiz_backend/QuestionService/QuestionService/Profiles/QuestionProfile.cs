@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
+using QuestionService.Data.Models;
 using QuestionService.Dtos;
-using QuestionService.Models;
 using QuestionService.Services;
 using System;
 using System.Collections.Generic;

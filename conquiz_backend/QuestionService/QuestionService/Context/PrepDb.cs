@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using QuestionService.Models;
+using QuestionService.Data;
+using QuestionService.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,14 +28,8 @@ namespace QuestionService.Context
         private static void ApplyMigrations(DefaultContext context)
         {
             Console.WriteLine("--> Attempting to apply migrations...");
-            try
-            {
-                context.Database.Migrate();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not run migrations: {ex.Message}");
-            }
+            context.Database.Migrate();
+            Console.WriteLine("--> Migrations added");
         }
         private static void Seed(DefaultContext db)
         {

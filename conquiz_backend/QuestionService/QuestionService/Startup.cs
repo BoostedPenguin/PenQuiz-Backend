@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QuestionService.Context;
+using QuestionService.Data;
 using QuestionService.EventProcessing;
 using QuestionService.MessageBus;
 using QuestionService.Services;
@@ -79,23 +80,6 @@ namespace QuestionService
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings").GetValue<string>("Secret"))),
                 };
             });
-
-            if (env.IsProduction())
-            {
-                services.AddDbContextFactory<DefaultContext>(options =>
-                {
-                    Console.WriteLine("--> Using production sql database");
-                    options.UseSqlServer(Configuration.GetConnectionString("QuestionsConn"));
-                });
-            }
-            else
-            {
-                Console.WriteLine("--> Using development sql database");
-                services.AddDbContextFactory<DefaultContext>(options =>
-                {
-                    options.UseSqlServer(Configuration.GetConnectionString("QuestionsConn"));
-                });
-            }
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
 

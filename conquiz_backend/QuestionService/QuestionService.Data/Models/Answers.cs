@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace QuestionService.Models
+namespace QuestionService.Data.Models
 {
     public partial class Answers
     {

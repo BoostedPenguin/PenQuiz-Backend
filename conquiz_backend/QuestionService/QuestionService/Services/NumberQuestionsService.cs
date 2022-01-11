@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuestionService.Context;
-using QuestionService.Models;
+using QuestionService.Data;
+using QuestionService.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

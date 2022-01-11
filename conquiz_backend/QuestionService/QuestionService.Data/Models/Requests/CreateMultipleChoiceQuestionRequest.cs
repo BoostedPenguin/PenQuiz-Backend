@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace QuestionService.Models.Requests
+namespace QuestionService.Data.Models.Requests
 {
     public class CreateMultipleChoiceQuestionRequest
     {

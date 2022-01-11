@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using QuestionService.Context;
+using QuestionService.Data;
 using QuestionService.Dtos;
 using QuestionService.MessageBus;
 using QuestionService.Services;

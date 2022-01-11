@@ -2,9 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using QuestionService.Context;
+using QuestionService.Data;
+using QuestionService.Data.Models;
 using QuestionService.Dtos;
 using QuestionService.MessageBus;
-using QuestionService.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

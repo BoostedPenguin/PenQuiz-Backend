@@ -20,19 +20,10 @@ namespace AccountService.Context
         private static void ApplyMigrations(IDbContextFactory<AppDbContext> contextFactory)
         {
             Console.WriteLine("--> Attempting to apply migrations...");
-            try
-            {
-                
-                using var context = contextFactory.CreateDbContext();
-                context.Database.Migrate();
+            using var context = contextFactory.CreateDbContext();
+            context.Database.Migrate();
 
-                Console.WriteLine("--> Migrations added");
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not run migrations: {ex.Message}");
-            }
+            Console.WriteLine("--> Migrations added");
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using QuestionService.Models.Requests;
+using QuestionService.Data.Models.Requests;
 using QuestionService.Services;
 using System;
 using System.Collections.Generic;
