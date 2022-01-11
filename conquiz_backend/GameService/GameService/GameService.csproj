@@ -1,41 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>GameService</RootNamespace>
     <UserSecretsId>07864454-d03b-43a6-a303-bbed849e2e11</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Migrations\20210926155825_initial.cs" />
-    <Compile Remove="Migrations\20210926155825_initial.Designer.cs" />
-    <Compile Remove="Migrations\20210926155905_initial.cs" />
-    <Compile Remove="Migrations\20210926155905_initial.Designer.cs" />
-    <Compile Remove="Migrations\20210926160557_initial.cs" />
-    <Compile Remove="Migrations\20210926160557_initial.Designer.cs" />
-    <Compile Remove="Migrations\20210926160725_initial.cs" />
-    <Compile Remove="Migrations\20210926160725_initial.Designer.cs" />
-    <Compile Remove="Migrations\20210926161800_initial.cs" />
-    <Compile Remove="Migrations\20210926161800_initial.Designer.cs" />
-    <Compile Remove="Migrations\20210926163415_initial.cs" />
-    <Compile Remove="Migrations\20210926163415_initial.Designer.cs" />
-    <Compile Remove="Migrations\20210926164407_refreshtoken-fix.cs" />
-    <Compile Remove="Migrations\20210926164407_refreshtoken-fix.Designer.cs" />
-    <Compile Remove="Migrations\20210926173247_removed-redudnant-table.cs" />
-    <Compile Remove="Migrations\20210926173247_removed-redudnant-table.Designer.cs" />
-    <Compile Remove="Migrations\20210926173740_removed-redunant-table.cs" />
-    <Compile Remove="Migrations\20210926173740_removed-redunant-table.Designer.cs" />
-    <Compile Remove="Migrations\20210930180155_reworked-rounds-table.cs" />
-    <Compile Remove="Migrations\20210930180155_reworked-rounds-table.Designer.cs" />
-    <Compile Remove="Migrations\20210930183010_fixed-gameinstance-participants.cs" />
-    <Compile Remove="Migrations\20210930183010_fixed-gameinstance-participants.Designer.cs" />
-    <Compile Remove="Migrations\20211013152248_AddedGameAvatar.cs" />
-    <Compile Remove="Migrations\20211013152248_AddedGameAvatar.Designer.cs" />
-    <Compile Remove="Migrations\20211014112811_GameRoundNumberConcurrency.cs" />
-    <Compile Remove="Migrations\20211014112811_GameRoundNumberConcurrency.Designer.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.10" />
     <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.2" />
@@ -46,8 +18,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.20" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="5.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="5.0.11" />
@@ -66,5 +38,18 @@
     <Protobuf Include="Protos\accounts.proto" GrpcServices="Client" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GameService.Data\GameService.Data.csproj" />
+    <ProjectReference Include="..\GameService.SqlServerMigrations\GameService.SqlServerMigrations.csproj">
+      <!-- Not working. See dotnet/sdk#952 -->
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>compile</ExcludeAssets>
+    </ProjectReference>
+    <ProjectReference Include="..\GameService.NpgsqlMigrations\GameService.NpgsqlMigrations.csproj">
+      <!-- Not working. See dotnet/sdk#952 -->
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>compile</ExcludeAssets>
+    </ProjectReference>
+  </ItemGroup>
 
 </Project>

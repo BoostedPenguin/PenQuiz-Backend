@@ -1,8 +1,8 @@
 ﻿using AccountService;
 using AutoMapper;
+using GameService.Data.Models;
 using GameService.Dtos;
 using GameService.Dtos.SignalR_Responses;
-using GameService.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

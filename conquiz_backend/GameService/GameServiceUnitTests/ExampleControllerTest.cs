@@ -1,5 +1,6 @@
 using GameService.Context;
-using GameService.Models;
+using GameService.Data;
+using GameService.Data.Models;
 using GameService.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;

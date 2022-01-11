@@ -1,7 +1,7 @@
 ﻿using AccountService;
 using AutoMapper;
+using GameService.Data.Models;
 using GameService.Helpers;
-using GameService.Models;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Options;
 using System;

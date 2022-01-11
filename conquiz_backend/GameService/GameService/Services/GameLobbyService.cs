@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using GameService.Context;
-using GameService.Models;
 using GameService.Services.Extensions;
 using System;
 using System.Collections.Generic;
@@ -10,6 +9,8 @@ using System.Threading.Tasks;
 using GameService.MessageBus;
 using GameService.Dtos;
 using GameService.Services.GameTimerServices;
+using GameService.Data.Models;
+using GameService.Data;
 
 namespace GameService.Services
 {

@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using GameService.Context;
-using GameService.Models;
 using GameService.Services.Interfaces;
 using GameService.Services.Extensions;
 using System;
@@ -11,6 +10,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.IO;
+using GameService.Data.Models;
+using GameService.Data;
 
 namespace GameService.Services
 {

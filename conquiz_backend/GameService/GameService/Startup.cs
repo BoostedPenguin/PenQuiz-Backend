@@ -21,6 +21,7 @@ using GameService.MessageBus;
 using GameService.Grpc;
 using GameService.Services.GameTimerServices;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using GameService.Data;
 
 namespace GameService
 {
@@ -42,23 +43,6 @@ namespace GameService
 
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            if (env.IsProduction())
-            {
-                services.AddDbContextFactory<DefaultContext>(options =>
-                {
-                    Console.WriteLine("--> Using production sql database");
-                    options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
-                });
-            }
-            else
-            {
-                services.AddDbContextFactory<DefaultContext>(options =>
-                {
-                    Console.WriteLine("--> Using production sql database");
-                    options.UseSqlServer(Configuration.GetConnectionString("GamesConn"));
-                    //options.ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
-                });
-            }
             services.AddSingleton<IExampleService, ExampleService>();
 
             services.AddSingleton<IStatisticsService, StatisticsService>();

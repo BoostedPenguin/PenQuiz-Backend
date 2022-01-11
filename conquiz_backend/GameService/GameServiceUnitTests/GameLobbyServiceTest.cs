@@ -1,7 +1,8 @@
 ﻿using GameService.Context;
+using GameService.Data;
+using GameService.Data.Models;
 using GameService.Dtos;
 using GameService.MessageBus;
-using GameService.Models;
 using GameService.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -47,7 +48,7 @@ namespace GameServiceUnitTests
             var gameInstance = await gameLobbyService.CreateGameLobby();
 
             Assert.NotNull(gameInstance);
-            Assert.True(gameInstance.GameState == GameService.Models.GameState.IN_LOBBY);
+            Assert.True(gameInstance.GameState == GameState.IN_LOBBY);
         }
 
         [Fact]

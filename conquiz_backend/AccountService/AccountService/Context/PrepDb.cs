@@ -19,16 +19,19 @@ namespace AccountService.Context
 
         private static void ApplyMigrations(IDbContextFactory<AppDbContext> contextFactory)
         {
-            using var context = contextFactory.CreateDbContext();
-            var pendingMigrationCount = context.Database.GetPendingMigrations().Count();
-
-            if (pendingMigrationCount != 0)
+            Console.WriteLine("--> Attempting to apply migrations...");
+            try
             {
-                Console.WriteLine($"--> Attempting to apply {pendingMigrationCount} migrations...");
-
+                
+                using var context = contextFactory.CreateDbContext();
                 context.Database.Migrate();
 
-                Console.WriteLine($"--> Successfully applied all pending migrations");
+                Console.WriteLine("--> Migrations added");
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Could not run migrations: {ex.Message}");
             }
         }
     }

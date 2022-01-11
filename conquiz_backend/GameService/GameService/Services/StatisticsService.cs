@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GameService.Services.Extensions;
-using GameService.Models;
 using GameService.Dtos;
+using GameService.Data;
+using GameService.Data.Models;
 
 public interface IStatisticsService
 {

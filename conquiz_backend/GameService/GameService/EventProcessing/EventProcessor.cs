@@ -1,7 +1,8 @@
 using AutoMapper;
 using GameService.Context;
+using GameService.Data;
+using GameService.Data.Models;
 using GameService.Dtos;
-using GameService.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;

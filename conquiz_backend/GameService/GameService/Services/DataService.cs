@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using GameService.Context;
-using GameService.Models;
 using GameService.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GameService.Data.Models;
+using GameService.Data;
 
 namespace GameService.Services
 {

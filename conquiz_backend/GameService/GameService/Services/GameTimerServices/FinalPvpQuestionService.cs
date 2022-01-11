@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using GameService.Context;
+using GameService.Data;
+using GameService.Data.Models;
 using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
@@ -62,7 +64,7 @@ namespace GameService.Services.GameTimerServices
                 .ThenInclude(x => x.Participants)
                 .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
                     x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber 
-                    && x.Round.AttackStage == Models.AttackStage.FINAL_NUMBER_PVP)
+                    && x.Round.AttackStage == AttackStage.FINAL_NUMBER_PVP)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
@@ -114,7 +116,7 @@ namespace GameService.Services.GameTimerServices
                 .Include(x => x.NeutralRound)
                 .ThenInclude(x => x.TerritoryAttackers)
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
-                    && x.AttackStage == Models.AttackStage.FINAL_NUMBER_PVP
+                    && x.AttackStage == AttackStage.FINAL_NUMBER_PVP
                     && x.GameInstanceId == data.GameInstanceId)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();

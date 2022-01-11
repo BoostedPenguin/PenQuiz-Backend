@@ -1,6 +1,7 @@
 ﻿using GameService.Context;
+using GameService.Data;
+using GameService.Data.Models;
 using GameService.Hubs;
-using GameService.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;

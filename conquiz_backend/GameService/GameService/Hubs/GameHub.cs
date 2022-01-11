@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
-using GameService.Models;
 using GameService.Services;
 using GameService.Services.Extensions;
 using System;
@@ -12,6 +11,7 @@ using System.Threading.Tasks;
 using GameService.Dtos;
 using GameService.Dtos.SignalR_Responses;
 using GameService.Services.GameTimerServices;
+using GameService.Data.Models;
 
 namespace GameService.Hubs
 {

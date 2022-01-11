@@ -1,5 +1,4 @@
-﻿using GameService.Models;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,6 +16,7 @@ using GameService.MessageBus;
 using GameService.Dtos;
 using GameService.Context;
 using GameService.Services.GameTimerServices;
+using GameService.Data;
 
 namespace GameService.Controllers
 {

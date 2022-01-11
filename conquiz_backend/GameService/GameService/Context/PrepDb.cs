@@ -1,5 +1,6 @@
-﻿using GameService.Grpc;
-using GameService.Models;
+﻿using GameService.Data;
+using GameService.Data.Models;
+using GameService.Grpc;
 using GameService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;

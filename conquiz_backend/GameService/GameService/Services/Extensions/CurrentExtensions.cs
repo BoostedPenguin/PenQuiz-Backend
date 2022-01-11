@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using GameService.Context;
-using GameService.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

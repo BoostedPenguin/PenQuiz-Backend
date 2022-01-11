@@ -1,9 +1,10 @@
 ﻿using AutoMapper;
 using GameService.Context;
+using GameService.Data;
+using GameService.Data.Models;
 using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
-using GameService.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;

@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using GameService.Context;
-using GameService.Models;
 using GameService.Services;
 using GameService.Services.Interfaces;
 using System;

@@ -1,5 +1,4 @@
 ﻿using GameService.Context;
-using GameService.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -10,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using Shouldly;
+using GameService.Data;
+using GameService.Data.Models;
 
 namespace GameServiceUnitTests
 {
