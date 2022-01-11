@@ -23,7 +23,8 @@ The backend consists of 3 microservices which utilize RabbitMQ and GRPC to commu
 
 # Backend stack: <a name="backendstack" />
 * NET Core 3.1
-* SQL Server (Entity ORM)
+* SQL Server / PostgreSQL (Entity ORM)
+* CockroachDB
 * SignalR
 * GRPC
 * JWT Authentication
