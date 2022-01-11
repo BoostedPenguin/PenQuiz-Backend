@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using AccountService.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -18,16 +19,16 @@ namespace AccountService.Context
 
         private static void ApplyMigrations(IDbContextFactory<AppDbContext> contextFactory)
         {
-            Console.WriteLine("--> Attempting to apply migrations...");
-            try
+            using var context = contextFactory.CreateDbContext();
+            var pendingMigrationCount = context.Database.GetPendingMigrations().Count();
+
+            if (pendingMigrationCount != 0)
             {
-                using var context = contextFactory.CreateDbContext();
+                Console.WriteLine($"--> Attempting to apply {pendingMigrationCount} migrations...");
 
                 context.Database.Migrate();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not run migrations: {ex.Message}");
+
+                Console.WriteLine($"--> Successfully applied all pending migrations");
             }
         }
     }

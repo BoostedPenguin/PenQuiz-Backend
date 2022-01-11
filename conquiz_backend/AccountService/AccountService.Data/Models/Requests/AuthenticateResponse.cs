@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AccountService.Models.Requests
+namespace AccountService.Data.Models.Requests
 {
     public class AuthenticateResponse
     {

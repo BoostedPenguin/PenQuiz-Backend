@@ -1,4 +1,4 @@
-﻿using AccountService.Models.Requests;
+﻿using AccountService.Data.Models.Requests;
 using AccountService.Services;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

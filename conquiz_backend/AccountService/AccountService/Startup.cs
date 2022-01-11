@@ -1,4 +1,5 @@
 using AccountService.Context;
+using AccountService.Data;
 using AccountService.Grpc;
 using AccountService.MessageBus;
 using AccountService.Services;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 using System;
 using System.IO;
 using System.Text;
@@ -71,25 +73,6 @@ namespace AccountService
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings").GetValue<string>("Secret"))),
                 };
             });
-
-            if (environment.IsProduction())
-            {
-                services.AddDbContextFactory<AppDbContext>(options =>
-                {
-                    Console.WriteLine("--> Using production sql database");
-                    options.UseSqlServer(Configuration.GetConnectionString("AccountsConn"));
-                });
-            }
-            else
-            {
-                Console.WriteLine("--> Using development sql database");
-                services.AddDbContextFactory<AppDbContext>(options =>
-                {
-                    options.UseSqlServer(Configuration.GetConnectionString("AccountsConn"));
-                });
-            }
-
-
 
             services.AddSingleton<IAccountService, Services.AccountService>();
 

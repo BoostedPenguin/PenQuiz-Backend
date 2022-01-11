@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AccountService.Models
+namespace AccountService.Data.Models
 {
     public partial class RefreshToken
     {

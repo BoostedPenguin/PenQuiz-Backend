@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AccountService.Models
+namespace AccountService.Data.Models
 {
     public partial class Users
     {

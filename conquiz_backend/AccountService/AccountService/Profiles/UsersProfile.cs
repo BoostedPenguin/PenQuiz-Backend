@@ -1,5 +1,5 @@
-﻿using AccountService.Dtos;
-using AccountService.Models;
+﻿using AccountService.Data.Models;
+using AccountService.Dtos;
 using AutoMapper;
 using System;
 using System.Collections.Generic;

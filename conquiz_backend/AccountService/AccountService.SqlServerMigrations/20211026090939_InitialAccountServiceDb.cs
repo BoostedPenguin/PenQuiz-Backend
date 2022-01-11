@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace AccountService.Migrations
+namespace AccountService.SqlServerMigrations
 {
     public partial class InitialAccountServiceDb : Migration
     {

@@ -11,12 +11,13 @@ using System.Text;
 using System.Threading.Tasks;
 using static Google.Apis.Auth.GoogleJsonWebSignature;
 using System.Security.Cryptography;
-using AccountService.Models.Requests;
-using AccountService.Models;
 using AccountService.Context;
 using AccountService.MessageBus;
 using AutoMapper;
 using AccountService.Dtos;
+using AccountService.Data.Models;
+using AccountService.Data.Models.Requests;
+using AccountService.Data;
 
 namespace AccountService.Services
 {

@@ -1,4 +1,5 @@
 ﻿using AccountService.Context;
+using AccountService.Data;
 using AutoMapper;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
