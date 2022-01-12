@@ -33,6 +33,7 @@ namespace AccountService
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            Console.WriteLine($"--> Startup: {Configuration.GetConnectionString("POSTGRESQLCONNSTR_AccountsConnNpgsql")}");
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
             services.AddCors(options =>
