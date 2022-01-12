@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dotnet-version: ['3.1.x' ]
+        dotnet-version: ['5.0.x' ]
 
     steps:
     - uses: actions/checkout@v2
@@ -96,5 +96,5 @@ jobs:
         with:
           app-name: 'conquiz-account-api'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3F762C3722034AE68154380788161AFB }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0697A7E908344AEDA1CA9FB7B2872D66 }}
           package: .
