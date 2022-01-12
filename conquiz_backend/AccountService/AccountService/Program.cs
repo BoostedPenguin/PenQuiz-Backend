@@ -33,6 +33,7 @@ namespace AccountService
                             var provider = configuration.GetValue("Provider", "SqlServer");
 
                             Console.WriteLine($"--> Attempting to connect with provider: {provider}");
+                            Console.WriteLine($"--> ConnString: {configuration.GetConnectionString("CUSTOMCONNSTR_AccountsConnNpgsql")}");
 
                             services.AddDbContextFactory<AppDbContext>(
                                 options => _ = provider switch
