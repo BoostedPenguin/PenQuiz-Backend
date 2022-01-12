@@ -37,7 +37,7 @@ namespace AccountService
                             services.AddDbContextFactory<AppDbContext>(
                                 options => _ = provider switch
                                 {
-                                    "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("AccountsConnNpgsql"),
+                                    "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("CUSTOMCONNSTR_AccountsConnNpgsql"),
                                 x => x.MigrationsAssembly("AccountService.NpgsqlMigrations")),
 
                                     "SqlServer" => options.UseSqlServer(
