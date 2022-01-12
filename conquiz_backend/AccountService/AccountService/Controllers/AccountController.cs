@@ -37,7 +37,7 @@ namespace AccountService.Controllers
             {
                 await PingRequiredServices();
 
-                return Ok("Successfully contacted me. Version 1.5");
+                return Ok("Successfully contacted me. Version 1.5.1");
             }
             catch(Exception ex)
             {
