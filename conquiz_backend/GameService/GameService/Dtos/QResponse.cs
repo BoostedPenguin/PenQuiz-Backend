@@ -7,7 +7,7 @@ namespace GameService.Dtos
 {
     public class QResponse
     {
-        public int GameInstanceId { get; set; }
+        public string GameGlobalIdentifier { get; set; }
         public string Event { get; set; }
         public virtual QuestionResponse[] QuestionResponses { get; set; }
 

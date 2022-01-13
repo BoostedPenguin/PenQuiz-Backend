@@ -30,9 +30,9 @@ namespace GameService.Services.GameTimerServices
             this.Start();
         }
 
-        public TimerWrapper(int gameInstanceId, string gameLink)
+        public TimerWrapper(int gameInstanceId, string gameLink, string gameGlobalIdentifier)
         {
-            Data = new TimerData(gameInstanceId, gameLink);
+            Data = new TimerData(gameInstanceId, gameLink, gameGlobalIdentifier);
         }
 
         public class CountDownTimer : Timer
@@ -84,11 +84,13 @@ namespace GameService.Services.GameTimerServices
 
         public class TimerData
         {
-            public TimerData(int gameInstanceId, string gameLink)
+            public TimerData(int gameInstanceId, string gameLink, string gameGlobalIdentifier)
             {
                 GameInstanceId = gameInstanceId;
                 GameLink = gameLink;
+                GameGlobalIdentifier = gameGlobalIdentifier;
             }
+
             public CountDownTimer CountDownTimer { get; set; }
             public int GameInstanceId { get; set; }
             public int LastNeutralMCRound { get; set; }
@@ -97,6 +99,7 @@ namespace GameService.Services.GameTimerServices
 
             // This is the invitation link which also acts as a group ID for signalR
             public string GameLink { get; set; }
+            public string GameGlobalIdentifier { get; set; }
             public int CurrentGameRoundNumber { get; set; }
             public ActionState NextAction { get; set; }
         }

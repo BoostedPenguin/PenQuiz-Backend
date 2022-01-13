@@ -27,6 +27,7 @@ namespace GameService.Data.Models
         }
 
         public int Id { get; set; }
+        public string GameGlobalIdentifier { get; set; }
         public int ResultId { get; set; }
         public int QuestionTimerSeconds { get; set; }
         public GameType GameType { get; set; }

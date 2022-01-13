@@ -7,7 +7,7 @@ namespace QuestionService.Dtos
 {
     public class RequestFinalNumberQuestionDto
     {
-        public int GameInstanceId { get; set; }
+        public string GameGlobalIdentifier { get; set; }
         public int QuestionFinalRoundId { get; set; }
         public string Event { get; set; }
     }

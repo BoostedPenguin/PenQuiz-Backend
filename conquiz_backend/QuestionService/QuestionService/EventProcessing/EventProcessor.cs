@@ -45,7 +45,7 @@ namespace QuestionService.EventProcessing
                     var questionRequest = JsonSerializer.Deserialize<QuestionRequest>(message);
 
                     var sessionToken = 
-                        await openDBService.GenerateSessionToken(questionRequest.GameInstanceId);
+                        await openDBService.GenerateSessionToken(questionRequest.GameGlobalIdentifier);
                     
                     var mulChoiceQuestions = await 
                         openDBService.GetMultipleChoiceQuestion(sessionToken.Token, questionRequest.MultipleChoiceQuestionsRoundId);
@@ -68,7 +68,7 @@ namespace QuestionService.EventProcessing
 
                     var response = new QResponse()
                     {
-                        GameInstanceId = questionRequest.GameInstanceId,
+                        GameGlobalIdentifier = questionRequest.GameGlobalIdentifier,
                         QuestionResponses = mappedQuestions,
                         Event = "Questions_MultipleChoice_Neutral_Response",
                     };
@@ -92,7 +92,7 @@ namespace QuestionService.EventProcessing
             var questionRequest = JsonSerializer.Deserialize<RequestFinalNumberQuestionDto>(message);
 
             var sessionToken =
-                await openDBService.GenerateSessionToken(questionRequest.GameInstanceId);
+                await openDBService.GenerateSessionToken(questionRequest.GameGlobalIdentifier);
             
             var numberQuestions =
                 await numberQuestionsService.GetNumberQuestions(new List<int> { questionRequest.QuestionFinalRoundId }, sessionToken.Token, sessionToken.InternalGameInstanceId);
@@ -101,7 +101,7 @@ namespace QuestionService.EventProcessing
 
             var response = new QResponse()
             {
-                GameInstanceId = questionRequest.GameInstanceId,
+                GameGlobalIdentifier = questionRequest.GameGlobalIdentifier,
                 QuestionResponses = mappedQuestions,
                 Event = "FinalNumber_Question_Response",
             };
@@ -114,7 +114,7 @@ namespace QuestionService.EventProcessing
             var capitalRequest = JsonSerializer.Deserialize<CapitalQuestionRequest>(message);
 
             var sessionToken =
-                await openDBService.GenerateSessionToken(capitalRequest.GameInstanceId);
+                await openDBService.GenerateSessionToken(capitalRequest.GameGlobalIdentifier);
 
             var mulChoiceQuestions = await
                 openDBService.GetMultipleChoiceQuestion(sessionToken.Token, capitalRequest.QuestionsCapitalRoundId);
@@ -129,7 +129,7 @@ namespace QuestionService.EventProcessing
 
             var response = new QResponse()
             {
-                GameInstanceId = capitalRequest.GameInstanceId,
+                GameGlobalIdentifier = capitalRequest.GameGlobalIdentifier,
                 QuestionResponses = mappedQuestions,
                 Event = "Capital_Question_Response",
             };

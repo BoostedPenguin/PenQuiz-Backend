@@ -33,7 +33,7 @@ namespace QuestionService.Services
 
     public interface IOpenDBService
     {
-        Task<OpenDBService.SessionTokenRequest> GenerateSessionToken(int gameInstanceId);
+        Task<OpenDBService.SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier);
         Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions);
     }
 
@@ -138,7 +138,7 @@ namespace QuestionService.Services
             public int InternalGameInstanceId { get; set; }
         }
 
-        public async Task<SessionTokenRequest> GenerateSessionToken(int gameInstanceId)
+        public async Task<SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier)
         {
             // If there is an existing token return it without making a new one
 
@@ -146,7 +146,7 @@ namespace QuestionService.Services
 
             var client = clientFactory.CreateClient();
 
-            var gm = await db.GameInstances.FirstOrDefaultAsync(x => x.ExternalId == gameInstanceId);
+            var gm = await db.GameInstances.FirstOrDefaultAsync(x => x.ExternalId == gameGlobalIdentifier);
             
             // Hasn't been added to db yet
             if(gm == null)
@@ -162,7 +162,7 @@ namespace QuestionService.Services
 
                 gm = new GameInstance()
                 {
-                    ExternalId = gameInstanceId,
+                    ExternalId = gameGlobalIdentifier,
                     OpentDbSessionToken = convertedResponse.Token,
                 };
 

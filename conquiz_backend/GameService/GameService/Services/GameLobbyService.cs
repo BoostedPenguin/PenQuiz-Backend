@@ -141,6 +141,7 @@ namespace GameService.Services
 
             var gameInstance = new GameInstance()
             {
+                GameGlobalIdentifier = Guid.NewGuid().ToString(),
                 GameType = gameType,
                 GameState = GameState.IN_LOBBY,
                 InvitationLink = invitationLink,
@@ -342,19 +343,19 @@ namespace GameService.Services
 
 
             // Send request to question service to generate questions in the background
-            RequestQuestions(gameInstance.Id, initialRounding, true);
+            RequestQuestions(gameInstance.GameGlobalIdentifier, initialRounding, true);
 
             return await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
         }
 
-        private void RequestQuestions(int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
+        private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
         {
             // Request questions only for the initial multiple questions for neutral attacking order
             // After multiple choices are over, request a new batch for number questions for all untaken territories
             messageBus.RequestQuestions(new RequestQuestionsDto()
             {
                 Event = "Question_Request",
-                GameInstanceId = gameInstanceId,
+                GameGlobalIdentifier = gameGlobalIdentifier,
                 MultipleChoiceQuestionsRoundId = rounds
                     .Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
                     .Select(x => x.Id)

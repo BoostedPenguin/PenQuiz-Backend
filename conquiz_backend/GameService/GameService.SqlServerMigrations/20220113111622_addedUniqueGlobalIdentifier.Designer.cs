@@ -3,37 +3,39 @@ using System;
 using GameService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace GameService.NpgsqlMigrations.Migrations
+namespace GameService.SqlServerMigrations.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20220113111622_addedUniqueGlobalIdentifier")]
+    partial class addedUniqueGlobalIdentifier
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 63)
+                .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("ProductVersion", "5.0.11")
-                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
             modelBuilder.Entity("GameService.Data.Models.Answers", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasColumnType("int")
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("Answer")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Correct")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<int>("QuestionId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -46,30 +48,30 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<DateTime?>("AnsweredAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("datetime2")
                         .HasColumnName("answered_at");
 
                     b.Property<int>("AttackOrderNumber")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(1)
                         .HasColumnName("attackOrderNumber");
 
                     b.Property<int?>("AttackedTerritoryId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("attackedTerritoryId");
 
                     b.Property<int>("AttackerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("attackerId");
 
                     b.Property<int?>("AttackerMChoiceQAnswerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("attackerMChoiceQAnswerId");
 
                     b.Property<long?>("AttackerNumberQAnswer")
@@ -77,11 +79,11 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .HasColumnName("attackerNumberQAnswer");
 
                     b.Property<bool?>("AttackerWon")
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasColumnName("attackerWon");
 
                     b.Property<int>("NeutralRoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -95,10 +97,10 @@ namespace GameService.NpgsqlMigrations.Migrations
             modelBuilder.Entity("GameService.Data.Models.Borders", b =>
                 {
                     b.Property<int>("ThisTerritory")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("NextToTerritory")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("ThisTerritory", "NextToTerritory")
                         .HasName("pk_myConstraint");
@@ -112,27 +114,27 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("CapitalRoundAttackStage")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsCompleted")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("isCompleted");
 
                     b.Property<bool>("IsQuestionVotingOpen")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<int>("PvpRoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("QuestionOpenedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -145,15 +147,15 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("CapitalRoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int?>("MChoiceQAnswerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("mChoiceQAnswerId");
 
                     b.Property<long?>("NumberQAnswer")
@@ -161,11 +163,11 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .HasColumnName("numberQAnswer");
 
                     b.Property<DateTime?>("NumberQAnsweredAt")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("datetime2")
                         .HasColumnName("numebrQAnsweredAt");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("userId");
 
                     b.HasKey("Id");
@@ -179,57 +181,57 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<DateTime?>("EndTime")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("datetime2")
                         .HasColumnName("end_time");
 
                     b.Property<int>("GameCreatorId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("gameCreatorId");
 
                     b.Property<string>("GameGlobalIdentifier")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("gameGlobalIdentifier");
 
                     b.Property<int>("GameRoundNumber")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("gameRoundNumber");
 
                     b.Property<string>("GameState")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
+                        .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("IN_LOBBY");
 
                     b.Property<int>("GameType")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("InvitationLink")
                         .HasMaxLength(1500)
-                        .HasColumnType("character varying(1500)")
+                        .HasColumnType("nvarchar(1500)")
                         .HasColumnName("invitationLink");
 
                     b.Property<int>("Mapid")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("ParticipantsId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("QuestionTimerSeconds")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("questionTimerSeconds");
 
                     b.Property<int>("ResultId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("resultId");
 
                     b.Property<DateTime>("StartTime")
-                        .HasColumnType("timestamp without time zone")
+                        .HasColumnType("datetime2")
                         .HasColumnName("start_time");
 
                     b.HasKey("Id");
@@ -247,19 +249,19 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("MapId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("mapId");
 
                     b.Property<string>("TerritoryName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .IsUnicode(false)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("territoryName");
 
                     b.HasKey("Id");
@@ -273,15 +275,15 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .IsUnicode(false)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("name");
 
                     b.HasKey("Id");
@@ -293,18 +295,18 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("AttackOrderNumber")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(1)
                         .HasColumnName("attackOrderNumber");
 
                     b.Property<int>("RoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -318,35 +320,35 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int?>("AttackedBy")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("attackedBy");
 
                     b.Property<int>("GameInstanceId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("gameInstanceId");
 
                     b.Property<bool>("IsCapital")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("isCapital");
 
                     b.Property<int>("MapTerritoryId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("mapTerritoryId");
 
                     b.Property<int?>("TakenBy")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("takenBy");
 
                     b.Property<int>("TerritoryScore")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasDefaultValue(0)
                         .HasColumnName("territoryScore");
 
@@ -363,37 +365,37 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("AvatarName")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("nvarchar(50)")
                         .HasDefaultValue("penguinAvatar.svg")
                         .HasColumnName("avatarName");
 
                     b.Property<int>("FinalQuestionScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("GameId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("gameId");
 
                     b.Property<bool>("IsBot")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("isBot");
 
                     b.Property<int>("PlayerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("playerId");
 
                     b.Property<int>("Score")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("score");
 
                     b.HasKey("Id");
@@ -409,30 +411,30 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int?>("AttackedTerritoryId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("attackedTerritoryId");
 
                     b.Property<int>("AttackerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("attackerId");
 
                     b.Property<int?>("DefenderId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("defenderId");
 
                     b.Property<bool>("IsCurrentlyCapitalStage")
-                        .HasColumnType("boolean");
+                        .HasColumnType("bit");
 
                     b.Property<int>("RoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int?>("WinnerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("winnerId");
 
                     b.HasKey("Id");
@@ -449,12 +451,12 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int?>("MChoiceQAnswerId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("mChoiceQAnswerId");
 
                     b.Property<long?>("NumberQAnswer")
@@ -462,13 +464,13 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .HasColumnName("numberQAnswer");
 
                     b.Property<DateTime?>("NumberQAnsweredAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("PvpRoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("userId");
 
                     b.HasKey("Id");
@@ -482,46 +484,50 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int?>("CapitalRoundMCId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int?>("CapitalRoundNumberId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<int?>("PvpRoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Question")
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("question");
 
                     b.Property<int?>("RoundId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("type");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CapitalRoundMCId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[CapitalRoundMCId] IS NOT NULL");
 
                     b.HasIndex("CapitalRoundNumberId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[CapitalRoundNumberId] IS NOT NULL");
 
                     b.HasIndex("PvpRoundId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[PvpRoundId] IS NOT NULL");
 
                     b.HasIndex("RoundId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[RoundId] IS NOT NULL");
 
                     b.ToTable("Questions");
                 });
@@ -530,43 +536,43 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("AttackStage")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
+                        .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("MULTIPLE_NEUTRAL");
 
                     b.Property<string>("Description")
                         .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("description");
 
                     b.Property<int>("GameInstanceId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("gameInstanceId");
 
                     b.Property<int>("GameRoundNumber")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("gameRoundNumber");
 
                     b.Property<bool>("IsQuestionVotingOpen")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("isQuestionVotingOpen");
 
                     b.Property<bool>("IsTerritoryVotingOpen")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("isTerritoryVotingOpen");
 
                     b.Property<DateTime?>("QuestionOpenedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -579,24 +585,24 @@ namespace GameService.NpgsqlMigrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("ExternalId")
-                        .HasColumnType("integer")
+                        .HasColumnType("int")
                         .HasColumnName("externalId");
 
                     b.Property<bool>("IsInGame")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("isInGame");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("username");
 
                     b.HasKey("Id");

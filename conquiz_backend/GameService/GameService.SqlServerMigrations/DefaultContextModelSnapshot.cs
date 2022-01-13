@@ -19,26 +19,21 @@ namespace GameService.SqlServerMigrations.Migrations
                 .HasAnnotation("ProductVersion", "5.0.11")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("GameService.Models.Answers", b =>
+            modelBuilder.Entity("GameService.Data.Models.Answers", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("id")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<string>("Answer")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("answer");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Correct")
-                        .HasColumnType("bit")
-                        .HasColumnName("correct");
+                        .HasColumnType("bit");
 
                     b.Property<int>("QuestionId")
-                        .HasColumnType("int")
-                        .HasColumnName("questionId");
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -47,7 +42,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Answers");
                 });
 
-            modelBuilder.Entity("GameService.Models.AttackingNeutralTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.AttackingNeutralTerritory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -56,7 +51,7 @@ namespace GameService.SqlServerMigrations.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<DateTime?>("AnsweredAt")
-                        .HasColumnType("datetime")
+                        .HasColumnType("datetime2")
                         .HasColumnName("answered_at");
 
                     b.Property<int>("AttackOrderNumber")
@@ -97,7 +92,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("AttackingNeutralTerritory");
                 });
 
-            modelBuilder.Entity("GameService.Models.Borders", b =>
+            modelBuilder.Entity("GameService.Data.Models.Borders", b =>
                 {
                     b.Property<int>("ThisTerritory")
                         .HasColumnType("int");
@@ -113,7 +108,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Borders");
                 });
 
-            modelBuilder.Entity("GameService.Models.CapitalRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.CapitalRound", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -146,7 +141,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("CapitalRound");
                 });
 
-            modelBuilder.Entity("GameService.Models.CapitalRoundAnswers", b =>
+            modelBuilder.Entity("GameService.Data.Models.CapitalRoundAnswers", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -166,7 +161,7 @@ namespace GameService.SqlServerMigrations.Migrations
                         .HasColumnName("numberQAnswer");
 
                     b.Property<DateTime?>("NumberQAnsweredAt")
-                        .HasColumnType("datetime")
+                        .HasColumnType("datetime2")
                         .HasColumnName("numebrQAnsweredAt");
 
                     b.Property<int>("UserId")
@@ -180,7 +175,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("CapitalRoundAnswers");
                 });
 
-            modelBuilder.Entity("GameService.Models.GameInstance", b =>
+            modelBuilder.Entity("GameService.Data.Models.GameInstance", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -189,12 +184,17 @@ namespace GameService.SqlServerMigrations.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<DateTime?>("EndTime")
-                        .HasColumnType("datetime")
+                        .HasColumnType("datetime2")
                         .HasColumnName("end_time");
 
                     b.Property<int>("GameCreatorId")
                         .HasColumnType("int")
                         .HasColumnName("gameCreatorId");
+
+                    b.Property<string>("GameGlobalIdentifier")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("gameGlobalIdentifier");
 
                     b.Property<int>("GameRoundNumber")
                         .HasColumnType("int")
@@ -229,7 +229,7 @@ namespace GameService.SqlServerMigrations.Migrations
                         .HasColumnName("resultId");
 
                     b.Property<DateTime>("StartTime")
-                        .HasColumnType("datetime")
+                        .HasColumnType("datetime2")
                         .HasColumnName("start_time");
 
                     b.HasKey("Id");
@@ -243,7 +243,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("GameInstance");
                 });
 
-            modelBuilder.Entity("GameService.Models.MapTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.MapTerritory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -269,7 +269,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("MapTerritory");
                 });
 
-            modelBuilder.Entity("GameService.Models.Maps", b =>
+            modelBuilder.Entity("GameService.Data.Models.Maps", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -289,7 +289,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Maps");
                 });
 
-            modelBuilder.Entity("GameService.Models.NeutralRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.NeutralRound", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -314,7 +314,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("NeutralRound");
                 });
 
-            modelBuilder.Entity("GameService.Models.ObjectTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.ObjectTerritory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -359,7 +359,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("ObjectTerritory");
                 });
 
-            modelBuilder.Entity("GameService.Models.Participants", b =>
+            modelBuilder.Entity("GameService.Data.Models.Participants", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -405,7 +405,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Participants");
                 });
 
-            modelBuilder.Entity("GameService.Models.PvpRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.PvpRound", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -445,7 +445,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("PvpRounds");
                 });
 
-            modelBuilder.Entity("GameService.Models.PvpRoundAnswers", b =>
+            modelBuilder.Entity("GameService.Data.Models.PvpRoundAnswers", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -478,7 +478,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("PvpRoundAnswers");
                 });
 
-            modelBuilder.Entity("GameService.Models.Questions", b =>
+            modelBuilder.Entity("GameService.Data.Models.Questions", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -530,7 +530,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Questions");
                 });
 
-            modelBuilder.Entity("GameService.Models.Round", b =>
+            modelBuilder.Entity("GameService.Data.Models.Round", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -579,7 +579,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Round");
                 });
 
-            modelBuilder.Entity("GameService.Models.Users", b =>
+            modelBuilder.Entity("GameService.Data.Models.Users", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -608,26 +608,25 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("GameService.Models.Answers", b =>
+            modelBuilder.Entity("GameService.Data.Models.Answers", b =>
                 {
-                    b.HasOne("GameService.Models.Questions", "Question")
+                    b.HasOne("GameService.Data.Models.Questions", "Question")
                         .WithMany("Answers")
                         .HasForeignKey("QuestionId")
-                        .HasConstraintName("FK__Answers__questio__5DCAEF64")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("GameService.Models.AttackingNeutralTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.AttackingNeutralTerritory", b =>
                 {
-                    b.HasOne("GameService.Models.ObjectTerritory", "AttackedTerritory")
+                    b.HasOne("GameService.Data.Models.ObjectTerritory", "AttackedTerritory")
                         .WithMany("NeutralRoundsAttacks")
                         .HasForeignKey("AttackedTerritoryId")
                         .HasConstraintName("FK__attTer__neuAtt__8AJAWDSW");
 
-                    b.HasOne("GameService.Models.NeutralRound", "NeutralRound")
+                    b.HasOne("GameService.Data.Models.NeutralRound", "NeutralRound")
                         .WithMany("TerritoryAttackers")
                         .HasForeignKey("NeutralRoundId")
                         .HasConstraintName("FK__NeuRound__terAtt__8AWDJXCS")
@@ -639,15 +638,15 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("NeutralRound");
                 });
 
-            modelBuilder.Entity("GameService.Models.Borders", b =>
+            modelBuilder.Entity("GameService.Data.Models.Borders", b =>
                 {
-                    b.HasOne("GameService.Models.MapTerritory", "NextToTerritoryNavigation")
+                    b.HasOne("GameService.Data.Models.MapTerritory", "NextToTerritoryNavigation")
                         .WithMany("BordersNextToTerritoryNavigation")
                         .HasForeignKey("NextToTerritory")
                         .HasConstraintName("FK_Borders_MapTerritory1")
                         .IsRequired();
 
-                    b.HasOne("GameService.Models.MapTerritory", "ThisTerritoryNavigation")
+                    b.HasOne("GameService.Data.Models.MapTerritory", "ThisTerritoryNavigation")
                         .WithMany("BordersThisTerritoryNavigation")
                         .HasForeignKey("ThisTerritory")
                         .HasConstraintName("FK_Borders_MapTerritory")
@@ -659,9 +658,9 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("ThisTerritoryNavigation");
                 });
 
-            modelBuilder.Entity("GameService.Models.CapitalRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.CapitalRound", b =>
                 {
-                    b.HasOne("GameService.Models.PvpRound", "PvpRound")
+                    b.HasOne("GameService.Data.Models.PvpRound", "PvpRound")
                         .WithMany("CapitalRounds")
                         .HasForeignKey("PvpRoundId")
                         .HasConstraintName("FK__capitalRou__pvpRound__JAWD2")
@@ -670,9 +669,9 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("PvpRound");
                 });
 
-            modelBuilder.Entity("GameService.Models.CapitalRoundAnswers", b =>
+            modelBuilder.Entity("GameService.Data.Models.CapitalRoundAnswers", b =>
                 {
-                    b.HasOne("GameService.Models.CapitalRound", "CapitalRound")
+                    b.HasOne("GameService.Data.Models.CapitalRound", "CapitalRound")
                         .WithMany("CapitalRoundUserAnswers")
                         .HasForeignKey("CapitalRoundId")
                         .IsRequired();
@@ -680,9 +679,9 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("CapitalRound");
                 });
 
-            modelBuilder.Entity("GameService.Models.GameInstance", b =>
+            modelBuilder.Entity("GameService.Data.Models.GameInstance", b =>
                 {
-                    b.HasOne("GameService.Models.Maps", "Map")
+                    b.HasOne("GameService.Data.Models.Maps", "Map")
                         .WithMany("GameInstance")
                         .HasForeignKey("Mapid")
                         .HasConstraintName("FK_GameInstance_Maps")
@@ -692,9 +691,9 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Map");
                 });
 
-            modelBuilder.Entity("GameService.Models.MapTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.MapTerritory", b =>
                 {
-                    b.HasOne("GameService.Models.Maps", "Map")
+                    b.HasOne("GameService.Data.Models.Maps", "Map")
                         .WithMany("MapTerritory")
                         .HasForeignKey("MapId")
                         .HasConstraintName("FK_MapTerritory_Maps")
@@ -703,26 +702,26 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Map");
                 });
 
-            modelBuilder.Entity("GameService.Models.NeutralRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.NeutralRound", b =>
                 {
-                    b.HasOne("GameService.Models.Round", "Round")
+                    b.HasOne("GameService.Data.Models.Round", "Round")
                         .WithOne("NeutralRound")
-                        .HasForeignKey("GameService.Models.NeutralRound", "RoundId")
+                        .HasForeignKey("GameService.Data.Models.NeutralRound", "RoundId")
                         .IsRequired();
 
                     b.Navigation("Round");
                 });
 
-            modelBuilder.Entity("GameService.Models.ObjectTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.ObjectTerritory", b =>
                 {
-                    b.HasOne("GameService.Models.GameInstance", "GameInstance")
+                    b.HasOne("GameService.Data.Models.GameInstance", "GameInstance")
                         .WithMany("ObjectTerritory")
                         .HasForeignKey("GameInstanceId")
                         .HasConstraintName("FK__ObjectTer__gameIn__5AEE82B9")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("GameService.Models.MapTerritory", "MapTerritory")
+                    b.HasOne("GameService.Data.Models.MapTerritory", "MapTerritory")
                         .WithMany("ObjectTerritory")
                         .HasForeignKey("MapTerritoryId")
                         .HasConstraintName("FK__ObjectTer__mapTe__59FA5E80")
@@ -734,15 +733,15 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("MapTerritory");
                 });
 
-            modelBuilder.Entity("GameService.Models.Participants", b =>
+            modelBuilder.Entity("GameService.Data.Models.Participants", b =>
                 {
-                    b.HasOne("GameService.Models.GameInstance", "Game")
+                    b.HasOne("GameService.Data.Models.GameInstance", "Game")
                         .WithMany("Participants")
                         .HasForeignKey("GameId")
                         .HasConstraintName("FK__Participa__gameI__5812160E")
                         .IsRequired();
 
-                    b.HasOne("GameService.Models.Users", "Player")
+                    b.HasOne("GameService.Data.Models.Users", "Player")
                         .WithMany("Participants")
                         .HasForeignKey("PlayerId")
                         .HasConstraintName("FK__Participa__playe__571DF1D5")
@@ -754,15 +753,15 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Player");
                 });
 
-            modelBuilder.Entity("GameService.Models.PvpRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.PvpRound", b =>
                 {
-                    b.HasOne("GameService.Models.ObjectTerritory", "AttackedTerritory")
+                    b.HasOne("GameService.Data.Models.ObjectTerritory", "AttackedTerritory")
                         .WithMany("PvpRounds")
                         .HasForeignKey("AttackedTerritoryId");
 
-                    b.HasOne("GameService.Models.Round", "Round")
+                    b.HasOne("GameService.Data.Models.Round", "Round")
                         .WithOne("PvpRound")
-                        .HasForeignKey("GameService.Models.PvpRound", "RoundId")
+                        .HasForeignKey("GameService.Data.Models.PvpRound", "RoundId")
                         .IsRequired();
 
                     b.Navigation("AttackedTerritory");
@@ -770,9 +769,9 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Round");
                 });
 
-            modelBuilder.Entity("GameService.Models.PvpRoundAnswers", b =>
+            modelBuilder.Entity("GameService.Data.Models.PvpRoundAnswers", b =>
                 {
-                    b.HasOne("GameService.Models.PvpRound", "PvpRound")
+                    b.HasOne("GameService.Data.Models.PvpRound", "PvpRound")
                         .WithMany("PvpRoundAnswers")
                         .HasForeignKey("PvpRoundId")
                         .HasConstraintName("FK__pvpRou__pvpRouAns__A8AWDJBNS")
@@ -782,23 +781,23 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("PvpRound");
                 });
 
-            modelBuilder.Entity("GameService.Models.Questions", b =>
+            modelBuilder.Entity("GameService.Data.Models.Questions", b =>
                 {
-                    b.HasOne("GameService.Models.CapitalRound", "CapitalRoundMultiple")
+                    b.HasOne("GameService.Data.Models.CapitalRound", "CapitalRoundMultiple")
                         .WithOne("CapitalRoundMultipleQuestion")
-                        .HasForeignKey("GameService.Models.Questions", "CapitalRoundMCId");
+                        .HasForeignKey("GameService.Data.Models.Questions", "CapitalRoundMCId");
 
-                    b.HasOne("GameService.Models.CapitalRound", "CapitalRoundNumber")
+                    b.HasOne("GameService.Data.Models.CapitalRound", "CapitalRoundNumber")
                         .WithOne("CapitalRoundNumberQuestion")
-                        .HasForeignKey("GameService.Models.Questions", "CapitalRoundNumberId");
+                        .HasForeignKey("GameService.Data.Models.Questions", "CapitalRoundNumberId");
 
-                    b.HasOne("GameService.Models.PvpRound", "PvpRoundNum")
+                    b.HasOne("GameService.Data.Models.PvpRound", "PvpRoundNum")
                         .WithOne("NumberQuestion")
-                        .HasForeignKey("GameService.Models.Questions", "PvpRoundId");
+                        .HasForeignKey("GameService.Data.Models.Questions", "PvpRoundId");
 
-                    b.HasOne("GameService.Models.Round", "Round")
+                    b.HasOne("GameService.Data.Models.Round", "Round")
                         .WithOne("Question")
-                        .HasForeignKey("GameService.Models.Questions", "RoundId");
+                        .HasForeignKey("GameService.Data.Models.Questions", "RoundId");
 
                     b.Navigation("CapitalRoundMultiple");
 
@@ -809,9 +808,9 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Round");
                 });
 
-            modelBuilder.Entity("GameService.Models.Round", b =>
+            modelBuilder.Entity("GameService.Data.Models.Round", b =>
                 {
-                    b.HasOne("GameService.Models.GameInstance", "GameInstance")
+                    b.HasOne("GameService.Data.Models.GameInstance", "GameInstance")
                         .WithMany("Rounds")
                         .HasForeignKey("GameInstanceId")
                         .HasConstraintName("FK__Round__gameI__5CD6CB2B")
@@ -821,7 +820,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("GameInstance");
                 });
 
-            modelBuilder.Entity("GameService.Models.CapitalRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.CapitalRound", b =>
                 {
                     b.Navigation("CapitalRoundMultipleQuestion");
 
@@ -830,7 +829,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("CapitalRoundUserAnswers");
                 });
 
-            modelBuilder.Entity("GameService.Models.GameInstance", b =>
+            modelBuilder.Entity("GameService.Data.Models.GameInstance", b =>
                 {
                     b.Navigation("ObjectTerritory");
 
@@ -839,7 +838,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Rounds");
                 });
 
-            modelBuilder.Entity("GameService.Models.MapTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.MapTerritory", b =>
                 {
                     b.Navigation("BordersNextToTerritoryNavigation");
 
@@ -848,26 +847,26 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("ObjectTerritory");
                 });
 
-            modelBuilder.Entity("GameService.Models.Maps", b =>
+            modelBuilder.Entity("GameService.Data.Models.Maps", b =>
                 {
                     b.Navigation("GameInstance");
 
                     b.Navigation("MapTerritory");
                 });
 
-            modelBuilder.Entity("GameService.Models.NeutralRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.NeutralRound", b =>
                 {
                     b.Navigation("TerritoryAttackers");
                 });
 
-            modelBuilder.Entity("GameService.Models.ObjectTerritory", b =>
+            modelBuilder.Entity("GameService.Data.Models.ObjectTerritory", b =>
                 {
                     b.Navigation("NeutralRoundsAttacks");
 
                     b.Navigation("PvpRounds");
                 });
 
-            modelBuilder.Entity("GameService.Models.PvpRound", b =>
+            modelBuilder.Entity("GameService.Data.Models.PvpRound", b =>
                 {
                     b.Navigation("CapitalRounds");
 
@@ -876,12 +875,12 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("PvpRoundAnswers");
                 });
 
-            modelBuilder.Entity("GameService.Models.Questions", b =>
+            modelBuilder.Entity("GameService.Data.Models.Questions", b =>
                 {
                     b.Navigation("Answers");
                 });
 
-            modelBuilder.Entity("GameService.Models.Round", b =>
+            modelBuilder.Entity("GameService.Data.Models.Round", b =>
                 {
                     b.Navigation("NeutralRound");
 
@@ -890,7 +889,7 @@ namespace GameService.SqlServerMigrations.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("GameService.Models.Users", b =>
+            modelBuilder.Entity("GameService.Data.Models.Users", b =>
                 {
                     b.Navigation("Participants");
                 });

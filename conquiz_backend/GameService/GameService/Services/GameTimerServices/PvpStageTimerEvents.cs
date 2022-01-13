@@ -578,7 +578,7 @@ namespace GameService.Services.GameTimerServices
 
                 // Request questions for these rounds
                 CommonTimerFunc.RequestCapitalQuestions(messageBus,
-                    data.GameInstanceId,
+                    data.GameGlobalIdentifier,
                     currentRound.PvpRound.CapitalRounds.Select(x => x.Id).ToList());
             }
 

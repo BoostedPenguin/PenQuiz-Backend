@@ -232,7 +232,7 @@ namespace GameService.Services.GameTimerServices
                     .Select(x => x.GameRoundNumber)
                     .First();
 
-                CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, false);
+                CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, false);
             }
 
             // Tell clients

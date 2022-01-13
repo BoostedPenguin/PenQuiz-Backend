@@ -51,7 +51,7 @@ namespace GameService.Services.GameTimerServices
             if (GameTimers.FirstOrDefault(x => x.Data.GameInstanceId == gm.Id) != null)
                 throw new ArgumentException("Timer already exists for this game instance");
 
-            var actionTimer = new TimerWrapper(gm.Id, gm.InvitationLink)
+            var actionTimer = new TimerWrapper(gm.Id, gm.InvitationLink, gm.GameGlobalIdentifier)
             {
                 AutoReset = false,
                 Interval = 500,

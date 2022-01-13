@@ -7,7 +7,7 @@ namespace GameService.Dtos
 {
     public class RequestQuestionsDto
     {
-        public int GameInstanceId { get; set; }
+        public string GameGlobalIdentifier { get; set; }
 
         public List<int> MultipleChoiceQuestionsRoundId { get; set; } = new List<int>();
 

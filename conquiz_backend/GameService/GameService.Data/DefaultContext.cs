@@ -68,6 +68,8 @@ namespace GameService.Data
 
                 entity.Property(e => e.GameRoundNumber).HasColumnName("gameRoundNumber");
 
+                entity.Property(e => e.GameGlobalIdentifier).IsRequired().HasColumnName("gameGlobalIdentifier");
+
                 entity.Property(e => e.EndTime)
                     .HasColumnName("end_time");
 

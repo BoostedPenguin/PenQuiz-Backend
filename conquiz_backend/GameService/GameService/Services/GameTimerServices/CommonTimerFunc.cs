@@ -154,7 +154,7 @@ namespace GameService.Services.GameTimerServices
                     await db.AddAsync(baseRound);
                     await db.SaveChangesAsync();
 
-                    RequestFinalNumberQuestion(messageBus, data.GameInstanceId, baseRound.Id);
+                    RequestFinalNumberQuestion(messageBus, data.GameGlobalIdentifier, baseRound.Id);
 
                     return PvpStageIsGameOver.REQUEST_FINAL_QUESTION;
                 }
@@ -200,37 +200,37 @@ namespace GameService.Services.GameTimerServices
             return new UserAttackOrder(attackOrder, totalTerritories, emptyTerritories);
         }
 
-        public static void RequestCapitalQuestions(IMessageBusClient messageBus, int gameInstanceId, List<int> capitalRoundsIds)
+        public static void RequestCapitalQuestions(IMessageBusClient messageBus, string gameGlobalIdentifier, List<int> capitalRoundsIds)
         {
             // Request questions only for the initial multiple questions for neutral attacking order
             // After multiple choices are over, request a new batch for number questions for all untaken territories
             messageBus.RequestQuestions(new RequestCapitalQuestionsDto()
             {
                 Event = "Capital_Question_Request",
-                GameInstanceId = gameInstanceId,
+                GameGlobalIdentifier = gameGlobalIdentifier,
                 QuestionsCapitalRoundId = capitalRoundsIds,
             });
         }
 
-        public static void RequestFinalNumberQuestion(IMessageBusClient messageBus, int gameInstanceId, int finalRoundId)
+        public static void RequestFinalNumberQuestion(IMessageBusClient messageBus, string gameGlobalIdentifier, int finalRoundId)
         {
             // Request final score determining number question
             messageBus.RequestFinalNumberQuestion(new RequestFinalNumberQuestionDto()
             {
                 Event = "FinalNumber_Question_Request",
-                GameInstanceId = gameInstanceId,
+                GameGlobalIdentifier = gameGlobalIdentifier,
                 QuestionFinalRoundId = finalRoundId,
             });
         }
 
-        public static void RequestQuestions(IMessageBusClient messageBus, int gameInstanceId, Round[] rounds, bool isNeutralGeneration = false)
+        public static void RequestQuestions(IMessageBusClient messageBus, string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
         {
             // Request questions only for the initial multiple questions for neutral attacking order
             // After multiple choices are over, request a new batch for number questions for all untaken territories
             messageBus.RequestQuestions(new RequestQuestionsDto()
             {
                 Event = "Question_Request",
-                GameInstanceId = gameInstanceId,
+                GameGlobalIdentifier = gameGlobalIdentifier,
                 MultipleChoiceQuestionsRoundId = rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL ||
                         x.AttackStage == AttackStage.MULTIPLE_PVP)
                     .Select(x => x.Id)

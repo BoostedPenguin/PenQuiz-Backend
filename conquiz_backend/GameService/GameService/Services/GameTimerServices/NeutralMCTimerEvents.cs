@@ -218,7 +218,7 @@ namespace GameService.Services.GameTimerServices
                     .First();
 
 
-                CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, true);
+                CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
             }
 
             // Response correct answer and all player answers
@@ -398,7 +398,7 @@ namespace GameService.Services.GameTimerServices
                 .First();
 
 
-            CommonTimerFunc.RequestQuestions(messageBus, data.GameInstanceId, rounds, true);
+            CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
 
             // Next action should be a number question related one
             timerWrapper.StartTimer(ActionState.SHOW_PREVIEW_GAME_MAP);

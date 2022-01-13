@@ -55,7 +55,8 @@ namespace GameService.EventProcessing
             using var db = contextFactory.CreateDbContext();
 
             var finalRound = db.Round
-                .Where(x => x.GameInstanceId == result.GameInstanceId && 
+                .Include(x => x.GameInstance)
+                .Where(x => x.GameInstance.GameGlobalIdentifier == result.GameGlobalIdentifier && 
                     x.Id == result.QuestionResponses.First().RoundId && 
                     x.AttackStage == AttackStage.FINAL_NUMBER_PVP)
                 .FirstOrDefault();
@@ -66,6 +67,7 @@ namespace GameService.EventProcessing
                 Console.WriteLine($"--> Capital Round with ID: {result.QuestionResponses.First().RoundId}. Doesn't exist.");
                 return;
             }
+
             var mapped = mapper.Map<Questions>(result.QuestionResponses.First());
             db.AddAsync(mapped);
 
@@ -81,7 +83,8 @@ namespace GameService.EventProcessing
             var capitalRounds = db.CapitalRound
                 .Include(x => x.PvpRound)
                 .ThenInclude(x => x.Round)
-                .Where(x => x.PvpRound.Round.GameInstanceId == result.GameInstanceId)
+                .ThenInclude(x => x.GameInstance)
+                .Where(x => x.PvpRound.Round.GameInstance.GameGlobalIdentifier == result.GameGlobalIdentifier)
                 .ToList();
 
             var mapped = mapper.Map<Questions[]>(result.QuestionResponses);
@@ -126,7 +129,7 @@ namespace GameService.EventProcessing
                 .ThenInclude(x => x.PvpRound)
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.Question)
-                .Where(x => x.Id == questionsResponse.GameInstanceId)
+                .Where(x => x.GameGlobalIdentifier == questionsResponse.GameGlobalIdentifier)
                 .FirstOrDefault();
 
 
