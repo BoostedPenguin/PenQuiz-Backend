@@ -22,7 +22,7 @@ namespace QuestionService.Data.Models
 
         public int Id { get; set; }
         public string OpentDbSessionToken { get; set; }
-        public string ExternalId { get; set; }
+        public string ExternalGlobalId { get; set; }
 
         public virtual ICollection<GameSessionQuestions> GameSessionQuestions { get; set; }
     }

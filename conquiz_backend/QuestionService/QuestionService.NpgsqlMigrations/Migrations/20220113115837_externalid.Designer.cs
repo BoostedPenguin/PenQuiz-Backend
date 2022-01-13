@@ -9,8 +9,8 @@ using QuestionService.Data;
 namespace QuestionService.NpgsqlMigrations.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    [Migration("20220113113903_updatedExternalGameinstanceId")]
-    partial class updatedExternalGameinstanceId
+    [Migration("20220113115837_externalid")]
+    partial class externalid
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -57,10 +57,10 @@ namespace QuestionService.NpgsqlMigrations.Migrations
                         .HasColumnName("id")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<string>("ExternalId")
+                    b.Property<string>("ExternalGlobalId")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("externalId");
+                        .HasColumnName("externalGlobalId");
 
                     b.Property<string>("OpentDbSessionToken")
                         .IsRequired()

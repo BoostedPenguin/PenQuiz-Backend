@@ -77,7 +77,7 @@ namespace QuestionService.Data
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.ExternalId).IsRequired().HasColumnName("externalId");
+                entity.Property(e => e.ExternalGlobalId).IsRequired().HasColumnName("externalGlobalId");
 
                 entity.Property(e => e.OpentDbSessionToken)
                     .IsRequired()

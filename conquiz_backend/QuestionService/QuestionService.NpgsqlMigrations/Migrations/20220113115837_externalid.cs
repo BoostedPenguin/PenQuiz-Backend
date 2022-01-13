@@ -2,28 +2,34 @@
 
 namespace QuestionService.NpgsqlMigrations.Migrations
 {
-    public partial class updatedExternalGameinstanceId : Migration
+    public partial class externalid : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<string>(
+            migrationBuilder.DropColumn(
                 name: "externalId",
+                table: "GameInstances");
+
+            migrationBuilder.AddColumn<string>(
+                name: "externalGlobalId",
                 table: "GameInstances",
                 type: "text",
                 nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer");
+                defaultValue: "");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<int>(
+            migrationBuilder.DropColumn(
+                name: "externalGlobalId",
+                table: "GameInstances");
+
+            migrationBuilder.AddColumn<int>(
                 name: "externalId",
                 table: "GameInstances",
                 type: "integer",
                 nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text");
+                defaultValue: 0);
         }
     }
 }

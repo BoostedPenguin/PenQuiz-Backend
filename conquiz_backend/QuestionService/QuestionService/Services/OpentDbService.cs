@@ -146,7 +146,7 @@ namespace QuestionService.Services
 
             var client = clientFactory.CreateClient();
 
-            var gm = await db.GameInstances.FirstOrDefaultAsync(x => x.ExternalId == gameGlobalIdentifier);
+            var gm = await db.GameInstances.FirstOrDefaultAsync(x => x.ExternalGlobalId == gameGlobalIdentifier);
             
             // Hasn't been added to db yet
             if(gm == null)
@@ -162,7 +162,7 @@ namespace QuestionService.Services
 
                 gm = new GameInstance()
                 {
-                    ExternalId = gameGlobalIdentifier,
+                    ExternalGlobalId = gameGlobalIdentifier,
                     OpentDbSessionToken = convertedResponse.Token,
                 };
 
