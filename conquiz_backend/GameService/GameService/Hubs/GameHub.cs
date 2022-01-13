@@ -45,6 +45,7 @@ namespace GameService.Hubs
         Task ShowGameMap();
         Task ShowRoundingAttacker(int userId, string[] availableAttackTerritoriesNames);
 
+        Task OnSelectedTerritory(SelectedTerritoryResponse selectedTerritoryResponse);
         Task CloseQuestionScreen();
         Task MCQuestionPreviewResult(MCPlayerQuestionAnswers previewResult);
         Task NumberQuestionPreviewResult(NumberPlayerQuestionAnswers previewResult);
@@ -166,9 +167,9 @@ namespace GameService.Hubs
         {
             try
             {
-                var gm = await gameControlService.SelectTerritory(mapTerritoryName);
+                var response = await gameControlService.SelectTerritory(mapTerritoryName);
 
-                await Clients.Group(gm.InvitationLink).GetGameInstance(gm);
+                await Clients.Group(response.GameLink).OnSelectedTerritory(response);
             }
             catch (BorderSelectedGameException ex)
             {

@@ -44,6 +44,14 @@ namespace GameService.Services.GameTimerServices
         }
 
         private static readonly Random r = new Random();
+
+        /// <summary>
+        /// Gets all game instance details <br />
+        /// Do not call this method often as it is slow. Use more precise queries instead.
+        /// </summary>
+        /// <param name="gameInstanceId"></param>
+        /// <param name="defaultContext"></param>
+        /// <returns></returns>
         public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
         {
             var game = await defaultContext.GameInstance

@@ -1,6 +1,7 @@
 ﻿using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Services.Extensions;
 using GameService.Services.GameTimerServices;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +16,7 @@ namespace GameService.Services
     public interface IGameControlService
     {
         Task AnswerQuestion(string answerIdString);
-        Task<GameInstance> SelectTerritory(string mapTerritoryName);
+        Task<SelectedTerritoryResponse> SelectTerritory(string mapTerritoryName);
     }
 
     /// <summary>
@@ -34,7 +35,7 @@ namespace GameService.Services
             this.gameTerritoryService = gameTerritoryService;
         }
 
-        public async Task<GameInstance> SelectTerritory(string mapTerritoryName)
+        public async Task<SelectedTerritoryResponse> SelectTerritory(string mapTerritoryName)
         {
             using var db = contextFactory.CreateDbContext();
             var userId = httpContextAccessor.GetCurrentUserId();
@@ -52,7 +53,8 @@ namespace GameService.Services
                     RoundId = x.Id,
                     x.AttackStage,
                     x.IsTerritoryVotingOpen,
-                    x.GameInstanceId
+                    x.GameInstanceId,
+                    x.GameInstance.InvitationLink
                 })
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
@@ -113,8 +115,12 @@ namespace GameService.Services
 
                 await db.SaveChangesAsync();
 
-                return await CommonTimerFunc.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
-
+                return new SelectedTerritoryResponse()
+                {
+                    GameLink = currentRoundOverview.InvitationLink,
+                    AttackedById = userId,
+                    TerritoryId = gameObjTerritory.Id
+                };
             }
 
             // Selecting territory for multiple choice pvp rounds
@@ -160,7 +166,12 @@ namespace GameService.Services
 
                 await db.SaveChangesAsync();
 
-                return await CommonTimerFunc.GetFullGameInstance(currentRoundOverview.GameInstanceId, db);
+                return new SelectedTerritoryResponse()
+                {
+                    GameLink = currentRoundOverview.InvitationLink,
+                    AttackedById = userId,
+                    TerritoryId = gameObjTerritory.Id
+                };
             }
             else
             {
