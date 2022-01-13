@@ -11,9 +11,13 @@ namespace AccountService.Context
 {
     public static class PrepDb
     {
-        public static void PrepMigration(IApplicationBuilder app)
+        public static void PrepMigration(IApplicationBuilder app, bool isProduction)
         {
             using var serviceScope = app.ApplicationServices.CreateScope();
+
+            if (!isProduction)
+                return;
+
             ApplyMigrations(serviceScope.ServiceProvider.GetService<IDbContextFactory<AppDbContext>>());
         }
 

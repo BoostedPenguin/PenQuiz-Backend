@@ -32,20 +32,37 @@ namespace GameService
 
                             var provider = configuration.GetValue("Provider", "SqlServer");
 
-                            Console.WriteLine($"--> Attempting to connect with provider: {provider}");
+                            if (hostContext.HostingEnvironment.IsProduction())
+                            {
+                                Console.WriteLine($"--> Using production database with provider: {provider}");
 
-                            services.AddDbContextFactory<DefaultContext>(
-                                options => _ = provider switch
-                                {
-                                    "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("GamesConnNpgsql"),
-                                x => x.MigrationsAssembly("GameService.NpgsqlMigrations")),
+                                services.AddDbContextFactory<DefaultContext>(
+                                    options => _ = provider switch
+                                    {
+                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("GamesConnNpgsql"),
+                                    x => x.MigrationsAssembly("GameService.NpgsqlMigrations")),
 
-                                    "SqlServer" => options.UseSqlServer(
-                                        configuration.GetConnectionString("GamesConn"),
-                                        x => x.MigrationsAssembly("GameService.SqlServerMigrations")),
+                                        "SqlServer" => options.UseSqlServer(
+                                            configuration.GetConnectionString("GamesConn"),
+                                            x => x.MigrationsAssembly("GameService.SqlServerMigrations")),
 
-                                    _ => throw new Exception($"Unsupported provider: {provider}")
-                                });
+                                        _ => throw new Exception($"Unsupported provider: {provider}")
+                                    });
+                            }
+                            else
+                            {
+                                Console.WriteLine($"--> Using development database with provider: {provider}");
+
+                                services.AddDbContextFactory<DefaultContext>(
+                                    options => _ = provider switch
+                                    {
+                                        "Npgsql" => options.UseInMemoryDatabase("InMemoryNpgsql"),
+
+                                        "SqlServer" => options.UseInMemoryDatabase("InMemorySqlServer"),
+
+                                        _ => throw new Exception($"Unsupported provider: {provider}")
+                                    });
+                            }
                         });
                 });
     }

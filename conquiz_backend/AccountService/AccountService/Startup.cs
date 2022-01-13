@@ -124,7 +124,7 @@ namespace AccountService
                 });
             });
 
-            PrepDb.PrepMigration(app);
+            PrepDb.PrepMigration(app, env.IsProduction());
 
         }
     }

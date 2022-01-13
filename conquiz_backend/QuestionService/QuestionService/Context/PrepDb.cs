@@ -19,7 +19,10 @@ namespace QuestionService.Context
             var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
             using var db = contextFactory.CreateDbContext();
 
-            ApplyMigrations(db);
+            if(isProduction)
+            {
+                ApplyMigrations(db);
+            }
 
 
             Seed(db);
@@ -83,7 +86,7 @@ namespace QuestionService.Context
 
             var result = questions.Where(x => !db.Questions.Any(y => y.Question.ToLower() == x.Question.ToLower())).ToList();
 
-            if (result.Count() != 0)
+            if (result.Count != 0)
             {
                 db.Questions.AddRange(result);
                 db.SaveChanges();

@@ -27,6 +27,36 @@ namespace QuestionService.Data.Models
             });
         }
 
+        // For MC questions
+        public Questions(string question, string correctAnswer, string[] wrongAnswers, string category = null, string difficulty = null)
+        {
+            if (wrongAnswers.Length != 3)
+                throw new ArgumentException("Wrong answers need to be exactly 3");
+
+            Answers = new HashSet<Answers>();
+            GameSessionQuestions = new HashSet<GameSessionQuestions>();
+
+            Type = "multiple";
+            Question = question;
+            Difficulty = difficulty;
+            Category = category;
+
+            Answers.Add(new Answers()
+            {
+                Answer = correctAnswer,
+                Correct = true,
+            });
+
+            foreach(var wAnswer in wrongAnswers)
+            {
+                Answers.Add(new Answers()
+                {
+                    Answer = wAnswer,
+                    Correct = false,
+                });
+            }
+        }
+
         public int Id { get; set; }
         public string Question { get; set; }
         public string Type { get; set; }
