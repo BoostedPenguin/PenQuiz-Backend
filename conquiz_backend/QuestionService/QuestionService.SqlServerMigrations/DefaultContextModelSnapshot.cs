@@ -18,7 +18,7 @@ namespace QuestionService.SqlServerMigrations.Migrations
                 .HasAnnotation("ProductVersion", "5.0.11")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("QuestionService.Models.Answers", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.Answers", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -47,7 +47,7 @@ namespace QuestionService.SqlServerMigrations.Migrations
                     b.ToTable("Answers");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.GameInstance", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.GameInstance", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -55,8 +55,9 @@ namespace QuestionService.SqlServerMigrations.Migrations
                         .HasColumnName("id")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int>("ExternalId")
-                        .HasColumnType("int")
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("externalId");
 
                     b.Property<string>("OpentDbSessionToken")
@@ -70,7 +71,7 @@ namespace QuestionService.SqlServerMigrations.Migrations
                     b.ToTable("GameInstances");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.GameSessionQuestions", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.GameSessionQuestions", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +96,7 @@ namespace QuestionService.SqlServerMigrations.Migrations
                     b.ToTable("GameSessionQuestions");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.Questions", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.Questions", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -130,9 +131,9 @@ namespace QuestionService.SqlServerMigrations.Migrations
                     b.ToTable("Questions");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.Answers", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.Answers", b =>
                 {
-                    b.HasOne("QuestionService.Models.Questions", "Question")
+                    b.HasOne("QuestionService.Data.Models.Questions", "Question")
                         .WithMany("Answers")
                         .HasForeignKey("QuestionId")
                         .HasConstraintName("FK__Answers__questio__5DCAEF64")
@@ -142,16 +143,16 @@ namespace QuestionService.SqlServerMigrations.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.GameSessionQuestions", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.GameSessionQuestions", b =>
                 {
-                    b.HasOne("QuestionService.Models.GameInstance", "GameInstance")
+                    b.HasOne("QuestionService.Data.Models.GameInstance", "GameInstance")
                         .WithMany("GameSessionQuestions")
                         .HasForeignKey("GameInstanceId")
                         .HasConstraintName("FK__GameSessQues__game__5EBF139D")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("QuestionService.Models.Questions", "Question")
+                    b.HasOne("QuestionService.Data.Models.Questions", "Question")
                         .WithMany("GameSessionQuestions")
                         .HasForeignKey("QuestionId")
                         .HasConstraintName("FK__GameSessQues__quest__5FB337D6")
@@ -163,12 +164,12 @@ namespace QuestionService.SqlServerMigrations.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.GameInstance", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.GameInstance", b =>
                 {
                     b.Navigation("GameSessionQuestions");
                 });
 
-            modelBuilder.Entity("QuestionService.Models.Questions", b =>
+            modelBuilder.Entity("QuestionService.Data.Models.Questions", b =>
                 {
                     b.Navigation("Answers");
 

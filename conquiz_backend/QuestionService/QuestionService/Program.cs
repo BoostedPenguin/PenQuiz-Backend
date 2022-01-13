@@ -55,9 +55,12 @@ namespace QuestionService
                                 services.AddDbContextFactory<DefaultContext>(
                                     options => _ = provider switch
                                     {
-                                        "Npgsql" => options.UseInMemoryDatabase("InMemoryNpgsql"),
+                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("QuestionsConnNpgsql"),
+                                    x => x.MigrationsAssembly("QuestionService.NpgsqlMigrations")),
 
-                                        "SqlServer" => options.UseInMemoryDatabase("InMemorySqlServer"),
+                                        "SqlServer" => options.UseSqlServer(
+                                            configuration.GetConnectionString("QuestionsConn"),
+                                            x => x.MigrationsAssembly("QuestionService.SqlServerMigrations")),
 
                                         _ => throw new Exception($"Unsupported provider: {provider}")
                                     });
