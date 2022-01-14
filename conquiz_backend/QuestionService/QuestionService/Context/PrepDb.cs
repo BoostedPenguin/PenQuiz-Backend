@@ -19,7 +19,7 @@ namespace QuestionService.Context
             var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
             using var db = contextFactory.CreateDbContext();
 
-            if(true)
+            if (isProduction)
             {
                 ApplyMigrations(db);
             }
@@ -36,8 +36,23 @@ namespace QuestionService.Context
         }
         private static void Seed(DefaultContext db)
         {
-            // Questions
-            var questions = new List<Questions>()
+            // Seed Questions
+            var questions = new List<Questions>();
+            questions.AddRange(SeedNumberQuestions());
+            questions.AddRange(SeedMCQuestions());
+
+            var result = questions.Where(x => !db.Questions.Any(y => y.Question.ToLower() == x.Question.ToLower())).ToList();
+
+            if (result.Count != 0)
+            {
+                db.Questions.AddRange(result);
+                db.SaveChanges();
+            }
+        }
+
+        private static Questions[] SeedNumberQuestions()
+        {
+            return new Questions[]
             {
                 new Questions("In what year was Bulgaria founded?", "681"),
                 new Questions("In what year did World War 2 start?", "1939"),
@@ -83,14 +98,117 @@ namespace QuestionService.Context
                 new Questions("How many years ago were horses domesticated?", "6000"),
                 new Questions("When did the USSR dissolve?", "1991"),
             };
+        }
 
-            var result = questions.Where(x => !db.Questions.Any(y => y.Question.ToLower() == x.Question.ToLower())).ToList();
-
-            if (result.Count != 0)
+        private static Questions[] SeedMCQuestions()
+        {
+            return new Questions[]
             {
-                db.Questions.AddRange(result);
-                db.SaveChanges();
-            }
+                new Questions("Which is the capital of Bulgaria?", "Sofia", new string[]
+                {
+                    "Burgas", "Plovdiv", "Varna"
+                }),
+                new Questions("Which of these European cities has the largest population?", "Istanbul", new string[]
+                {
+                    "Moscow", "London", "Varna"
+                }),
+                new Questions("What countries made up the original Axis powers in World War II?", "Germany, Italy, Japan", new string[]
+                {
+                    "Germany, Russia, Austria", "France, Germany, Russia", "France, Germany, Italy"
+                }),
+                new Questions("What is cynophobia?", "Fear of dogs", new string[]
+                {
+                    "Fear of insects", "Fear of shoes", "Fear of cats"
+                }),
+                new Questions("Which language is written from right to left?", "Arabic", new string[]
+                {
+                    "Spanish", "Chinese", "Bulgarian"
+                }),
+                new Questions("What is the name of the biggest technology company in South Korea?", "Samsung", new string[]
+                {
+                    "LG", "Sony", "Philips"
+                }),
+                new Questions("What is the name of the largest ocean on earth?", "Pacific", new string[]
+                {
+                    "Indian", "Atlantic", "Arctic"
+                }),
+                new Questions("Which country consumes the most chocolate per capita?", "Switzerland", new string[]
+                {
+                    "Finland", "Belgium", "Russia"
+                }),
+                new Questions("What was the first soft drink in space?", "Coca Cola", new string[]
+                {
+                    "Fanta", "Pepsi", "Sprite"
+                }),
+                new Questions("Which is the only edible food that never goes bad?", "Honey", new string[]
+                {
+                    "Rice", "Chocolate", "Vegetable Oil"
+                }),
+                new Questions("Which country invented ice cream?", "China", new string[]
+                {
+                    "Belgium", "Finland", "Russia"
+                }),
+                new Questions("What’s the shortcut for the 'copy' function on most computers?", "CTRL C", new string[]
+                {
+                    "CTRL X", "CTRL V", "ALT CTRL"
+                }),
+                new Questions("Which planet is the hottest in the solar system?", "Venus", new string[]
+                {
+                    "Mercury", "Mars", "Saturn"
+                }),
+                new Questions("Which natural disaster is measured with a Richter scale?", "Earthquakes", new string[]
+                {
+                    "Volcanos", "Tornados", "Tsunamis"
+                }),
+                new Questions("Which planet has the most gravity?", "Jupiter", new string[]
+                {
+                    "Saturn", "Earth", "Neptune"
+                }),
+                new Questions("How many Lord of the Rings films are there?", "3", new string[]
+                {
+                    "2", "4", "6"
+                }),
+                new Questions("What is the name of the thin and long country that spans more than half of the western coast of South America?", "Chile", new string[]
+                {
+                    "Peru", "Colombia", "Argentina"
+                }),
+                new Questions("Which two countries share the longest international border?", "Canada and the USA", new string[]
+                {
+                    "Russia and China", "Norway and Sweden", "Mexico and the USA"
+                }),
+                new Questions("Which continent is the largest?", "Asia", new string[]
+                {
+                    "Australia", "Africa", "South America"
+                }),
+                new Questions("By what name were the Egyptian kings/rulers known?", "Pharaohs", new string[]
+                {
+                    "Hans", "Kings", "Tsars"
+                }),
+                new Questions("Which religion dominated the Middle Ages?", "Catholicism", new string[]
+                {
+                    "Islam", "Buddhism", "Judaism"
+                }),
+                new Questions("In which country Adolph Hitler was born?", "Austria", new string[]
+                {
+                    "Germany", "Poland", "Netherlands"
+                }),
+                new Questions("Which country did AC/DC originate in?", "Australia", new string[]
+                {
+                    "England", "USA", "New Zealand"
+                }),
+                new Questions("Who was the messenger of the gods in Greek mythology?", "Hermes", new string[]
+                {
+                    "Zeus", "Dionysus", "Apollo"
+                }),
+                new Questions("The Roman God of War inspired the name of which planet?", "Mars", new string[]
+                {
+                    "Venus", "Jupiter", "Saturn"
+                }),
+                new Questions("What was the name of the Egyptian God of the Sun?", "Ra", new string[]
+                {
+                    "Osiris", "Seth", "Anubis"
+                }),
+            };
         }
     }
 }

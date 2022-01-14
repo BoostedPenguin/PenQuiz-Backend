@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using QuestionService.Context;
 using QuestionService.Data;
 using QuestionService.Dtos;
@@ -20,17 +21,15 @@ namespace QuestionService.EventProcessing
 
     public class EventProcessor : IEventProcessor
     {
-        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IMapper mapper;
-        private readonly IOpenDBService openDBService;
+        private readonly IMCQuestionsService mcQuestionService;
         private readonly INumberQuestionsService numberQuestionsService;
         private readonly IMessageBusClient messageBus;
 
-        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, IOpenDBService openDBService, INumberQuestionsService numberQuestionsService, IMessageBusClient messageBus)
+        public EventProcessor(IMapper mapper, IMCQuestionsService mcQuestionService, INumberQuestionsService numberQuestionsService, IMessageBusClient messageBus)
         {
-            this.contextFactory = contextFactory;
             this.mapper = mapper;
-            this.openDBService = openDBService;
+            this.mcQuestionService = mcQuestionService;
             this.numberQuestionsService = numberQuestionsService;
             this.messageBus = messageBus;
         }
@@ -45,10 +44,10 @@ namespace QuestionService.EventProcessing
                     var questionRequest = JsonSerializer.Deserialize<QuestionRequest>(message);
 
                     var sessionToken = 
-                        await openDBService.GenerateSessionToken(questionRequest.GameGlobalIdentifier);
+                        await mcQuestionService.GenerateSessionToken(questionRequest.GameGlobalIdentifier);
                     
                     var mulChoiceQuestions = await 
-                        openDBService.GetMultipleChoiceQuestion(sessionToken.Token, questionRequest.MultipleChoiceQuestionsRoundId);
+                        mcQuestionService.GetMultipleChoiceQuestion(sessionToken.Token, questionRequest.MultipleChoiceQuestionsRoundId);
 
                     var numberQuestions = 
                         await numberQuestionsService.GetNumberQuestions(questionRequest.NumberQuestionsRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);
@@ -92,7 +91,7 @@ namespace QuestionService.EventProcessing
             var questionRequest = JsonSerializer.Deserialize<RequestFinalNumberQuestionDto>(message);
 
             var sessionToken =
-                await openDBService.GenerateSessionToken(questionRequest.GameGlobalIdentifier);
+                await mcQuestionService.GenerateSessionToken(questionRequest.GameGlobalIdentifier);
             
             var numberQuestions =
                 await numberQuestionsService.GetNumberQuestions(new List<int> { questionRequest.QuestionFinalRoundId }, sessionToken.Token, sessionToken.InternalGameInstanceId);
@@ -114,10 +113,10 @@ namespace QuestionService.EventProcessing
             var capitalRequest = JsonSerializer.Deserialize<CapitalQuestionRequest>(message);
 
             var sessionToken =
-                await openDBService.GenerateSessionToken(capitalRequest.GameGlobalIdentifier);
+                await mcQuestionService.GenerateSessionToken(capitalRequest.GameGlobalIdentifier);
 
             var mulChoiceQuestions = await
-                openDBService.GetMultipleChoiceQuestion(sessionToken.Token, capitalRequest.QuestionsCapitalRoundId);
+                mcQuestionService.GetMultipleChoiceQuestion(sessionToken.Token, capitalRequest.QuestionsCapitalRoundId);
 
             var numberQuestions =
                 await numberQuestionsService.GetNumberQuestions(capitalRequest.QuestionsCapitalRoundId, sessionToken.Token, sessionToken.InternalGameInstanceId);

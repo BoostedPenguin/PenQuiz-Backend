@@ -15,10 +15,10 @@ namespace AccountService.Context
         {
             using var serviceScope = app.ApplicationServices.CreateScope();
 
-            if (false)
-                return;
-
-            ApplyMigrations(serviceScope.ServiceProvider.GetService<IDbContextFactory<AppDbContext>>());
+            if (isProduction)
+            {
+                ApplyMigrations(serviceScope.ServiceProvider.GetService<IDbContextFactory<AppDbContext>>());
+            }
         }
 
         private static void ApplyMigrations(IDbContextFactory<AppDbContext> contextFactory)

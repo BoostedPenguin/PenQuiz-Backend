@@ -55,12 +55,9 @@ namespace AccountService
                                 services.AddDbContextFactory<AppDbContext>(
                                     options => _ = provider switch
                                     {
-                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("AccountsConnNpgsql"),
-                                    x => x.MigrationsAssembly("AccountService.NpgsqlMigrations")),
+                                        "Npgsql" => options.UseInMemoryDatabase("InMem"),
 
-                                        "SqlServer" => options.UseSqlServer(
-                                            configuration.GetConnectionString("AccountsConn"),
-                                            x => x.MigrationsAssembly("AccountService.SqlServerMigrations")),
+                                        "SqlServer" => options.UseInMemoryDatabase("InMem"),
 
                                         _ => throw new Exception($"Unsupported provider: {provider}")
                                     });

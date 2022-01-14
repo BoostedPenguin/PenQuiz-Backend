@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace QuestionService.Data.Models
 {
@@ -26,7 +27,7 @@ namespace QuestionService.Data.Models
                 Correct = true,
             });
         }
-
+        private readonly Random rng = new Random();
         // For MC questions
         public Questions(string question, string correctAnswer, string[] wrongAnswers, string category = null, string difficulty = null)
         {
@@ -41,20 +42,26 @@ namespace QuestionService.Data.Models
             Difficulty = difficulty;
             Category = category;
 
-            Answers.Add(new Answers()
+            var answers = new List<Answers>
             {
-                Answer = correctAnswer,
-                Correct = true,
-            });
+                new Answers()
+                {
+                    Answer = correctAnswer,
+                    Correct = true,
+                }
+            };
 
-            foreach(var wAnswer in wrongAnswers)
+            foreach (var wAnswer in wrongAnswers)
             {
-                Answers.Add(new Answers()
+                answers.Add(new Answers()
                 {
                     Answer = wAnswer,
                     Correct = false,
                 });
             }
+
+            // Shuffle list so the correct answer isn't always first
+            Answers = answers.OrderBy(x => rng.Next()).ToList();
         }
 
         public int Id { get; set; }

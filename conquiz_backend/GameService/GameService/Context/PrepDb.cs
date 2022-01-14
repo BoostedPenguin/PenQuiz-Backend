@@ -14,13 +14,13 @@ namespace GameService.Context
 {
     public static class PrepDb
     {
-        public static void PrepMigration(IApplicationBuilder app, bool isProd)
+        public static void PrepMigration(IApplicationBuilder app, bool isProduction)
         {
             using var serviceScope = app.ApplicationServices.CreateScope();
 
             var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
             
-            if (true)
+            if (isProduction)
             {
                 ApplyMigrations(contextFactory);
             }

@@ -56,12 +56,9 @@ namespace GameService
                                 services.AddDbContextFactory<DefaultContext>(
                                     options => _ = provider switch
                                     {
-                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("GamesConnNpgsql"),
-                                    x => x.MigrationsAssembly("GameService.NpgsqlMigrations")),
+                                        "Npgsql" => options.UseInMemoryDatabase("InMem"),
 
-                                        "SqlServer" => options.UseSqlServer(
-                                            configuration.GetConnectionString("GamesConn"),
-                                            x => x.MigrationsAssembly("GameService.SqlServerMigrations")),
+                                        "SqlServer" => options.UseInMemoryDatabase("InMem"),
 
                                         _ => throw new Exception($"Unsupported provider: {provider}")
                                     });

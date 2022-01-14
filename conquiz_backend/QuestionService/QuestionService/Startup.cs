@@ -85,7 +85,22 @@ namespace QuestionService
 
             services.AddSingleton<IEventProcessor, EventProcessor>();
 
-            services.AddSingleton<IOpenDBService, OpenDBService>();
+            var mcQuestionsProvider = Configuration.GetValue<string>("AppSettings:MCQuestionProvider");
+            switch (mcQuestionsProvider)
+            {
+                case "Database":
+                    Console.WriteLine($"--> MultipleChoice question provider: {mcQuestionsProvider}");
+                    services.AddSingleton<IMCQuestionsService, LocalMCQuestionsService>();
+                    break;
+                case "OpentDb":
+                    Console.WriteLine($"--> MultipleChoice question provider: {mcQuestionsProvider}");
+                    services.AddSingleton<IMCQuestionsService, OpenDBService>();
+                    break;
+                default:
+                    Console.WriteLine($"--> Unknown MultipleChoice question provider: {mcQuestionsProvider}. Switching to default provider - Database");
+                    services.AddSingleton<IMCQuestionsService, LocalMCQuestionsService>();
+                    break;
+            }
 
             services.AddSingleton<INumberQuestionsService, NumberQuestionsService>();
 

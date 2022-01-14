@@ -31,13 +31,19 @@ namespace QuestionService.Services
         public List<OpenTDBQuestion> Results { get; set; } = new List<OpenTDBQuestion>();
     }
 
-    public interface IOpenDBService
+    public class SessionTokenRequest
     {
-        Task<OpenDBService.SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier);
+        public string Token { get; set; }
+        public int InternalGameInstanceId { get; set; }
+    }
+
+    public interface IMCQuestionsService
+    {
+        Task<SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier);
         Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions);
     }
 
-    public class OpenDBService : IOpenDBService
+    public class OpenDBService : IMCQuestionsService
     {
         private readonly IHttpClientFactory clientFactory;
         private readonly IMapper mapper;
@@ -132,11 +138,6 @@ namespace QuestionService.Services
             return questions;
         }
 
-        public class SessionTokenRequest
-        {
-            public string Token { get; set; }
-            public int InternalGameInstanceId { get; set; }
-        }
 
         public async Task<SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier)
         {
