@@ -56,7 +56,10 @@ namespace GameService.Services.GameTimerServices
 
                 Interval = 1000;
                 AutoReset = true;
-                MaxTime = maxTimeMs / 1000;
+
+                // -1 to offset client to server response
+                // Ensures client time to communicate response won't cause time out
+                MaxTime = maxTimeMs / 1000 - 1;
                 StartTime = DateTime.Now;
                 Start();
             }
@@ -72,7 +75,7 @@ namespace GameService.Services.GameTimerServices
                 hubContext.Clients.Group(timer.GameLink)
                     .GameSendCountDownSeconds(timeRemaining <= 0 ? 0 : timeRemaining);
 
-                Console.WriteLine($"Time remaining: {(timeRemaining <= 0 ? 0 : timeRemaining)}");
+                //Console.WriteLine($"Time remaining: {(timeRemaining <= 0 ? 0 : timeRemaining)}");
 
                 if (timeRemaining <= 0)
                 {
