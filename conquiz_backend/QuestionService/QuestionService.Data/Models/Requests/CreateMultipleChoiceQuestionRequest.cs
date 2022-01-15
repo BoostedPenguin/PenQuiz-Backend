@@ -13,6 +13,6 @@ namespace QuestionService.Data.Models.Requests
         [Required]
         public string Answer { get; set; }
         [Required]
-        public string[] WrongAnswers { get; set; } = new string[3];
+        public string[] WrongAnswers { get; set; }
     }
 }

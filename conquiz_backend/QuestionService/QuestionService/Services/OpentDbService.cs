@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using QuestionService.Context;
 using QuestionService.Data;
 using QuestionService.Data.Models;
+using QuestionService.Data.Models.Requests;
 using QuestionService.Dtos;
 using QuestionService.MessageBus;
 using System;
@@ -41,6 +42,7 @@ namespace QuestionService.Services
     {
         Task<SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier);
         Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions);
+        Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request);
     }
 
     public class OpenDBService : IMCQuestionsService
@@ -176,6 +178,11 @@ namespace QuestionService.Services
                 Token = gm.OpentDbSessionToken,
                 InternalGameInstanceId = gm.Id,
             };
+        }
+
+        public Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request)
+        {
+            throw new ArgumentException("The system uses legacy questions provider. Unable to manually add new questions");
         }
     }
 }

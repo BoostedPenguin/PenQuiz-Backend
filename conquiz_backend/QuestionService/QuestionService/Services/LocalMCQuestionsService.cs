@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuestionService.Data;
 using QuestionService.Data.Models;
+using QuestionService.Data.Models.Requests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,22 @@ namespace QuestionService.Services
         public LocalMCQuestionsService(IDbContextFactory<DefaultContext> contextFactory)
         {
             this.contextFactory = contextFactory;
+        }
+
+        public async Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request)
+        {
+            if (request.WrongAnswers.Length != 3)
+                throw new ArgumentException("You need to provide exactly 3 wrong answers.");
+
+            using var db = contextFactory.CreateDbContext();
+            var existing = await db.Questions
+                .FirstOrDefaultAsync(x => x.Type == "multiple" && x.Question.ToLower() == request.Question.ToLower());
+
+            if (existing != null)
+                throw new ArgumentException("This question already exists in our db.");
+
+            await db.AddAsync(new Questions(request.Question, request.Answer, request.WrongAnswers, false));
+            await db.SaveChangesAsync();
         }
 
         public async Task<SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier)
@@ -56,7 +73,7 @@ namespace QuestionService.Services
                 .Include(x => x.Answers)
                 .Include(x => x.GameSessionQuestions)
                 .ThenInclude(x => x.GameInstance)
-                .Where(x => x.Type == "multiple" && !x.GameSessionQuestions
+                .Where(x => x.Type == "multiple" && x.IsVerified == true && !x.GameSessionQuestions
                     .Any(y => y.GameInstance.OpentDbSessionToken == sessionToken))
                 .ToListAsync();
 
@@ -66,7 +83,7 @@ namespace QuestionService.Services
             {
                 questions = await db.Questions
                     .Include(x => x.Answers)
-                    .Where(x => x.Type == "number")
+                    .Where(x => x.Type == "multiple" && x.IsVerified == true)
                     .ToListAsync();
             }
 

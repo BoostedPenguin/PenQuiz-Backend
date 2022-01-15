@@ -2,6 +2,7 @@
 using QuestionService.Context;
 using QuestionService.Data;
 using QuestionService.Data.Models;
+using QuestionService.Data.Models.Requests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace QuestionService.Services
 {
     public interface INumberQuestionsService
     {
-        Task AddNumberQuestion(string question, string numberAnswer);
+        Task AddNumberQuestion(CreateNumberQuestionRequest request);
         Task<List<Questions>> GetNumberQuestions(List<int> amountRoundId, string sessionId, int gameInstanceId);
     }
 
@@ -24,9 +25,9 @@ namespace QuestionService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task AddNumberQuestion(string question, string numberAnswer)
+        public async Task AddNumberQuestion(CreateNumberQuestionRequest request)
         {
-            var isAnswerNumber = int.TryParse(numberAnswer, out _);
+            var isAnswerNumber = int.TryParse(request.Answer, out _);
             
             if (!isAnswerNumber)
                 throw new ArgumentException("The provided answer isn't a number");
@@ -34,12 +35,12 @@ namespace QuestionService.Services
             using var db = contextFactory.CreateDbContext();
 
             var existing = await db.Questions
-                .FirstOrDefaultAsync(x => x.Question.ToLower() == question.ToLower());
+                .FirstOrDefaultAsync(x => x.Question.ToLower() == request.Question.ToLower() && x.Type == "number");
 
             if (existing != null) 
                 throw new ArgumentException("This question already exists in our db.");
 
-            await db.AddAsync(new Questions(question, numberAnswer));
+            await db.AddAsync(new Questions(request.Question, request.Answer, false));
             await db.SaveChangesAsync();
         }
 

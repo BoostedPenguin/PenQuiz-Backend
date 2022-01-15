@@ -13,12 +13,17 @@ namespace QuestionService.Data.Models
             GameSessionQuestions = new HashSet<GameSessionQuestions>();
         }
 
-        // For number questions
-        public Questions(string question, string answer)
+        /// <summary>
+        /// Add number questions
+        /// </summary>
+        /// <param name="question"></param>
+        /// <param name="answer"></param>
+        public Questions(string question, string answer, bool isVerified = true)
         {
             Answers = new HashSet<Answers>();
             GameSessionQuestions = new HashSet<GameSessionQuestions>();
 
+            IsVerified = isVerified;
             Type = "number";
             Question = question;
             Answers.Add(new Answers()
@@ -28,8 +33,16 @@ namespace QuestionService.Data.Models
             });
         }
         private readonly Random rng = new Random();
-        // For MC questions
-        public Questions(string question, string correctAnswer, string[] wrongAnswers, string category = null, string difficulty = null)
+        
+        /// <summary>
+        /// Add multiple choice question
+        /// </summary>
+        /// <param name="question"></param>
+        /// <param name="correctAnswer"></param>
+        /// <param name="wrongAnswers"></param>
+        /// <param name="category"></param>
+        /// <param name="difficulty"></param>
+        public Questions(string question, string correctAnswer, string[] wrongAnswers, bool isVerified = true, string category = null, string difficulty = null)
         {
             if (wrongAnswers.Length != 3)
                 throw new ArgumentException("Wrong answers need to be exactly 3");
@@ -41,6 +54,7 @@ namespace QuestionService.Data.Models
             Question = question;
             Difficulty = difficulty;
             Category = category;
+            IsVerified = isVerified;
 
             var answers = new List<Answers>
             {
@@ -69,6 +83,7 @@ namespace QuestionService.Data.Models
         public string Type { get; set; }
         public string Difficulty { get; set; }
         public string Category { get; set; }
+        public bool? IsVerified { get; set; }
 
         [NotMapped]
         public int RoundId { get; set; }

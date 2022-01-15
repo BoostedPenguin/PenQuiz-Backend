@@ -14,10 +14,12 @@ namespace QuestionService.Controllers
     public class QuestionController : ControllerBase
     {
         private readonly INumberQuestionsService numberQuestionsService;
+        private readonly IMCQuestionsService mCQuestionsService;
 
-        public QuestionController(INumberQuestionsService numberQuestionsService)
+        public QuestionController(INumberQuestionsService numberQuestionsService, IMCQuestionsService mCQuestionsService)
         {
             this.numberQuestionsService = numberQuestionsService;
+            this.mCQuestionsService = mCQuestionsService;
         }
 
         [HttpGet]
@@ -33,15 +35,32 @@ namespace QuestionService.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost("number")]
         public async Task<IActionResult> CreateNumberQuestion([FromBody] CreateNumberQuestionRequest request)
         {
             try
             {
-                await numberQuestionsService.AddNumberQuestion(request.Question, request.Answer);
-                return Ok();
+                await numberQuestionsService.AddNumberQuestion(request);
+                return Ok(new { message = "Successfully submitted a number question! We will review it and if it follows our guidelines it will be added to ConQuiz!" });
             }
             catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpPost("multiple")]
+        public async Task<IActionResult> CreateMultipleChoiceQuestion([FromBody] CreateMultipleChoiceQuestionRequest request)
+        {
+            try
+            {
+                await mCQuestionsService.CreateMultipleChoiceQuestion(request);
+
+                return Ok(new { message = "Successfully submitted a multiple choice question! We will review it and if it follows our guidelines it will be added to ConQuiz!" });
+            }
+            catch(Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
