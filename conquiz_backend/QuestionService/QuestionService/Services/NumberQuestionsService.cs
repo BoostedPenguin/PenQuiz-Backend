@@ -27,7 +27,7 @@ namespace QuestionService.Services
 
         public async Task AddNumberQuestion(CreateNumberQuestionRequest request)
         {
-            var isAnswerNumber = int.TryParse(request.Answer, out _);
+            var isAnswerNumber = long.TryParse(request.Answer, out _);
             
             if (!isAnswerNumber)
                 throw new ArgumentException("The provided answer isn't a number");
