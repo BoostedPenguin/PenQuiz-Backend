@@ -90,7 +90,12 @@ namespace GameService.Services.GameTimerServices
                 {
                     case ActionState.GAME_START_PREVIEW_TIME:
 
-                        // Send request to clients to stay on main screen for preview
+                        /*
+                         * Send request to clients to stay on main screen for preview
+                         * 
+                         * - Next event will be ActionState.OPEN_PLAYER_ATTACK_VOTING
+                         */
+
                         await Game_Preview_Time(timer);
 
                         // Debug
@@ -101,8 +106,12 @@ namespace GameService.Services.GameTimerServices
                     #region Neutral Multiple Choice events
                     case ActionState.OPEN_PLAYER_ATTACK_VOTING:
 
-                        // Send request to clients to open the multiple choice voting
-                        // And show whos attacking turn it is
+                        /*
+                         * Send request to clients to open the multiple choice territory voting for a specific person
+                         * Show whos attacking turn it is
+                         * 
+                         * - Next event will be ActionState.CLOSE_PLAYER_ATTACK_VOTING
+                         */
 
                         await neutralMCTimerEvents
                             .Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(timer);
@@ -110,17 +119,40 @@ namespace GameService.Services.GameTimerServices
 
                     case ActionState.CLOSE_PLAYER_ATTACK_VOTING:
 
+                        /*
+                         * Send request to clients to close the multiple choice voting for a specific person
+                         * Find next attacker and display him
+                         * 
+                         * - If this was last attacker, next event will be ActionState.SHOW_MULTIPLE_CHOICE_QUESTION
+                         * - If this was not last attacker, next event will be ActionState.OPEN_PLAYER_ATTACK_VOTING
+                         */
+
                         await neutralMCTimerEvents
                             .Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(timer);
                         return;
 
                     case ActionState.SHOW_MULTIPLE_CHOICE_QUESTION:
 
+                        /*
+                         * Get the question and display it to the users
+                         * - Next event will be ActionState.END_MULTIPLE_CHOICE_QUESTION
+                         */
+
                         await neutralMCTimerEvents
                             .Show_Neutral_MultipleChoice_Screen(timer);
                         return;
 
                     case ActionState.END_MULTIPLE_CHOICE_QUESTION:
+
+                        /*
+                         * Check all player answers if they won a neutral territory or not
+                         * 
+                         * - If this was last fixed MC neutral territory, 
+                         * next event will be ActionState.SHOW_PREVIEW_GAME_MAP
+                         * 
+                         * - If this wasn't last fixed MC neutral territory, 
+                         * next event will be ActionState.OPEN_PLAYER_ATTACK_VOTING
+                         */
 
                         await neutralMCTimerEvents
                             .Close_Neutral_MultipleChoice_Question_Voting(timer);
@@ -129,72 +161,223 @@ namespace GameService.Services.GameTimerServices
 
                     #region Neutral Number Events
                     case ActionState.SHOW_PREVIEW_GAME_MAP:
+
+                        /*
+                         * Prepares users for number questions (Blitz rounds)
+                         * - Next event will be ActionState.SHOW_NUMBER_QUESTION
+                         */
+
                         await neutralNumberTimerEvents.Show_Game_Map_Screen(timer);
                         return;
 
                     case ActionState.SHOW_NUMBER_QUESTION:
+
+                        /*
+                         * Get the blitz question and display it to the users
+                         * - Next event will be ActionState.END_NUMBER_QUESTION
+                         */
+
                         await neutralNumberTimerEvents.Show_Neutral_Number_Screen(timer);
                         return;
 
                     case ActionState.END_NUMBER_QUESTION:
+
+                        /*
+                         * Checks users answers for the winner
+                         * 
+                         * - If this was last neutral number question, 
+                         * next event will be ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING
+                         * 
+                         * - If this wasn't last neutral number question, 
+                         * next event will be ActionState.SHOW_PREVIEW_GAME_MAP
+                         */
+
                         await neutralNumberTimerEvents.Close_Neutral_Number_Question_Voting(timer);
                         return;
                     #endregion
 
                     #region Pvp Events
                     case ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING:
+
+                        /*
+                         * Send request to clients to open the multiple choice pvp territory voting for a specific person
+                         * And show whos attacking turn it is
+                         * 
+                         * - Next event will be ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING
+                         */
+
                         await pvpStageTimerEvents.Open_Pvp_MultipleChoice_Attacker_Territory_Selecting(timer);
                         return;
 
                     case ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING:
+
+                        /*
+                         * Send request to clients to close the multiple choice territory pvp voting for a specific person
+                         * 
+                         * - Next event will be ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION
+                         */
+
                         await pvpStageTimerEvents.Close_Pvp_MultipleChoice_Attacker_Territory_Selecting(timer);
                         return;
 
                     case ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION:
+
+                        /*
+                         * Get the multiple choice question and display it to the users
+                         * Only 2 players will be able to answer (1v1 pvp)
+                         * 
+                         * - Next event will be ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION:
+                         */
+
                         await pvpStageTimerEvents.Show_Pvp_MultipleChoice_Screen(timer);
                         return;
 
                     case ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION:
+
+                        /*
+                         * Determine the pvp mc winner based on user answers
+                         * 
+                         * - If both users answered correctly, next event will be ActionState.SHOW_PVP_NUMBER_QUESTION
+                         * 
+                         * - If attacker won, defender lost and territory attacked is 
+                         * capital, next event will be ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION
+                         * 
+                         * - If this is last multiple choice question, not capital and scores of at least
+                         * 2 users are same, next event will be ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION
+                         * 
+                         * - If this is last multiple choice question, not capital and scores of users are unique
+                         * next event will be ActionState.END_GAME
+                         */
+
                         await pvpStageTimerEvents.Close_Pvp_MultipleChoice_Question_Voting(timer);
                         return;
 
                     case ActionState.SHOW_PVP_NUMBER_QUESTION:
+
+                        /*
+                         * Get the number question and display it to the users
+                         * Only 2 players will be able to answer (1v1 pvp)
+                         * 
+                         * - Next event will be ActionState.END_PVP_NUMBER_QUESTION
+                         */
+
                         await pvpStageTimerEvents.Show_Pvp_Number_Screen(timer);
                         return;
 
                     case ActionState.END_PVP_NUMBER_QUESTION:
+
+                        /*
+                         * Determine the pvp number question winner based on user answers
+                         * 
+                         * - If attacker won and territory is capital, 
+                         * next event will be ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION
+                         * 
+                         * - If this is last question, not capital and scores of at least
+                         * 2 users are same, next event will be ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION
+                         * 
+                         * - If this is last question, not capital and scores of users are unique
+                         * next event will be ActionState.END_GAME
+                         */
+
                         await pvpStageTimerEvents.Close_Pvp_Number_Question_Voting(timer);
                         return;
                     #endregion
 
                     #region CapitalPvpRoundStages
                     case ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION:
+
+                        /*
+                         * Get the MC capital question and display it to the users
+                         * Only 2 players will be able to answer (1v1 pvp)
+                         * 
+                         * - Next event will be ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION
+                         */
+
                         await capitalStageTimerEvents.Capital_Show_Pvp_MultipleChoice_Question_Voting(timer);
                         return;
 
                     case ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION:
+
+                        /*
+                         * Determine the pvp capital MC question winner based on user answers
+                         * 
+                         * - If either won and this isn't last question
+                         * next event will be ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING
+                         * 
+                         * - If either won and this is last question and scores of at least 2 users are same
+                         * next event will be ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION
+                         * 
+                         * - If either won and this is last question and scores of users are unique
+                         * next event will be ActionState.END_GAME
+                         * 
+                         * - If both users won, next event will be ActionState.SHOW_CAPITAL_PVP_NUMBER_QUESTION
+                         */
+
                         await capitalStageTimerEvents.Capital_Close_Pvp_MultipleChoice_Question_Voting(timer);
                         return;
 
                     case ActionState.SHOW_CAPITAL_PVP_NUMBER_QUESTION:
+
+                        /*
+                         * Get the number capital question and display it to the users
+                         * Only 2 players will be able to answer (1v1 pvp)
+                         * 
+                         * - Next event will be ActionState.END_CAPITAL_PVP_NUMBER_QUESTION
+                         */
+
                         await capitalStageTimerEvents.Capital_Show_Pvp_Number_Screen(timer);
                         return;
 
                     case ActionState.END_CAPITAL_PVP_NUMBER_QUESTION:
+
+                        /*
+                         * Determine the pvp capital number question winner based on user answers
+                         * 
+                         * - If either won and this isn't last question
+                         * next event will be ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING
+                         * 
+                         * - If either won and this is last question and scores of at least 2 users are same
+                         * next event will be ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION
+                         * 
+                         * - If either won and this is last question and scores of users are unique
+                         * next event will be ActionState.END_GAME
+                         */
+
                         await capitalStageTimerEvents.Capital_Close_Pvp_Number_Question_Voting(timer);
                         return;
                     #endregion
 
                     #region FinalPvpStageQuestion
                     case ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION:
+
+                        /*
+                         * Get the final number capital question and display it to the users
+                         * 2-3 players will answer depending on their scoring
+                         * 
+                         * - Next event will be ActionState.END_FINAL_PVP_NUMBER_QUESTION
+                         */
+
                         await finalPvpQuestionService.Final_Show_Pvp_Number_Screen(timer);
                         return;
 
                     case ActionState.END_FINAL_PVP_NUMBER_QUESTION:
+
+                        /*
+                         * Determine the pvp number final question winner based on user answers
+                         * 
+                         * Next event will be ActionState.END_GAME
+                         */
+
                         await finalPvpQuestionService.Final_Close_Pvp_Number_Question_Voting(timer);
                         return;
                     #endregion
 
+
+                    /*
+                     * Game ended
+                     * 
+                     * Next event: None
+                     */
                     case ActionState.END_GAME:
                         await Game_End(timer);
                         return;
