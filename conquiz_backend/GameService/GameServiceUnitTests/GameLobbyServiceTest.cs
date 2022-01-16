@@ -84,6 +84,50 @@ namespace GameServiceUnitTests
         }
 
         [Fact]
+        public async Task JoinPublicGameLobbyTest()
+        {
+            // Second user trying to join lobby
+            var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+            var httpContext = new DefaultHttpContext();
+            var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.NameIdentifier, "2"),
+            };
+
+            mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
+
+            var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory), null);
+
+
+            var initialGame = await gameLobbyService.FindPublicMatch();
+            var result = await secondaryUserService.JoinGameLobby(initialGame.InvitationLink);
+
+            Assert.Same(initialGame.InvitationLink, result.InvitationLink);
+        }
+
+        [Fact]
+        public async Task CreatePublicGameLobbyTest()
+        {
+            // Second user trying to join lobby
+            var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+            var httpContext = new DefaultHttpContext();
+            var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.NameIdentifier, "2"),
+            };
+
+            mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
+
+            var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory), null);
+
+
+            var initialGame = await gameLobbyService.FindPublicMatch();
+            Assert.NotNull(initialGame);
+        }
+
+        [Fact]
         public async Task JoinNonExistingGameLobbyTest()
         {
             // Second user trying to join lobby
