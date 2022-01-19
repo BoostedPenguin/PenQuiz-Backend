@@ -5,6 +5,7 @@ using GameService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,29 +20,31 @@ namespace GameService.Context
             using var serviceScope = app.ApplicationServices.CreateScope();
 
             var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
+            var logger = serviceScope.ServiceProvider.GetService<ILogger<DefaultContext>>();
             
             if (isProduction)
             {
-                ApplyMigrations(contextFactory);
+                ApplyMigrations(contextFactory, logger);
             }
 
             ValidateResources(
                 serviceScope.ServiceProvider.GetService<IMapGeneratorService>(),
-                serviceScope.ServiceProvider.GetService<IGameService>());
+                serviceScope.ServiceProvider.GetService<IGameService>(), logger);
 
-            Console.WriteLine("--> Database prepared!");
+
+            logger.LogInformation("Database prepared!");
 
             var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
 
             var users = grpcClient.ReturnAllAccounts();
 
             if (users == null) return;
-            FetchAccounts(contextFactory, users);
+            FetchAccounts(contextFactory, users, logger);
         }
 
-        private static void FetchAccounts(IDbContextFactory<DefaultContext> contextFactory, IEnumerable<Users> users)
+        private static void FetchAccounts(IDbContextFactory<DefaultContext> contextFactory, IEnumerable<Users> users, ILogger logger = null)
         {
-            Console.WriteLine("Applying missing users...");
+            logger.LogInformation("Applying missing users...");
 
             using var db = contextFactory.CreateDbContext();
 
@@ -55,18 +58,18 @@ namespace GameService.Context
             db.SaveChanges();
         }
 
-        private static void ApplyMigrations(IDbContextFactory<DefaultContext> contextFactory)
+        private static void ApplyMigrations(IDbContextFactory<DefaultContext> contextFactory, ILogger logger = null)
         {
-            Console.WriteLine("--> Attempting to apply migrations...");
+            logger.LogInformation("Attempting to apply migrations...");
             
             using var context = contextFactory.CreateDbContext();
 
             context.Database.Migrate();
 
-            Console.WriteLine("--> Migrations added");
+            logger.LogInformation("Migrations added");
         }
 
-        private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService)
+        private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService, ILogger logger = null)
         {
             try
             {
@@ -81,7 +84,7 @@ namespace GameService.Context
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"--> Could not validate resources: {ex.Message}");
+                logger.LogError($"Could not validate resources: {ex.Message}");
             }
         }
     }

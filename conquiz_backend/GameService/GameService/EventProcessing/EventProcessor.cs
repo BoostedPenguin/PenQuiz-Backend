@@ -3,7 +3,9 @@ using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
 using GameService.Dtos;
+using Google.Apis.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -19,11 +21,13 @@ namespace GameService.EventProcessing
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IMapper mapper;
+        private readonly ILogger<EventProcessor> logger;
 
-        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper)
+        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, ILogger<EventProcessor> logger)
         {
             this.contextFactory = contextFactory;
             this.mapper = mapper;
+            this.logger = logger;
         }
         public void ProcessEvent(string message)
         {
@@ -64,7 +68,7 @@ namespace GameService.EventProcessing
 
             if (finalRound == null)
             {
-                Console.WriteLine($"--> Capital Round with ID: {result.QuestionResponses.First().RoundId}. Doesn't exist.");
+                logger.LogWarning($"Capital Round with ID: {result.QuestionResponses.First().RoundId}. Doesn't exist.");
                 return;
             }
 
@@ -95,7 +99,7 @@ namespace GameService.EventProcessing
 
                 if (capitalRound == null)
                 {
-                    Console.WriteLine($"--> Capital Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
+                    logger.LogWarning($"Capital Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
                     continue;
                 }
 
@@ -135,7 +139,7 @@ namespace GameService.EventProcessing
 
             if (gm == null)
             {
-                Console.WriteLine("--> Game instance doesn't exist");
+                logger.LogWarning($"Game instance doesnt exist. Global ID: {questionsResponse.GameGlobalIdentifier}");
                 return;
             }
 
@@ -148,7 +152,7 @@ namespace GameService.EventProcessing
 
                 if (gameRound == null)
                 {
-                    Console.WriteLine($"--> Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
+                    logger.LogWarning($"Round with ID: {receivedQuestion.RoundId}. Doesn't exist.");
                     continue;
                 }
 
@@ -178,42 +182,44 @@ namespace GameService.EventProcessing
                 {
                     db.Users.Add(user);
                     db.SaveChanges();
-                    Console.WriteLine("--> User added to GameService database.");
 
+                    logger.LogInformation($"User added to GameService database.");
                 }
                 else
                 {
-                    Console.WriteLine("--> User already exists. Not adding to db.");
+                    logger.LogInformation($"User already exists. Not adding to db.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"--> Could not add User to DB: {ex.Message}");
+                logger.LogError($"Could not add User to DB: {ex.Message}");
             }
         }
 
         private EventType DetermineEvent(string notificationMessage)
         {
-            Console.WriteLine("--> Determining Event");
+
 
             var eventType = JsonSerializer.Deserialize<GenericEventDto>(notificationMessage);
+
+            logger.LogDebug($"Determining Event: {eventType.Event}");
 
             switch (eventType.Event)
             {
                 case "FinalNumber_Question_Response":
-                    Console.WriteLine("Final question Response Event Detected");
+                    logger.LogDebug($"Final question Response Event Detected");
                     return EventType.FinalQuestionResponse;
                 case "Questions_MultipleChoice_Neutral_Response":
-                    Console.WriteLine("Question Response Event Detected");
+                    logger.LogDebug($"Question Response Event Detected");
                     return EventType.QuestionsReceived;
                 case "User_Published":
-                    Console.WriteLine("User Published Event Detected");
+                    logger.LogDebug($"User Published Event Detected");
                     return EventType.UserPublished;
                 case "Capital_Question_Response":
-                    Console.WriteLine("Capital Question Response Detected");
+                    logger.LogDebug($"Capital Question Response Detected");
                     return EventType.CapitalQuestionResponse;
                 default:
-                    Console.WriteLine("--> Could not determine the event type");
+                    logger.LogDebug($"Could not determine the event type");
                     return EventType.Undetermined;
             }
         }

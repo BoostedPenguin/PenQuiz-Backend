@@ -3,6 +3,7 @@ using AutoMapper;
 using GameService.Data.Models;
 using GameService.Helpers;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -19,16 +20,18 @@ namespace GameService.Grpc
     {
         private readonly IOptions<AppSettings> appSettings;
         private readonly IMapper mapper;
+        private readonly ILogger<AccountDataClient> logger;
 
-        public AccountDataClient(IOptions<AppSettings> appSettings, IMapper mapper)
+        public AccountDataClient(IOptions<AppSettings> appSettings, IMapper mapper, ILogger<AccountDataClient> logger)
         {
             this.appSettings = appSettings;
             this.mapper = mapper;
+            this.logger = logger;
         }
 
         public IEnumerable<Users> ReturnAllAccounts()
         {
-            Console.WriteLine($"--> Calling GRPC {appSettings.Value.GrpcAccount}");
+            logger.LogInformation($"Calling GRPC {appSettings.Value.GrpcAccount}");
 
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
@@ -43,7 +46,7 @@ namespace GameService.Grpc
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"--> Couldn't call GRPC Server {ex.Message}");
+                logger.LogError($"Couldn't call GRPC Server {ex.Message}");
                 return null;
             }
         }
