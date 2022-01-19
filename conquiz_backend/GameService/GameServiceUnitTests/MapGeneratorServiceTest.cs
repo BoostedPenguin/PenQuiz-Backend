@@ -3,6 +3,7 @@ using GameService.Data;
 using GameService.Services;
 using GameService.Services.GameTimerServices;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,8 @@ namespace GameServiceUnitTests
             mockContextFactory = new TestDbContextFactory("MapGenService");
             context = mockContextFactory.CreateDbContext();
 
-            service = new MapGeneratorService(mockContextFactory);
+            var loggerMoq = Mock.Of<ILogger<MapGeneratorService>>();
+            service = new MapGeneratorService(mockContextFactory, loggerMoq);
             _ = service.ValidateMap();
         }
 

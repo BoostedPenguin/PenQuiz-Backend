@@ -6,6 +6,7 @@ using GameService.MessageBus;
 using GameService.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
 using System;
@@ -25,6 +26,7 @@ namespace GameServiceUnitTests
         IGameLobbyService gameLobbyService;
         IMapGeneratorService mapGeneratorService;
         Mock<IHttpContextAccessor> mockHttpContextAccessor;
+        ILogger<MapGeneratorService> loggerMoq = Mock.Of<ILogger<MapGeneratorService>>();
         public GameLobbyServiceTest()
         {
             mockContextFactory = new TestDbContextFactory("GameLobbyService");
@@ -36,9 +38,10 @@ namespace GameServiceUnitTests
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
-            mapGeneratorService = new MapGeneratorService(mockContextFactory);
 
-            gameLobbyService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, new MapGeneratorService(mockContextFactory), null);
+            mapGeneratorService = new MapGeneratorService(mockContextFactory, loggerMoq);
+
+            gameLobbyService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, new MapGeneratorService(mockContextFactory, loggerMoq), null);
         }
 
 
@@ -74,7 +77,7 @@ namespace GameServiceUnitTests
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
 
             var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, 
-                new MapGeneratorService(mockContextFactory), null);
+                new MapGeneratorService(mockContextFactory, loggerMoq), null);
 
 
             var initialGame = await gameLobbyService.CreateGameLobby();
@@ -97,7 +100,7 @@ namespace GameServiceUnitTests
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
 
             var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory), null);
+                new MapGeneratorService(mockContextFactory, loggerMoq), null);
 
 
             var initialGame = await gameLobbyService.FindPublicMatch();
@@ -120,7 +123,7 @@ namespace GameServiceUnitTests
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
 
             var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory), null);
+                new MapGeneratorService(mockContextFactory, loggerMoq), null);
 
 
             var initialGame = await gameLobbyService.FindPublicMatch();
@@ -140,7 +143,7 @@ namespace GameServiceUnitTests
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
             var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory), null);
+                new MapGeneratorService(mockContextFactory, loggerMoq), null);
 
 
             var initialGame = await gameLobbyService.CreateGameLobby();
@@ -172,7 +175,7 @@ namespace GameServiceUnitTests
             };
 
             var mockContextFactory = new TestDbContextFactory("StartGameTest");
-            await new MapGeneratorService(mockContextFactory).ValidateMap();
+            await new MapGeneratorService(mockContextFactory, loggerMoq).ValidateMap();
             using var db = mockContextFactory.CreateDbContext();
 
             db.Add(playerOne);
@@ -221,7 +224,7 @@ namespace GameServiceUnitTests
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
             var gameLobbyService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory), messageBusMock.Object);
+                new MapGeneratorService(mockContextFactory, loggerMoq), messageBusMock.Object);
 
             // Act
             var result = await gameLobbyService.StartGame();
