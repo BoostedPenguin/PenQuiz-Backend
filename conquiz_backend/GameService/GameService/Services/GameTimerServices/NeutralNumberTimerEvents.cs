@@ -389,7 +389,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var mapId = await db.Maps.Where(x => x.Name == "Antarctica").Select(x => x.Id).FirstAsync();
-            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(mapId);
+            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(db, mapId);
 
             var order = CommonTimerFunc.GenerateAttackOrder(userIds, totalTerritories, RequiredPlayers, false);
 

@@ -43,8 +43,8 @@ namespace GameService.Services
             var currentRoundOverview = await db.Round
                 .Include(x => x.GameInstance)
                 .ThenInclude(x => x.Participants)
-                .Where(x => 
-                    x.GameInstance.GameState == GameState.IN_PROGRESS && 
+                .Where(x =>
+                    x.GameInstance.GameState == GameState.IN_PROGRESS &&
                     x.GameRoundNumber == x.GameInstance.GameRoundNumber &&
                     x.GameInstance.Participants
                         .Any(y => y.PlayerId == userId))
@@ -56,6 +56,7 @@ namespace GameService.Services
                     x.GameInstanceId,
                     x.GameInstance.InvitationLink
                 })
+                .AsNoTracking()
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 

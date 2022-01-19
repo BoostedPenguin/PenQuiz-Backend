@@ -60,7 +60,7 @@ namespace GameService.Services
 
             // There is a possibility where people get blocked off
             // So in case all takenterritories don't border anything, you need a random select
-            var allPlayerBorders = await mapGeneratorService.GetBorders(userTerritories.Select(x => x.MapTerritoryId).ToArray());
+            var allPlayerBorders = await mapGeneratorService.GetBorders(db, userTerritories.Select(x => x.MapTerritoryId).ToArray());
 
             List<ObjectTerritory> untakenBorder;
 

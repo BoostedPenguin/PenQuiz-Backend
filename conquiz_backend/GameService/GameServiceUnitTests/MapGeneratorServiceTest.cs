@@ -32,7 +32,7 @@ namespace GameServiceUnitTests
         [Fact]
         public async Task TestBorderingTerritories()
         {
-            var result = await service.AreTheyBorders("Vibri", "Ranku", "Antarctica");
+            var result = await service.AreTheyBorders(context, "Vibri", "Ranku", "Antarctica");
 
             Assert.True(result);
         }
@@ -50,7 +50,7 @@ namespace GameServiceUnitTests
         [Fact]
         public async Task TestNonBorderingTerritories()
         {
-            var result = await service.AreTheyBorders("Dager", "Lisu", "Antarctica");
+            var result = await service.AreTheyBorders(context, "Dager", "Lisu", "Antarctica");
 
             Assert.False(result);
         }
@@ -61,7 +61,7 @@ namespace GameServiceUnitTests
             var db = mockContextFactory.CreateDbContext();
             var lisu = db.MapTerritory.First(x => x.TerritoryName == "Lisu");
             var dager = db.MapTerritory.First(x => x.TerritoryName == "Dager");
-            var result = await service.AreTheyBorders(dager.Id, lisu.Id);
+            var result = await service.AreTheyBorders(db, dager.Id, lisu.Id);
 
             Assert.False(result);
         }
@@ -72,7 +72,7 @@ namespace GameServiceUnitTests
             var db = mockContextFactory.CreateDbContext();
             var Vibri = db.MapTerritory.First(x => x.TerritoryName == "Vibri");
             var Ranku = db.MapTerritory.First(x => x.TerritoryName == "Ranku");
-            var result = await service.AreTheyBorders(Vibri.Id, Ranku.Id);
+            var result = await service.AreTheyBorders(db, Vibri.Id, Ranku.Id);
 
             Assert.True(result);
         }
@@ -82,7 +82,7 @@ namespace GameServiceUnitTests
         {
             var mapId = await context.Maps.Select(x => x.Id).FirstAsync();
 
-            var amount = await service.GetAmountOfTerritories(mapId);
+            var amount = await service.GetAmountOfTerritories(context, mapId);
 
             Assert.Equal(20, amount);
         }
@@ -93,7 +93,7 @@ namespace GameServiceUnitTests
             // Now || 15 seconds in the pass
             var mapId = await context.Maps.Select(x => x.Id).FirstAsync();
 
-            var amount = await service.GetAmountOfTerritories(mapId);
+            var amount = await service.GetAmountOfTerritories(context, mapId);
 
             Assert.Equal(20, amount);
         }

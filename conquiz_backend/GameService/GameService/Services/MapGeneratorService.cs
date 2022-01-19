@@ -21,12 +21,12 @@ namespace GameService.Services
         /// </summary>
         /// <returns></returns>
         Task ValidateMap();
-        Task<bool> AreTheyBorders(string territoryName, string territoryName2, string mapName);
-        Task<bool> AreTheyBorders(int territoryId, int territoryId2);
-        Task<MapTerritory[]> GetBorders(string territoryName, string mapName);
-        Task<MapTerritory[]> GetBorders(int territoryId);
-        Task<MapTerritory[]> GetBorders(int[] territoryId);
-        Task<int> GetAmountOfTerritories(int mapId);
+        Task<bool> AreTheyBorders(DefaultContext context, string territoryName, string territoryName2, string mapName);
+        Task<bool> AreTheyBorders(DefaultContext context, int territoryId, int territoryId2);
+        Task<MapTerritory[]> GetBorders(DefaultContext context, string territoryName, string mapName);
+        Task<MapTerritory[]> GetBorders(DefaultContext context, int territoryId);
+        Task<MapTerritory[]> GetBorders(DefaultContext context, int[] territoryId);
+        Task<int> GetAmountOfTerritories(DefaultContext context, int mapId);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -43,7 +43,7 @@ namespace GameService.Services
         private async Task<bool> AddBorderIfNotExistant(int territoryId, int territoryId2)
         {
             using var a = contextFactory.CreateDbContext();
-            var areBorders = await AreTheyBorders(territoryId, territoryId2);
+            var areBorders = await AreTheyBorders(a, territoryId, territoryId2);
 
             if (!areBorders)
             {
@@ -66,7 +66,7 @@ namespace GameService.Services
             if (bothTerritories.Count < 2) throw new ArgumentException("There was 1 or more territory name which didn't exist in our db.");
             if (bothTerritories.Count > 2) throw new ArgumentException("There was 1 or more territory name which was duplicated in our db.");
 
-            var areBorders = await AreTheyBorders(bothTerritories[0].Id, bothTerritories[1].Id);
+            var areBorders = await AreTheyBorders(a, bothTerritories[0].Id, bothTerritories[1].Id);
 
             if (!areBorders)
             {
@@ -79,25 +79,26 @@ namespace GameService.Services
             return false;
         }
 
-        public async Task<MapTerritory[]> GetBorders(string territoryName, string mapName)
+        public async Task<MapTerritory[]> GetBorders(DefaultContext context, string territoryName, string mapName)
         {
             using var a = contextFactory.CreateDbContext();
-            var territory = await a.MapTerritory
+            var territory = await context.MapTerritory
                 .Include(x => x.Map)
                 .Where(x => x.Map.Name == mapName)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TerritoryName == territoryName);
 
             if (territory == null) throw new ArgumentException("This territory doesn't belong to this map or doesn't exist at all");
 
-            return await GetBorders(territory.Id);
+            return await GetBorders(context, territory.Id);
         }
 
-        public async Task<MapTerritory[]> GetBorders(int[] territoryIds)
+        public async Task<MapTerritory[]> GetBorders(DefaultContext context, int[] territoryIds)
         {
             var nonRepeatingBorders = new List<MapTerritory>();
             foreach(var territoryId in territoryIds)
             {
-                var theseBorders = await GetBorders(territoryId);
+                var theseBorders = await GetBorders(context, territoryId);
                 var uniqueBorders = theseBorders
                     .Where(x => nonRepeatingBorders.All(y => y.TerritoryName != x.TerritoryName)).ToList();
                 nonRepeatingBorders.AddRange(uniqueBorders);
@@ -107,25 +108,21 @@ namespace GameService.Services
         }
 
 
-        public async Task<MapTerritory[]> GetBorders(int territoryId)
+        public async Task<MapTerritory[]> GetBorders(DefaultContext context, int territoryId)
         {
-            using var a = contextFactory.CreateDbContext();
-
-            var borderTerritories = await a.MapTerritory
+            var borderTerritories = await context.MapTerritory
                 .Include(x => x.Map)
                 .Include(x => x.BordersNextToTerritoryNavigation)
                 .ThenInclude(x => x.ThisTerritoryNavigation)
-                .Include(x => x.BordersNextToTerritoryNavigation)
-                .ThenInclude(x => x.NextToTerritoryNavigation)
 
-                .Include(x => x.BordersThisTerritoryNavigation)
-                .ThenInclude(x => x.ThisTerritoryNavigation)
                 .Include(x => x.BordersThisTerritoryNavigation)
                 .ThenInclude(x => x.NextToTerritoryNavigation)
 
                 .Where(x => x.Id == territoryId)
                 .AsSplitQuery()
+                .AsNoTracking()
                 .FirstOrDefaultAsync();
+
 
             var btRelations = new
             {
@@ -146,12 +143,11 @@ namespace GameService.Services
         /// <param name="territoryId"></param>
         /// <param name="territoryId2"></param>
         /// <returns></returns>
-        public async Task<bool> AreTheyBorders(int territoryId, int territoryId2)
+        public async Task<bool> AreTheyBorders(DefaultContext context, int territoryId, int territoryId2)
         {
-            using var a = contextFactory.CreateDbContext();
-            
-            var borders = await a.Borders
+            var borders = await context.Borders
                 .Where(x => (x.NextToTerritory == territoryId && x.ThisTerritory == territoryId2) || (x.NextToTerritory == territoryId2 && x.ThisTerritory == territoryId))
+                .AsNoTracking()
                 .ToListAsync();
 
             return borders.Count != 0;
@@ -253,26 +249,24 @@ namespace GameService.Services
             logger.LogInformation($"`{defaultMapFile}` map validated.");
         }
 
-        public async Task<bool> AreTheyBorders(string territoryName, string territoryName2, string mapName)
+        public async Task<bool> AreTheyBorders(DefaultContext context, string territoryName, string territoryName2, string mapName)
         {
-            using var a = contextFactory.CreateDbContext();
-
-            var bothTerritories = await a.MapTerritory
+            var bothTerritories = await context.MapTerritory
                 .Include(x => x.Map)
                 .Where(x => x.Map.Name == mapName)
-                .Where(x => x.TerritoryName == territoryName || x.TerritoryName == territoryName2).ToListAsync();
+                .Where(x => x.TerritoryName == territoryName || x.TerritoryName == territoryName2)
+                .AsNoTracking()
+                .ToListAsync();
 
             if (bothTerritories.Count < 2) throw new ArgumentException("There was 1 or more territory name, bound to this map, which didn't exist in our db.");
             if (bothTerritories.Count > 2) throw new ArgumentException("There was 1 or more territory name, bound to this map, which was duplicated in our db.");
 
-            return await AreTheyBorders(bothTerritories[0].Id, bothTerritories[1].Id);
+            return await AreTheyBorders(context, bothTerritories[0].Id, bothTerritories[1].Id);
         }
 
-        public async Task<int> GetAmountOfTerritories(int mapId)
+        public async Task<int> GetAmountOfTerritories(DefaultContext context, int mapId)
         {
-            using var a = contextFactory.CreateDbContext();
-
-            var totalTerritories = await a.MapTerritory.Where(x => x.MapId == mapId).CountAsync();
+            var totalTerritories = await context.MapTerritory.Where(x => x.MapId == mapId).AsNoTracking().CountAsync();
 
             return totalTerritories;
         }

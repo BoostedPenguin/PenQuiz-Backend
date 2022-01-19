@@ -330,7 +330,7 @@ namespace GameService.Services
             var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
 
             // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
-            var initialRounding = await CreateNeutralAttackRounding(mapId, allPlayers, gameInstance.Id);
+            var initialRounding = await CreateNeutralAttackRounding(a, mapId, allPlayers, gameInstance.Id);
 
             // Assign all object territories & rounds and change gamestate
             gameInstance.GameState = GameState.IN_PROGRESS;
@@ -365,9 +365,9 @@ namespace GameService.Services
             });
         }
 
-        public async Task<Round[]> CreateNeutralAttackRounding(int mapId, List<Participants> allPlayers, int gameInstanceId)
+        public async Task<Round[]> CreateNeutralAttackRounding(DefaultContext context, int mapId, List<Participants> allPlayers, int gameInstanceId)
         {
-            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(mapId);
+            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(context, mapId);
 
             var order = CommonTimerFunc.GenerateAttackOrder(allPlayers.Select(x => x.PlayerId).ToList(), totalTerritories, RequiredPlayers);
 
@@ -442,7 +442,7 @@ namespace GameService.Services
                 // Capital already here
                 if (capitals.Contains(randomTerritory)) continue;
 
-                var borders = await mapGeneratorService.GetBorders(randomTerritory.MapTerritoryId);
+                var borders = await mapGeneratorService.GetBorders(a, randomTerritory.MapTerritoryId);
 
                 var borderWithOtherCapitals = capitals.Where(x => borders.Any(y => y.Id == x.MapTerritoryId)).FirstOrDefault();
 
