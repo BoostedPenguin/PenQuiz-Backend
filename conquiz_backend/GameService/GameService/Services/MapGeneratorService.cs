@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GameService.Data.Models;
 using GameService.Data;
+using Microsoft.Extensions.Logging;
 
 namespace GameService.Services
 {
@@ -31,10 +32,12 @@ namespace GameService.Services
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
+        private readonly ILogger<MapGeneratorService> logger;
         private const string defaultMapFile = "Antarctica";
-        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory) : base(_contextFactory)
+        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory, ILogger<MapGeneratorService> logger) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
+            this.logger = logger;
         }
 
         private async Task<bool> AddBorderIfNotExistant(int territoryId, int territoryId2)
@@ -221,9 +224,9 @@ namespace GameService.Services
 
             if (antarctica == null)
             {
-                Console.WriteLine($"`{defaultMapFile}` doesn't exist. Attempting to re-create.");
+                logger.LogInformation($"`{defaultMapFile}` doesn't exist. Attempting to re-create.");
                 await GenerateDefaultMap();
-                Console.WriteLine($"`{defaultMapFile}` successfully re-created.");
+                logger.LogInformation($"`{defaultMapFile}` successfully re-created.");
                 return;
             }
 
@@ -247,7 +250,7 @@ namespace GameService.Services
                 }
             }
 
-            Console.WriteLine($"`{defaultMapFile}` map validated.");
+            logger.LogInformation($"`{defaultMapFile}` map validated.");
         }
 
         public async Task<bool> AreTheyBorders(string territoryName, string territoryName2, string mapName)

@@ -75,8 +75,6 @@ namespace GameService.Services.GameTimerServices
                 hubContext.Clients.Group(timer.GameLink)
                     .GameSendCountDownSeconds(timeRemaining <= 0 ? 0 : timeRemaining);
 
-                //Console.WriteLine($"Time remaining: {(timeRemaining <= 0 ? 0 : timeRemaining)}");
-
                 if (timeRemaining <= 0)
                 {
                     timer.AutoReset = false;

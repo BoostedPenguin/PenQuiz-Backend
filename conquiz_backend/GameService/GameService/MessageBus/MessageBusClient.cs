@@ -2,6 +2,7 @@
 using GameService.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System;
@@ -25,8 +26,9 @@ namespace GameService.MessageBus
         private readonly IConnection connection;
         private readonly IModel channel;
         private readonly IWebHostEnvironment env;
+        private readonly ILogger<MessageBusClient> logger;
         private readonly string QuestionsExchange;
-        public MessageBusClient(IOptions<AppSettings> appSettings, IWebHostEnvironment env)
+        public MessageBusClient(IOptions<AppSettings> appSettings, IWebHostEnvironment env, ILogger<MessageBusClient> logger)
         {
             var factory = new ConnectionFactory()
             {
@@ -66,19 +68,20 @@ namespace GameService.MessageBus
 
                 connection.ConnectionShutdown += Connection_ConnectionShutdown;
 
-                Console.WriteLine("--> Connected to MessageBus");
+                logger.LogInformation("Connected to MessageBus");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"--> Could not connect to the Message Bus: {ex.Message}");
+                logger.LogError($"Could not connect to the Message Bus: {ex.Message}");
             }
 
             this.env = env;
+            this.logger = logger;
         }
 
         private void Connection_ConnectionShutdown(object sender, ShutdownEventArgs e)
         {
-            Console.WriteLine("--> RabbitMQ Connection Shutdown");
+            logger.LogInformation($"RabbitMQ Connection Shutdown");
         }
 
         private void QRequest(object requestDto)
@@ -87,7 +90,7 @@ namespace GameService.MessageBus
 
             if (connection.IsOpen)
             {
-                Console.WriteLine("--> RabbitMQ Connection Open, sending message...");
+                logger.LogDebug($"RabbitMQ Connection Open, sending message...");
 
                 if (env.IsProduction())
                 {
@@ -100,7 +103,7 @@ namespace GameService.MessageBus
             }
             else
             {
-                Console.WriteLine("--> RabbitMQ connectionis closed, not sending");
+                logger.LogWarning($"RabbitMQ connectionis closed, not sending message.");
             }
         }
 
@@ -128,12 +131,12 @@ namespace GameService.MessageBus
                             basicProperties: null,
                             body: body);
 
-            Console.WriteLine($"--> We have sent a DIRECT msg with: {rk}");
+            logger.LogInformation($"We have sent a DIRECT msg with: {rk}");
         }
 
         public void Dispose()
         {
-            Console.WriteLine("MessageBus Disposed");
+            logger.LogInformation($"MessageBus Disposed");
             if (channel.IsOpen)
             {
                 channel.Close();

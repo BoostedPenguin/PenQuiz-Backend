@@ -4,6 +4,7 @@ using GameService.Data.Models;
 using GameService.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace GameService.Services.GameTimerServices
         private readonly INeutralMCTimerEvents neutralMCTimerEvents;
         private readonly ICapitalStageTimerEvents capitalStageTimerEvents;
         private readonly IFinalPvpQuestionService finalPvpQuestionService;
+        private readonly ILogger<GameTimerService> logger;
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
@@ -35,6 +37,7 @@ namespace GameService.Services.GameTimerServices
             INeutralMCTimerEvents neutralMCTimerEvents,
             ICapitalStageTimerEvents capitalStageTimerEvents,
             IFinalPvpQuestionService finalPvpQuestionService,
+            ILogger<GameTimerService> logger,
             INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
             contextFactory = _contextFactory;
@@ -43,6 +46,7 @@ namespace GameService.Services.GameTimerServices
             this.neutralMCTimerEvents = neutralMCTimerEvents;
             this.capitalStageTimerEvents = capitalStageTimerEvents;
             this.finalPvpQuestionService = finalPvpQuestionService;
+            this.logger = logger;
             this.neutralNumberTimerEvents = neutralNumberTimerEvents;
         }
 
@@ -387,6 +391,8 @@ namespace GameService.Services.GameTimerServices
             catch (Exception ex)
             {
                 await UnexpectedCriticalError(timer, ex.Message);
+
+                logger.LogError($"Unexpected error occured during a game instance: {ex.Message} \n\n {ex.StackTrace}");
                 Console.WriteLine(ex);
             }
         }

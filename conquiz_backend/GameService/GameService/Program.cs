@@ -56,7 +56,8 @@ namespace GameService
                                 services.AddDbContextFactory<DefaultContext>(
                                     options => _ = provider switch
                                     {
-                                        "Npgsql" => options.UseInMemoryDatabase("InMem"),
+                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("GamesConnNpgsql"),
+                                    x => x.MigrationsAssembly("GameService.NpgsqlMigrations")),
 
                                         "SqlServer" => options.UseInMemoryDatabase("InMem"),
 

@@ -32,18 +32,21 @@ namespace GameService.Controllers
         private readonly IExampleService context;
         private readonly IHttpClientFactory clientFactory;
         private readonly IMessageBusClient messageBus;
+        private readonly ILogger<GameController> logger;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IStatisticsService statisticsService;
 
         public GameController(IExampleService _context, 
             IHttpClientFactory clientFactory, 
             IMessageBusClient messageBus, 
+            ILogger<GameController> logger,
             IDbContextFactory<DefaultContext> contextFactory, 
             IStatisticsService statisticsService)
         {
             context = _context;
             this.clientFactory = clientFactory;
             this.messageBus = messageBus;
+            this.logger = logger;
             this.contextFactory = contextFactory;
             this.statisticsService = statisticsService;
         }
@@ -72,6 +75,7 @@ namespace GameService.Controllers
         {
             try
             {
+                logger.LogInformation("Testing Logger");
                 return Ok($"Successfully contacted ConQuiz question service. Version 1.5.1");
             }
             catch (Exception ex)

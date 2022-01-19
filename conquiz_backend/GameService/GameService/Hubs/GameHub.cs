@@ -12,6 +12,8 @@ using GameService.Dtos;
 using GameService.Dtos.SignalR_Responses;
 using GameService.Services.GameTimerServices;
 using GameService.Data.Models;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace GameService.Hubs
 {
@@ -61,12 +63,19 @@ namespace GameService.Hubs
         private readonly IGameLobbyService gameLobbyService;
         private readonly IGameControlService gameControlService;
         private readonly IHttpContextAccessor httpContext;
+        private readonly ILogger<GameHub> logger;
 
-        public GameHub(IGameTimerService timer, IGameService gameService, IHttpContextAccessor httpContext, IGameLobbyService gameLobbyService, IGameControlService gameControlService)
+        public GameHub(IGameTimerService timer, 
+            IGameService gameService, 
+            IHttpContextAccessor httpContext, 
+            ILogger<GameHub> logger,
+            IGameLobbyService gameLobbyService, 
+            IGameControlService gameControlService)
         {
             this.timer = timer;
             this.gameService = gameService;
             this.httpContext = httpContext;
+            this.logger = logger;
             this.gameLobbyService = gameLobbyService;
             this.gameControlService = gameControlService;
         }
@@ -162,14 +171,20 @@ namespace GameService.Hubs
                 await Clients.Caller.GameException(ex.Message);
             }
         }
+        Stopwatch stopwatch = new Stopwatch();
 
         public async Task SelectTerritory(string mapTerritoryName)
         {
             try
             {
+
+                stopwatch.Restart();
                 var response = await gameControlService.SelectTerritory(mapTerritoryName);
 
                 await Clients.Group(response.GameLink).OnSelectedTerritory(response);
+                stopwatch.Stop();
+
+                logger.LogInformation($"Time elapsed for selecting territory: {stopwatch.ElapsedMilliseconds}");
             }
             catch (BorderSelectedGameException ex)
             {

@@ -2,6 +2,7 @@
 using GameService.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -19,15 +20,17 @@ namespace GameService.MessageBus
         private readonly IEventProcessor eventProcessor;
         private readonly IOptions<AppSettings> appSettings;
         private readonly IWebHostEnvironment env;
+        private readonly ILogger<MessageBusSubscriber> logger;
         private  IConnection connection;
         private IModel channel;
         private string queue;
 
-        public MessageBusSubscriber(IEventProcessor eventProcessor, IOptions<AppSettings> appSettings, IWebHostEnvironment env)
+        public MessageBusSubscriber(IEventProcessor eventProcessor, IOptions<AppSettings> appSettings, IWebHostEnvironment env, ILogger<MessageBusSubscriber> logger)
         {
             this.eventProcessor = eventProcessor;
             this.appSettings = appSettings;
             this.env = env;
+            this.logger = logger;
             InitRabbbitMQ();
         }
 
@@ -69,14 +72,14 @@ namespace GameService.MessageBus
                 channel.QueueBind(queue, "dev_question_events", "dev_question_response");
             }
 
-            Console.WriteLine("--> Listening on the Message Bus..");
+            logger.LogInformation("Listening on the Message Bus..");
 
             connection.ConnectionShutdown += Connection_ConnectionShutdown;
         }
 
         private void Connection_ConnectionShutdown(object sender, ShutdownEventArgs e)
         {
-            Console.WriteLine("--> Connection Shutdown");
+            logger.LogInformation("Connection Shutdown");
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -87,7 +90,7 @@ namespace GameService.MessageBus
 
             consumer.Received += (ModuleHandle, ea) =>
             {
-                Console.WriteLine("--> Event Received!");
+                logger.LogInformation("Event Received!");
 
                 var body = ea.Body;
                 var notificationMessage = Encoding.UTF8.GetString(body.ToArray());
