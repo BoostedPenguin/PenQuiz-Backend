@@ -162,6 +162,9 @@ namespace QuestionService.Data.Models
             Category = category;
             VerificationStatus = VerificationStatus.VERIFIED;
 
+            SubmittedAt = DateTime.Now;
+            VerifiedAt = DateTime.Now;
+
             var answers = new List<Answers>
             {
                 new Answers()

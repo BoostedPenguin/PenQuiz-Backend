@@ -55,7 +55,7 @@ namespace QuestionService.Data
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.VerificationStatus)
-                    .HasDefaultValue(VerificationStatus.VERIFIED)
+                    .HasDefaultValue(VerificationStatus.UNVERIFIED)
                     .HasConversion<string>()
                     .HasColumnName("verificationStatus");
 
