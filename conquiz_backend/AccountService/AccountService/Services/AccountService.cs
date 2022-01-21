@@ -25,6 +25,7 @@ namespace AccountService.Services
     {
         Task<AuthenticateResponse> Authenticate(Payload payload, string ipAddress);
         Task<List<Users>> GetUsers();
+        string IssueDebugJwtToken(string role);
         Task<AuthenticateResponse> RefreshToken(string token, string ipaddress);
         Task<bool> RevokeCookie(string token, string ipAddress);
         Task<bool> RevokeToken(string token, string ipAddress);
@@ -158,6 +159,17 @@ namespace AccountService.Services
         {
             using var a = contextFactory.CreateDbContext();
             return await a.Users.ToListAsync();
+        }
+        Random r = new Random();
+
+        public string IssueDebugJwtToken(string role)
+        {
+            return generateJwtToken(new Users()
+            {
+                Username = $"TestingUser - {r.Next(0, 10000)}",
+                Role = role == "admin" ? "admin" : role == "user" ? "user" : throw new ArgumentException($"Invalid role ${role}"),
+                Id = r.Next(0, 10000)
+            });
         }
 
         private string generateJwtToken(Users user)
