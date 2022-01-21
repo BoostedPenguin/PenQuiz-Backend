@@ -31,7 +31,7 @@ namespace QuestionService.Services
 
             using var db = contextFactory.CreateDbContext();
             var baseQuery = db.Questions
-                .Where(x => !x.IsVerified)
+                .Where(x => x.VerificationStatus == VerificationStatus.UNVERIFIED)
                 .OrderBy(x => x.SubmittedAt)
                 .AsNoTracking();
 
@@ -60,11 +60,16 @@ namespace QuestionService.Services
             if (question == null)
                 throw new ArgumentException($"Question with ID: {request.QuestionId} not found.");
 
-            if (question.IsVerified == true)
-                throw new ArgumentException($"Question with ID: {request.QuestionId} was already verified.");
+            switch (question.VerificationStatus)
+            {
+                case VerificationStatus.VERIFIED:
+                    throw new ArgumentException($"Question with ID: {request.QuestionId} was already verified.");
+                case VerificationStatus.REJECTED:
+                    throw new ArgumentException($"Question with ID: {request.QuestionId} was already rejected by administrator.");
+            }
 
             question.VerifiedAt = DateTime.Now;
-            question.IsVerified = true;
+            question.VerificationStatus = VerificationStatus.VERIFIED;
 
             db.Update(question);
             await db.SaveChangesAsync();

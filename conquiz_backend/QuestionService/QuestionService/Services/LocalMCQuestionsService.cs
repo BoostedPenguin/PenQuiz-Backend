@@ -92,7 +92,7 @@ namespace QuestionService.Services
                 .Include(x => x.Answers)
                 .Include(x => x.GameSessionQuestions)
                 .ThenInclude(x => x.GameInstance)
-                .Where(x => x.Type == "multiple" && x.IsVerified == true && !x.GameSessionQuestions
+                .Where(x => x.Type == "multiple" && x.VerificationStatus == VerificationStatus.VERIFIED && !x.GameSessionQuestions
                     .Any(y => y.GameInstance.OpentDbSessionToken == sessionToken))
                 .ToListAsync();
 
@@ -102,7 +102,7 @@ namespace QuestionService.Services
             {
                 questions = await db.Questions
                     .Include(x => x.Answers)
-                    .Where(x => x.Type == "multiple" && x.IsVerified == true)
+                    .Where(x => x.Type == "multiple" && x.VerificationStatus == VerificationStatus.VERIFIED)
                     .ToListAsync();
             }
 

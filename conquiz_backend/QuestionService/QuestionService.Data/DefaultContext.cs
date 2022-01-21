@@ -54,7 +54,10 @@ namespace QuestionService.Data
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.IsVerified).HasColumnName("isVerified");
+                entity.Property(e => e.VerificationStatus)
+                    .HasDefaultValue(VerificationStatus.VERIFIED)
+                    .HasConversion<string>()
+                    .HasColumnName("verificationStatus");
 
                 entity.Property(e => e.Type)
                     .IsRequired()

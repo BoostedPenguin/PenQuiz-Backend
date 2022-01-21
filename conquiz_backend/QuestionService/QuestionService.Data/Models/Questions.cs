@@ -5,6 +5,13 @@ using System.Linq;
 
 namespace QuestionService.Data.Models
 {
+    public enum VerificationStatus
+    {
+        UNVERIFIED,
+        VERIFIED,
+        REJECTED
+    }
+
     public partial class Questions
     {
         private readonly Random rng = new Random();
@@ -30,7 +37,7 @@ namespace QuestionService.Data.Models
             Type = "number";
             
             SubmittedAt = DateTime.Now;
-            IsVerified = true;
+            VerificationStatus = VerificationStatus.VERIFIED;
             VerifiedAt = DateTime.Now;
 
             Question = question;
@@ -65,13 +72,13 @@ namespace QuestionService.Data.Models
 
             if (isAdmin)
             {
-                IsVerified = true;
+                VerificationStatus = VerificationStatus.VERIFIED;
 
                 VerifiedAt = DateTime.Now;
             }
             else
             {
-                IsVerified = false;
+                VerificationStatus = VerificationStatus.UNVERIFIED;
             }
         }
 
@@ -100,13 +107,13 @@ namespace QuestionService.Data.Models
             // Verified status
             if (isAdmin)
             {
-                IsVerified = true;
+                VerificationStatus = VerificationStatus.VERIFIED;
 
                 VerifiedAt = DateTime.Now;
             }
             else
             {
-                IsVerified = false;
+                VerificationStatus = VerificationStatus.UNVERIFIED;
             }
 
             // Add answers
@@ -141,7 +148,7 @@ namespace QuestionService.Data.Models
         /// <param name="wrongAnswers"></param>
         /// <param name="category"></param>
         /// <param name="difficulty"></param>
-        public Questions(string question, string correctAnswer, string[] wrongAnswers, bool isVerified = true, string category = null, string difficulty = null)
+        public Questions(string question, string correctAnswer, string[] wrongAnswers, string category = null, string difficulty = null)
         {
             if (wrongAnswers.Length != 3)
                 throw new ArgumentException("Wrong answers need to be exactly 3");
@@ -153,7 +160,7 @@ namespace QuestionService.Data.Models
             Question = question;
             Difficulty = difficulty;
             Category = category;
-            IsVerified = isVerified;
+            VerificationStatus = VerificationStatus.VERIFIED;
 
             var answers = new List<Answers>
             {
@@ -185,7 +192,7 @@ namespace QuestionService.Data.Models
         public string SubmittedByUsername { get; set; }
         public DateTime? SubmittedAt { get; set; }
         public DateTime? VerifiedAt { get; set; }
-        public bool IsVerified { get; set; }
+        public VerificationStatus VerificationStatus { get; set; }
 
         [NotMapped]
         public int RoundId { get; set; }
