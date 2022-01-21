@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using QuestionService.Data.Models.Requests;
 using QuestionService.Services;
@@ -15,11 +16,13 @@ namespace QuestionService.Controllers
     {
         private readonly INumberQuestionsService numberQuestionsService;
         private readonly IMCQuestionsService mCQuestionsService;
+        private readonly IHttpContextAccessor httpContextAccessor;
 
-        public QuestionController(INumberQuestionsService numberQuestionsService, IMCQuestionsService mCQuestionsService)
+        public QuestionController(INumberQuestionsService numberQuestionsService, IMCQuestionsService mCQuestionsService, IHttpContextAccessor httpContextAccessor)
         {
             this.numberQuestionsService = numberQuestionsService;
             this.mCQuestionsService = mCQuestionsService;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         [HttpGet]
@@ -41,7 +44,11 @@ namespace QuestionService.Controllers
         {
             try
             {
-                await numberQuestionsService.AddNumberQuestion(request);
+                // Get Claim
+                var userRole = httpContextAccessor.GetCurrentUserRole();
+                var userName = httpContextAccessor.GetCurrentUserName();
+
+                await numberQuestionsService.AddNumberQuestion(request, userName, userRole);
                 return Ok(new { message = "Successfully submitted a number question! We will review it and if it follows our guidelines it will be added to ConQuiz!" });
             }
             catch (Exception ex)
@@ -56,7 +63,11 @@ namespace QuestionService.Controllers
         {
             try
             {
-                await mCQuestionsService.CreateMultipleChoiceQuestion(request);
+                // Get Claim
+                var userRole = httpContextAccessor.GetCurrentUserRole();
+                var userName = httpContextAccessor.GetCurrentUserName();
+
+                await mCQuestionsService.CreateMultipleChoiceQuestion(request, userName, userRole);
 
                 return Ok(new { message = "Successfully submitted a multiple choice question! We will review it and if it follows our guidelines it will be added to ConQuiz!" });
             }
@@ -65,6 +76,7 @@ namespace QuestionService.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
 
         [HttpGet("{questionId}")]
         public async Task<IActionResult> RemoveExistingQuestion([FromRoute]int questionId)

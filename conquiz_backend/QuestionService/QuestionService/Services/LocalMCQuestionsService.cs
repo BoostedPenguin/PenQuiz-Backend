@@ -18,10 +18,17 @@ namespace QuestionService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request)
+        public async Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request, string username, string role)
         {
             if (request.WrongAnswers.Length != 3)
                 throw new ArgumentException("You need to provide exactly 3 wrong answers.");
+
+            // Uppercase first char
+            request.Question = Extensions.FirstCharToUpper(request.Question);
+
+            // Add question mark in the end if missing
+            if (!request.Question.EndsWith("?"))
+                request.Question = request.Question += "?";
 
             using var db = contextFactory.CreateDbContext();
             var existing = await db.Questions
@@ -30,7 +37,19 @@ namespace QuestionService.Services
             if (existing != null)
                 throw new ArgumentException("This question already exists in our db.");
 
-            await db.AddAsync(new Questions(request.Question, request.Answer, request.WrongAnswers, false));
+            switch (role)
+            {
+                case "user":
+                    await db.AddAsync(new Questions(request.Question, request.Answer, request.WrongAnswers, username, false));
+                    break;
+
+                case "admin":
+                    await db.AddAsync(new Questions(request.Question, request.Answer, request.WrongAnswers, username, true));
+                    break;
+                default:
+                    throw new ArgumentException("The users role isn't recognized by the system");
+            }
+
             await db.SaveChangesAsync();
         }
 

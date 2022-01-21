@@ -12,7 +12,7 @@ namespace QuestionService.Services
 {
     public interface INumberQuestionsService
     {
-        Task AddNumberQuestion(CreateNumberQuestionRequest request);
+        Task AddNumberQuestion(CreateNumberQuestionRequest request, string userName, string role);
         Task<List<Questions>> GetNumberQuestions(List<int> amountRoundId, string sessionId, int gameInstanceId);
     }
 
@@ -25,7 +25,9 @@ namespace QuestionService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task AddNumberQuestion(CreateNumberQuestionRequest request)
+
+
+        public async Task AddNumberQuestion(CreateNumberQuestionRequest request, string username, string role)
         {
             var isAnswerNumber = long.TryParse(request.Answer, out _);
             
@@ -34,13 +36,32 @@ namespace QuestionService.Services
 
             using var db = contextFactory.CreateDbContext();
 
+            // Uppercase first char
+            request.Question = Extensions.FirstCharToUpper(request.Question);
+
+            // Add question mark in the end if missing
+            if (!request.Question.EndsWith("?"))
+                request.Question = request.Question += "?";
+
             var existing = await db.Questions
                 .FirstOrDefaultAsync(x => x.Question.ToLower() == request.Question.ToLower() && x.Type == "number");
 
-            if (existing != null) 
+            if (existing != null)
                 throw new ArgumentException("This question already exists in our db.");
 
-            await db.AddAsync(new Questions(request.Question, request.Answer, false));
+            switch (role)
+            {
+                case "user":
+                    await db.AddAsync(new Questions(request.Question, request.Answer, username));
+                    break;
+
+                case "admin":
+                    await db.AddAsync(new Questions(request.Question, request.Answer, username, true));
+                    break;
+                default:
+                    throw new ArgumentException("The users role isn't recognized by the system");
+            }
+
             await db.SaveChangesAsync();
         }
 

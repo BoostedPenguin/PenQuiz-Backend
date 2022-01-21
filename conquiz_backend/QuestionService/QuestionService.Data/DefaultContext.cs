@@ -69,6 +69,16 @@ namespace QuestionService.Data
                     .HasColumnName("category")
                     .HasMaxLength(255);
 
+                entity.Property(e => e.VerifiedAt)
+                    .HasColumnName("verifiedAt");
+
+                entity.Property(e => e.SubmittedByUsername)
+                    .HasColumnName("submittedByUsername")
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.SubmittedAt)
+                    .HasColumnName("submittedAt");
+
                 entity.Property(e => e.Question)
                     .IsRequired()
                     .HasColumnName("question")

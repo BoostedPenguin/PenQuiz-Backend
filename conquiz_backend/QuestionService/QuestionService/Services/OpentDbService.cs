@@ -42,7 +42,7 @@ namespace QuestionService.Services
     {
         Task<SessionTokenRequest> GenerateSessionToken(string gameGlobalIdentifier);
         Task<List<Questions>> GetMultipleChoiceQuestion(string sessionToken, List<int> multipleChoiceQuestions);
-        Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request);
+        Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request, string username, string role);
     }
 
     public class OpenDBService : IMCQuestionsService
@@ -180,7 +180,7 @@ namespace QuestionService.Services
             };
         }
 
-        public Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request)
+        public Task CreateMultipleChoiceQuestion(CreateMultipleChoiceQuestionRequest request, string username, string role)
         {
             throw new ArgumentException("The system uses legacy questions provider. Unable to manually add new questions");
         }

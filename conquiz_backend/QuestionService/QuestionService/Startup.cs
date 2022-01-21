@@ -104,9 +104,13 @@ namespace QuestionService
 
             services.AddSingleton<INumberQuestionsService, NumberQuestionsService>();
 
+            services.AddSingleton<IAdminQuestionCrudService, AdminQuestionCrudService>();
+
             services.AddHttpClient();
 
             services.AddGrpc();
+
+            services.AddHttpContextAccessor();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
