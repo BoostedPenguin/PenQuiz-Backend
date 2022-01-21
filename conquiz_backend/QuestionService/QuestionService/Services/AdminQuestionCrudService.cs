@@ -9,45 +9,9 @@ using System.Threading.Tasks;
 
 namespace QuestionService.Services
 {
-    public class PaginatedList<T> : List<T>
-    {
-        public int PageIndex { get; private set; }
-        public int TotalPages { get; private set; }
-
-        public PaginatedList(List<T> items, int count, int pageIndex, int pageSize)
-        {
-            PageIndex = pageIndex;
-            TotalPages = (int)Math.Ceiling(count / (double)pageSize);
-
-            this.AddRange(items);
-        }
-
-        public bool HasPreviousPage
-        {
-            get
-            {
-                return (PageIndex > 1);
-            }
-        }
-
-        public bool HasNextPage
-        {
-            get
-            {
-                return (PageIndex < TotalPages);
-            }
-        }
-
-        public static async Task<PaginatedList<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize)
-        {
-            var count = await source.CountAsync();
-            var items = await source.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
-            return new PaginatedList<T>(items, count, pageIndex, pageSize);
-        }
-    }
-
     public interface IAdminQuestionCrudService
     {
+        Task<PaginatedQuestionsResponse> GetUnverifiedQuestions(int pageNumber);
         Task VerifyQuestion(VerifyQuestionRequest request);
     }
 
@@ -60,12 +24,31 @@ namespace QuestionService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task GetUnverifiedQuestions(int pageNumber)
+        public async Task<PaginatedQuestionsResponse> GetUnverifiedQuestions(int pageNumber)
         {
-            using var db = contextFactory.CreateDbContext();
-            //var questions = db.Questions.OrderBy(x => x.)
+            var pageSize = 10;
 
-            //await PaginatedList<Questions>.CreateAsync(qu)
+
+            using var db = contextFactory.CreateDbContext();
+            var baseQuery = db.Questions
+                .Where(x => !x.IsVerified)
+                .OrderBy(x => x.SubmittedAt)
+                .AsNoTracking();
+
+            var questions = await baseQuery
+                .Include(x => x.Answers)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var count = baseQuery.Count();
+
+            return new PaginatedQuestionsResponse()
+            {
+                Questions = questions,
+                PageIndex = pageNumber,
+                TotalPages = (int)Math.Ceiling(count / (double)pageSize),
+            };
         }
 
         public async Task VerifyQuestion(VerifyQuestionRequest request)

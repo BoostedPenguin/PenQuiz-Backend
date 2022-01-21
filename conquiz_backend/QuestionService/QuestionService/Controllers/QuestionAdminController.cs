@@ -34,5 +34,21 @@ namespace QuestionService.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [Authorize(Roles = "admin")]
+        [HttpGet("{pageNumber}")]
+        public async Task<IActionResult> GetUnverifiedQuestions([FromRoute] int pageNumber)
+        {
+            try
+            {
+                var questions = await service.GetUnverifiedQuestions(pageNumber);
+
+                return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -185,7 +185,7 @@ namespace QuestionService.Data.Models
         public string SubmittedByUsername { get; set; }
         public DateTime? SubmittedAt { get; set; }
         public DateTime? VerifiedAt { get; set; }
-        public bool? IsVerified { get; set; }
+        public bool IsVerified { get; set; }
 
         [NotMapped]
         public int RoundId { get; set; }
