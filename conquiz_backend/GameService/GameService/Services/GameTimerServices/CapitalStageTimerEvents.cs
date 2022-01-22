@@ -68,6 +68,10 @@ namespace GameService.Services.GameTimerServices
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
+            if (question == null)
+                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
+
+
             question.CapitalRoundMultiple.IsQuestionVotingOpen = true;
             db.Update(question.CapitalRoundMultiple);
             await db.SaveChangesAsync();
@@ -331,6 +335,10 @@ namespace GameService.Services.GameTimerServices
                     x.CapitalRoundNumber.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
+
+            if (question == null)
+                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
+
 
             question.CapitalRoundNumber.IsQuestionVotingOpen = true;
             question.CapitalRoundNumber.QuestionOpenedAt = DateTime.Now;
