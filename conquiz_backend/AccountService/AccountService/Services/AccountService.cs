@@ -18,6 +18,7 @@ using AccountService.Dtos;
 using AccountService.Data.Models;
 using AccountService.Data.Models.Requests;
 using AccountService.Data;
+using Microsoft.Extensions.Hosting;
 
 namespace AccountService.Services
 {
@@ -48,12 +49,21 @@ namespace AccountService.Services
         public async Task<AuthenticateResponse> Authenticate(Payload payload, string ipAddress)
         {
             using var a = contextFactory.CreateDbContext();
-            
+
             var user = await a.Users.Include(x => x.RefreshToken).FirstOrDefaultAsync(x => x.Email == payload.Email);
 
             if (user == null)
             {
-                user = new Users() { Email = payload.Email, Username = payload.Name, Role = "user" };
+                // Activate only in development
+                if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development && payload.Email == "legendsxchaos@gmail.com")
+                {
+                    user = new Users() { Email = payload.Email, Username = payload.Name, Role = "admin" };
+                }
+                else
+                {
+                    user = new Users() { Email = payload.Email, Username = payload.Name, Role = "user" };
+                }
+
 
                 await a.AddAsync(user);
                 await a.SaveChangesAsync();
@@ -64,7 +74,7 @@ namespace AccountService.Services
                     userPublishedDto.Event = "User_Published";
                     messageBusClient.PublishNewUser(userPublishedDto);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine($"--> Could not send DTO to bus: {ex.Message}");
                 }
