@@ -295,6 +295,10 @@ namespace GameService.Services.GameTimerServices
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
 
+            if (question == null)
+                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
+
+
             question.PvpRoundNum.Round.IsQuestionVotingOpen = true;
             question.PvpRoundNum.Round.QuestionOpenedAt = DateTime.Now;
 
