@@ -11,7 +11,7 @@ namespace QuestionService.Services
 {
     public interface IAdminQuestionCrudService
     {
-        Task<PaginatedQuestionsResponse> GetUnverifiedQuestions(int pageNumber);
+        Task<PaginatedQuestionsResponse> GetUnverifiedQuestions(int pageNumber, int pageEntries);
         Task VerifyQuestion(VerifyQuestionRequest request);
     }
 
@@ -24,11 +24,8 @@ namespace QuestionService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task<PaginatedQuestionsResponse> GetUnverifiedQuestions(int pageNumber)
+        public async Task<PaginatedQuestionsResponse> GetUnverifiedQuestions(int pageNumber, int pageEntries)
         {
-            var pageSize = 10;
-
-
             using var db = contextFactory.CreateDbContext();
             var baseQuery = db.Questions
                 .Where(x => x.VerificationStatus == VerificationStatus.UNVERIFIED)
@@ -37,8 +34,8 @@ namespace QuestionService.Services
 
             var questions = await baseQuery
                 .Include(x => x.Answers)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((pageNumber - 1) * pageEntries)
+                .Take(pageEntries)
                 .ToListAsync();
 
             var count = baseQuery.Count();
@@ -47,7 +44,7 @@ namespace QuestionService.Services
             {
                 Questions = questions,
                 PageIndex = pageNumber,
-                TotalPages = (int)Math.Ceiling(count / (double)pageSize),
+                TotalPages = (int)Math.Ceiling(count / (double)pageEntries),
             };
         }
 

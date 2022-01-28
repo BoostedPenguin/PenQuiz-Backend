@@ -36,12 +36,12 @@ namespace QuestionService.Controllers
         }
 
         [Authorize(Roles = "admin")]
-        [HttpGet("{pageNumber}")]
-        public async Task<IActionResult> GetUnverifiedQuestions([FromRoute] int pageNumber)
+        [HttpGet]
+        public async Task<IActionResult> GetUnverifiedQuestions([FromQuery] int pageNumber, [FromQuery] int pageEntries)
         {
             try
             {
-                var questions = await service.GetUnverifiedQuestions(pageNumber);
+                var questions = await service.GetUnverifiedQuestions(pageNumber, pageEntries);
 
                 return Ok(questions);
             }
