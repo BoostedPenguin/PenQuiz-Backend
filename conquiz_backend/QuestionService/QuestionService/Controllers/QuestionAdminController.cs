@@ -19,7 +19,6 @@ namespace QuestionService.Controllers
             this.service = service;
         }
 
-        [Authorize(Roles = "admin")]
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyQuestion(VerifyQuestionRequest request)
         {
@@ -35,7 +34,36 @@ namespace QuestionService.Controllers
             }
         }
 
-        [Authorize(Roles = "admin")]
+        [HttpPost("changed-verify")]
+        public async Task<IActionResult> VerifyChangedQuestion(VerifyChangedQuestionRequest request)
+        {
+            try
+            {
+                await service.VerifyChangedQuestion(request);
+
+                return Ok(new { message = "Successfully changed and verified question!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("reject")]
+        public async Task<IActionResult> RejectQuestion(VerifyQuestionRequest request)
+        {
+            try
+            {
+                await service.RejectQuestion(request);
+
+                return Ok(new { message = "Successfully rejected question!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetUnverifiedQuestions([FromQuery] int pageNumber, [FromQuery] int pageEntries)
         {
