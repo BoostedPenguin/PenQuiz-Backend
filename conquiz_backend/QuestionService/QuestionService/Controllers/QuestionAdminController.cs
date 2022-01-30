@@ -49,6 +49,21 @@ namespace QuestionService.Controllers
             }
         }
 
+        [HttpPost("edit")]
+        public async Task<IActionResult> EditQuestion(VerifyChangedQuestionRequest request)
+        {
+            try
+            {
+                await service.EditQuestion(request);
+
+                return Ok(new { message = "Successfully edited a question!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("reject")]
         public async Task<IActionResult> RejectQuestion(VerifyQuestionRequest request)
         {
@@ -64,12 +79,27 @@ namespace QuestionService.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("unverified")]
         public async Task<IActionResult> GetUnverifiedQuestions([FromQuery] int pageNumber, [FromQuery] int pageEntries)
         {
             try
             {
                 var questions = await service.GetUnverifiedQuestions(pageNumber, pageEntries);
+
+                return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("verified")]
+        public async Task<IActionResult> GetVerifiedQuestions([FromQuery] int pageNumber, [FromQuery] int pageEntries)
+        {
+            try
+            {
+                var questions = await service.GetVerifiedQuestions(pageNumber, pageEntries);
 
                 return Ok(questions);
             }
