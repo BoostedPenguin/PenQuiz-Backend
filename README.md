@@ -10,6 +10,8 @@ This repository contains all the backend logic and kubernetes configuration file
 3. [Backend stack](#backendstack)
 3. [Run local production cluster](#runninglocalcluster)
 
+# Production
+Visit the fully working game at https://conquiz.netlify.app/
 
 # Game rules <a name="gamerules" />
 
@@ -22,7 +24,7 @@ The backend consists of 3 microservices which utilize RabbitMQ and GRPC to commu
 
 
 # Backend stack: <a name="backendstack" />
-* NET Core 3.1
+* NET 5
 * SQL Server / PostgreSQL (Entity ORM)
 * CockroachDB
 * SignalR
