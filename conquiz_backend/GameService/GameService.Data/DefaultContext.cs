@@ -358,7 +358,7 @@ namespace GameService.Data
             {
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.ExternalId).HasColumnName("externalId");
+                entity.Property(e => e.UserGlobalIdentifier).HasColumnName("userGlobalIdentifier");
 
                 entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
 

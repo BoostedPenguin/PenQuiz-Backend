@@ -13,6 +13,8 @@ namespace AccountService.Data.Models
         }
 
         public int Id { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastLoggedAt { get; set; }
         public string Email { get; set; }
         public string Username { get; set; }
         public string Role { get; set; }
@@ -20,6 +22,8 @@ namespace AccountService.Data.Models
         public bool IsOnline { get; set; }
         public bool Provider { get; set; }
         public bool IsInGame { get; set; }
+        public string UserGlobalIdentifier { get; set; }
+
 
         public virtual ICollection<RefreshToken> RefreshToken { get; set; }
     }

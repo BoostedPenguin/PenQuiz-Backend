@@ -13,7 +13,7 @@ namespace GameService.Data.Models
         public int Id { get; set; }
         public string Username { get; set; }
         public bool IsInGame { get; set; }
-        public int ExternalId { get; set; }
+        public string UserGlobalIdentifier { get; set; }
 
         public virtual ICollection<Participants> Participants { get; set; }
     }

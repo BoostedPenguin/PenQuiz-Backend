@@ -57,11 +57,11 @@ namespace AccountService.Services
                 // Activate only in development
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development && payload.Email == "legendsxchaos@gmail.com")
                 {
-                    user = new Users() { Email = payload.Email, Username = payload.Name, Role = "admin" };
+                    user = new Users() { Email = payload.Email, Username = payload.Name, UserGlobalIdentifier = Guid.NewGuid().ToString(), Role = "admin" };
                 }
                 else
                 {
-                    user = new Users() { Email = payload.Email, Username = payload.Name, Role = "user" };
+                    user = new Users() { Email = payload.Email, Username = payload.Name, UserGlobalIdentifier = Guid.NewGuid().ToString(), Role = "user" };
                 }
 
 

@@ -100,11 +100,11 @@ namespace GameService.Services.GameTimerServices
                          * - Next event will be ActionState.OPEN_PLAYER_ATTACK_VOTING
                          */
 
-                        await Game_Preview_Time(timer);
+                        //await Game_Preview_Time(timer);
 
                         // Debug
                         //await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
-                        //await neutralMCTimerEvents.Debug_Start_Number_Neutral(timer);
+                        await neutralMCTimerEvents.Debug_Start_Number_Neutral(timer);
                         return;
 
                     #region Neutral Multiple Choice events

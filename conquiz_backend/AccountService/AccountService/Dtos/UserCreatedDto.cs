@@ -9,6 +9,7 @@ namespace AccountService.Dtos
     {
         public int Id { get; set; }
         public string Username { get; set; }
+        public string UserGlobalIdentifier { get; set; }
         public bool IsInGame { get; set; }
         public string Event { get; set; }
     }

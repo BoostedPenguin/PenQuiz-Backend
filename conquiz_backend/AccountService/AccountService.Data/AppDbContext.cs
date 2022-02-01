@@ -51,6 +51,8 @@ namespace AccountService.Data
 
                 entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
 
+                entity.Property(e => e.UserGlobalIdentifier).IsRequired().HasColumnName("userGlobalIdentifier");
+
                 entity.Property(e => e.IsOnline).HasColumnName("isOnline");
 
                 entity.Property(e => e.Provider).HasColumnName("provider");

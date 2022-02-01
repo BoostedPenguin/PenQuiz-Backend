@@ -160,17 +160,17 @@ namespace GameServiceUnitTests
             // Arrange
             var playerOne = new Users()
             {
-                ExternalId = 123,
+                UserGlobalIdentifier = "123",
                 Username = "PlayerOne",
             };
             var playerTwo = new Users()
             {
-                ExternalId = 152,
+                UserGlobalIdentifier = "152",
                 Username = "PlayerTwo",
             };
             var playerThree = new Users()
             {
-                ExternalId = 181,
+                UserGlobalIdentifier = "181",
                 Username = "PlayerThree",
             };
 

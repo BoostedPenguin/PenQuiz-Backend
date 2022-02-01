@@ -178,7 +178,20 @@ namespace GameService.EventProcessing
             try
             {
                 var user = mapper.Map<Users>(userPublishedDto);
-                if (db.Users.FirstOrDefault(x => x.ExternalId == user.ExternalId) == null)
+                
+                // Migrate existing people if they have a username but don't have a global identifier
+                var old = db.Users.FirstOrDefault(x => x.Username == user.Username && string.IsNullOrEmpty(x.UserGlobalIdentifier));
+                
+                if (old != null)
+                {
+                    old.UserGlobalIdentifier = userPublishedDto.UserGlobalIdentifier;
+                    db.Update(old);
+                    db.SaveChanges();
+                    logger.LogInformation($"Old user global identifier added to GameService database.");
+                    return;
+                }
+
+                if (db.Users.FirstOrDefault(x => x.UserGlobalIdentifier == user.UserGlobalIdentifier) == null)
                 {
                     db.Users.Add(user);
                     db.SaveChanges();

@@ -15,7 +15,8 @@ namespace AccountService.Profiles
             CreateMap<Users, UserCreatedDto>();
             CreateMap<Users, GrpcAccountModel>()
                 .ForMember(dest => dest.AccountId, opt => opt.MapFrom(src => src.Id))
-                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.Username));
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.Username))
+                .ForMember(dest => dest.UserGlobalIdentifier, opt => opt.MapFrom(src => src.UserGlobalIdentifier));
         }
     }
 }

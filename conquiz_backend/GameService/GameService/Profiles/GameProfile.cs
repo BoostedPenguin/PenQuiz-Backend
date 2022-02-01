@@ -15,10 +15,10 @@ namespace GameService.Profiles
         public GameProfile()
         {
             CreateMap<UserPublishedDto, Users>()
-                .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.Id))
+                .ForMember(dest => dest.UserGlobalIdentifier, opt => opt.MapFrom(x => x.UserGlobalIdentifier))
                 .ForMember(dest => dest.Id, opt => opt.Ignore());
             CreateMap<GrpcAccountModel, Users>()
-                .ForMember(dest => dest.ExternalId, opt => opt.MapFrom(x => x.AccountId))
+                .ForMember(dest => dest.UserGlobalIdentifier, opt => opt.MapFrom(x => x.UserGlobalIdentifier))
                 .ForMember(dest => dest.Username, opt => opt.MapFrom(x => x.Username))
                 .ForMember(dest => dest.Id, opt => opt.Ignore());
             CreateMap<AnswerResponse, Answers>()

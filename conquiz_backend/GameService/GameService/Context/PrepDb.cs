@@ -50,7 +50,7 @@ namespace GameService.Context
 
             foreach(var user in users)
             {
-                if(db.Users.FirstOrDefault(x => x.ExternalId == user.ExternalId) == null)
+                if(db.Users.FirstOrDefault(x => x.UserGlobalIdentifier == user.UserGlobalIdentifier) == null)
                 {
                     db.Users.Add(user);
                 }
