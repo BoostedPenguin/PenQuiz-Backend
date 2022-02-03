@@ -85,6 +85,11 @@ namespace AccountService.Services
                 await a.SaveChangesAsync();
             }
 
+            // Assign a user global id if missing
+            if (string.IsNullOrEmpty(user.UserGlobalIdentifier))
+            {
+                user.UserGlobalIdentifier = Guid.NewGuid().ToString();
+            }
 
             // Always send message to game service that user has authenticated, in case data changes
             try
