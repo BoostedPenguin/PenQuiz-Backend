@@ -54,6 +54,10 @@ namespace AccountService.Data
                 entity.Property(e => e.UserGlobalIdentifier).IsRequired().HasColumnName("userGlobalIdentifier");
 
                 entity.Property(e => e.IsOnline).HasColumnName("isOnline");
+                
+                entity.Property(e => e.CreatedAt).HasColumnName("createdAt");
+
+                entity.Property(e => e.LastLoggedAt).HasColumnName("lastLoggedAt");
 
                 entity.Property(e => e.Provider).HasColumnName("provider");
 

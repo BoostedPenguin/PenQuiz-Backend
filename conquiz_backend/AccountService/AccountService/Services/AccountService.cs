@@ -57,11 +57,27 @@ namespace AccountService.Services
                 // Activate only in development
                 if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development && payload.Email == "legendsxchaos@gmail.com")
                 {
-                    user = new Users() { Email = payload.Email, Username = payload.Name, UserGlobalIdentifier = Guid.NewGuid().ToString(), Role = "admin" };
+                    user = new Users() 
+                    { 
+                        Email = payload.Email, 
+                        Username = payload.Name, 
+                        UserGlobalIdentifier = Guid.NewGuid().ToString(), 
+                        Role = "admin",
+                        LastLoggedAt = DateTime.Now,
+                        CreatedAt = DateTime.Now,
+                    };
                 }
                 else
                 {
-                    user = new Users() { Email = payload.Email, Username = payload.Name, UserGlobalIdentifier = Guid.NewGuid().ToString(), Role = "user" };
+                    user = new Users() 
+                    { 
+                        Email = payload.Email, 
+                        Username = payload.Name, 
+                        UserGlobalIdentifier = Guid.NewGuid().ToString(), 
+                        Role = "user" ,
+                        LastLoggedAt = DateTime.Now,
+                        CreatedAt = DateTime.Now,
+                    };
                 }
 
 
@@ -91,6 +107,8 @@ namespace AccountService.Services
                 x.RevokedByIp = ipAddress;
                 x.ReplacedByToken = refreshToken.Token;
             });
+
+            user.LastLoggedAt = DateTime.Now;
 
             user.RefreshToken.Add(refreshToken);
             a.Update(user);
@@ -134,6 +152,8 @@ namespace AccountService.Services
             rToken.ReplacedByToken = newRefreshToken.Token;
 
             rToken.Users.RefreshToken.Add(newRefreshToken);
+
+            rToken.Users.LastLoggedAt = DateTime.Now;
 
             a.Update(rToken.Users);
             await a.SaveChangesAsync();
