@@ -83,17 +83,19 @@ namespace AccountService.Services
 
                 await a.AddAsync(user);
                 await a.SaveChangesAsync();
+            }
 
-                try
-                {
-                    var userPublishedDto = mapper.Map<UserCreatedDto>(user);
-                    userPublishedDto.Event = "User_Published";
-                    messageBusClient.PublishNewUser(userPublishedDto);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"--> Could not send DTO to bus: {ex.Message}");
-                }
+
+            // Always send message to game service that user has authenticated, in case data changes
+            try
+            {
+                var userPublishedDto = mapper.Map<UserCreatedDto>(user);
+                userPublishedDto.Event = "User_Published";
+                messageBusClient.PublishNewUser(userPublishedDto);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Could not send DTO to bus: {ex.Message}");
             }
 
             var jwtToken = generateJwtToken(user);

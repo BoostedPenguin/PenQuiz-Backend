@@ -179,9 +179,18 @@ namespace GameService.EventProcessing
             {
                 var user = mapper.Map<Users>(userPublishedDto);
                 
+                var existing = db.Users.FirstOrDefault(x => x.UserGlobalIdentifier == user.UserGlobalIdentifier);
+
+                if(existing != null)
+                {
+                    logger.LogInformation($"User already exists in game service database. Skip.");
+                }
+
                 // Migrate existing people if they have a username but don't have a global identifier
                 var old = db.Users.FirstOrDefault(x => x.Username == user.Username && string.IsNullOrEmpty(x.UserGlobalIdentifier));
                 
+
+
                 if (old != null)
                 {
                     old.UserGlobalIdentifier = userPublishedDto.UserGlobalIdentifier;
