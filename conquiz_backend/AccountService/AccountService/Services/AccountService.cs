@@ -157,6 +157,23 @@ namespace AccountService.Services
 
             rToken.Users.LastLoggedAt = DateTime.Now;
 
+            // Assign a user global id if missing
+            if (string.IsNullOrEmpty(rToken.Users.UserGlobalIdentifier))
+            {
+                rToken.Users.UserGlobalIdentifier = Guid.NewGuid().ToString();
+
+                try
+                {
+                    var userPublishedDto = mapper.Map<UserCreatedDto>(rToken.Users);
+                    userPublishedDto.Event = "User_Published";
+                    messageBusClient.PublishNewUser(userPublishedDto);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"--> Could not send DTO to bus: {ex.Message}");
+                }
+            }
+
             a.Update(rToken.Users);
             await a.SaveChangesAsync();
 
