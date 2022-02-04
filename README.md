@@ -1,16 +1,29 @@
 <h1 align="center"> ConQuiz </h1>
-Trivia PvP game based on Triviador, set in Antarctica. ConQuiz is a round-based PvP trivia game revolved around capturing the territories of the continent of Antarctica. The end score is based on the amount of territories and points you control.
+ConQuiz is a trivia PvP game which is set in Antarctica. The game consists of 3 different stages with multiple rounds and requires 3 people per match to play. The core concept of the game is to capture territories from other players by answering trivia questions. The end score of a game is calculated by the amount of territories you control.
 <br />
 <br />
 This repository contains all the backend logic and kubernetes configuration files for the ConQuiz project. The front-end React Native repository is located <a href="https://github.com/BoostedPenguin/ConQuiz-Frontend">here</a>.
 
 # Table of contents
-1. [Game rules](#gamerules)
-2. [Architecture](#architecture)
-3. [Backend stack](#backendstack)
-3. [Run local production cluster](#runninglocalcluster)
+1. [Features](#features)
+2. [Production](#production)
+3. [Game rules](#gamerules)
+4. [Architecture](#architecture)
+5. [Backend stack](#backendstack)
+6. [Run local production cluster](#runninglocalcluster)
 
-# Production
+# Features <a name="features" />
+- Engaging trivia battles
+- Public matchmaking
+- Private lobbies
+- Match history and statistics
+- Submit your own questions to the game
+- Login with Google account
+- Admin panel
+
+# Production <a name="production" />
+The production backend is hosted on Azure, while the frontend React Native application is hosted on Netlify. The RabbitMQ provider we use is CloudAMQP.
+
 Visit the fully working game at https://conquiz.netlify.app/
 
 # Game rules <a name="gamerules" />
