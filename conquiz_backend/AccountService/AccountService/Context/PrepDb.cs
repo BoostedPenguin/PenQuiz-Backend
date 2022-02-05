@@ -15,17 +15,21 @@ namespace AccountService.Context
         {
             using var serviceScope = app.ApplicationServices.CreateScope();
 
-            if (isProduction)
+            var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<AppDbContext>>();
+
+            using var context = contextFactory.CreateDbContext();
+
+            
+            if (!context.Database.IsInMemory())
             {
-                ApplyMigrations(serviceScope.ServiceProvider.GetService<IDbContextFactory<AppDbContext>>());
+                ApplyMigrations(context);
             }
         }
 
-        private static void ApplyMigrations(IDbContextFactory<AppDbContext> contextFactory)
+        private static void ApplyMigrations(AppDbContext contextFactory)
         {
             Console.WriteLine("--> Attempting to apply migrations...");
-            using var context = contextFactory.CreateDbContext();
-            context.Database.Migrate();
+            contextFactory.Database.Migrate();
 
             Console.WriteLine("--> Migrations added");
         }

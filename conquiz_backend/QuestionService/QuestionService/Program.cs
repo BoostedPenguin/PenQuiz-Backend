@@ -55,7 +55,8 @@ namespace QuestionService
                                 services.AddDbContextFactory<DefaultContext>(
                                     options => _ = provider switch
                                     {
-                                        "Npgsql" => options.UseInMemoryDatabase("InMem"),
+                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("QuestionsConnDevNpgsql"),
+                                    x => x.MigrationsAssembly("QuestionService.NpgsqlMigrations")),
 
                                         "SqlServer" => options.UseInMemoryDatabase("InMem"),
 

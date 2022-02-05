@@ -19,7 +19,8 @@ namespace QuestionService.Context
             var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
             using var db = contextFactory.CreateDbContext();
 
-            if (isProduction)
+
+            if (!db.Database.IsInMemory())
             {
                 ApplyMigrations(db);
             }

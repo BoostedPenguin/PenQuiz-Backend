@@ -55,7 +55,8 @@ namespace AccountService
                                 services.AddDbContextFactory<AppDbContext>(
                                     options => _ = provider switch
                                     {
-                                        "Npgsql" => options.UseInMemoryDatabase("InMem"),
+                                        "Npgsql" => options.UseNpgsql(configuration.GetConnectionString("AccountsConnDevNpgsql"),
+                                    x => x.MigrationsAssembly("AccountService.NpgsqlMigrations")),
 
                                         "SqlServer" => options.UseInMemoryDatabase("InMem"),
 

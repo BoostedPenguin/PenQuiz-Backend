@@ -19,10 +19,12 @@ namespace GameService.Context
         {
             using var serviceScope = app.ApplicationServices.CreateScope();
 
-            var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
             var logger = serviceScope.ServiceProvider.GetService<ILogger<DefaultContext>>();
-            
-            if (isProduction)
+
+            var contextFactory = serviceScope.ServiceProvider.GetService<IDbContextFactory<DefaultContext>>();
+            using var db = contextFactory.CreateDbContext();
+
+            if (!db.Database.IsInMemory())
             {
                 ApplyMigrations(contextFactory, logger);
             }
