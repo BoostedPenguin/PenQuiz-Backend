@@ -91,6 +91,9 @@ namespace AccountService.Services
                 user.UserGlobalIdentifier = Guid.NewGuid().ToString();
             }
 
+            if (user.IsBanned)
+                throw new ArgumentException("You are banned. Contact an administrator for more information.");
+
             // Always send message to game service that user has authenticated, in case data changes
             try
             {
@@ -152,6 +155,9 @@ namespace AccountService.Services
 
             var rToken = await a.RefreshToken.Include(x => x.Users).FirstOrDefaultAsync(x => x.Token == token);
             if (rToken == null || !rToken.IsActive) return null;
+
+            if (rToken.Users.IsBanned)
+                throw new ArgumentException("You are banned. Contact an administrator for more information.");
 
             var newRefreshToken = generateRefreshToken(ipaddress);
             rToken.Revoked = DateTime.UtcNow;

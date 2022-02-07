@@ -9,6 +9,7 @@ namespace AccountService.Services
 {
     public interface IAccountAdminService
     {
+        Task BanAccount(BanAccountRequest request);
         Task<PaginatedAccountsResponse> GetAccounts(int pageNumber, int pageEntries);
     }
     public class AccountAdminService : IAccountAdminService
@@ -40,6 +41,24 @@ namespace AccountService.Services
                 PageIndex = pageNumber,
                 TotalPages = (int)Math.Ceiling(count / (double)pageEntries),
             };
+        }
+
+        public async Task BanAccount(BanAccountRequest request)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var user = await db.Users.FirstOrDefaultAsync(x => x.Id == request.AccountId);
+
+            if (user == null)
+                throw new ArgumentException("User with this ID doesn't exist");
+
+            if (user.IsBanned)
+                throw new ArgumentException($"User with ID: {request.AccountId}, has already been banned");
+
+            user.IsBanned = true;
+            db.Update(user);
+
+            await db.SaveChangesAsync();
         }
     }
 }

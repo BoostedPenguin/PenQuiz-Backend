@@ -1,4 +1,5 @@
-﻿using AccountService.Services;
+﻿using AccountService.Data.Models.Requests;
+using AccountService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,21 @@ namespace AccountService.Controllers
                 var questions = await adminService.GetAccounts(pageNumber, pageEntries);
 
                 return Ok(questions);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("/ban")]
+        public async Task<IActionResult> BanAccount(BanAccountRequest request)
+        {
+            try
+            {
+                await adminService.BanAccount(request);
+
+                return Ok(new {message = $"Account with ID: {request.AccountId} was banned successfully!"});
             }
             catch (Exception ex)
             {
