@@ -157,7 +157,10 @@ namespace AccountService.Services
             if (rToken == null || !rToken.IsActive) return null;
 
             if (rToken.Users.IsBanned)
+            {
+                await RevokeToken(rToken.Token, null);
                 throw new ArgumentException("You are banned. Contact an administrator for more information.");
+            }
 
             var newRefreshToken = generateRefreshToken(ipaddress);
             rToken.Revoked = DateTime.UtcNow;
