@@ -49,6 +49,8 @@ namespace AccountService.Data
 
                 entity.Property(e => e.IsBanned).HasColumnName("isBanned");
 
+                entity.Property(e => e.BannedDate).HasColumnName("bannedDate");
+
                 entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
 
                 entity.Property(e => e.UserGlobalIdentifier).IsRequired().HasColumnName("userGlobalIdentifier");

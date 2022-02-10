@@ -11,6 +11,7 @@ namespace AccountService.Services
     {
         Task BanAccount(BanAccountRequest request);
         Task<PaginatedAccountsResponse> GetAccounts(int pageNumber, int pageEntries);
+        Task UnbanAccount(BanAccountRequest request);
     }
     public class AccountAdminService : IAccountAdminService
     {
@@ -55,7 +56,27 @@ namespace AccountService.Services
             if (user.IsBanned)
                 throw new ArgumentException($"User with ID: {request.AccountId}, has already been banned");
 
+            user.BannedDate = DateTime.Now;
             user.IsBanned = true;
+            db.Update(user);
+
+            await db.SaveChangesAsync();
+        }
+
+        public async Task UnbanAccount(BanAccountRequest request)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var user = await db.Users.FirstOrDefaultAsync(x => x.Id == request.AccountId);
+
+            if (user == null)
+                throw new ArgumentException("User with this ID doesn't exist");
+
+            if (!user.IsBanned)
+                throw new ArgumentException($"User with ID: {request.AccountId}, isn't banned");
+
+            user.IsBanned = false;
+            user.BannedDate = null;
             db.Update(user);
 
             await db.SaveChangesAsync();

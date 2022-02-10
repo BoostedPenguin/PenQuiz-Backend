@@ -19,6 +19,7 @@ namespace AccountService.Data.Models
         public string Username { get; set; }
         public string Role { get; set; }
         public bool IsBanned { get; set; }
+        public DateTime? BannedDate { get; set; }
         public bool IsOnline { get; set; }
         public bool Provider { get; set; }
         public bool IsInGame { get; set; }

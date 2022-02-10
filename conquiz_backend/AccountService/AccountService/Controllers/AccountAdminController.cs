@@ -56,5 +56,20 @@ namespace AccountService.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("/unban")]
+        public async Task<IActionResult> UnbanAccount(BanAccountRequest request)
+        {
+            try
+            {
+                await adminService.UnbanAccount(request);
+
+                return Ok(new { message = $"Account with ID: {request.AccountId} was unbanned successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
