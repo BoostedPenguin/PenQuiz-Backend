@@ -56,10 +56,12 @@ namespace GameService.Services
         {
             using var db = contextFactory.CreateDbContext();
 
-            var userId = httpContextAccessor.GetCurrentUserId();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
-                .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
+                .Where(x => x.GameCreatorId == user.Id && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
             return null;
         }
@@ -67,10 +69,12 @@ namespace GameService.Services
         public async Task<GameInstance> FindPublicMatch()
         {
             using var db = contextFactory.CreateDbContext();
-            var userId = httpContextAccessor.GetCurrentUserId();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
             try
             {
-                await CanPersonJoin(userId);
+                await CanPersonJoin(user.Id);
             }
             catch (ExistingLobbyGameException game)
             {
@@ -86,7 +90,7 @@ namespace GameService.Services
             // Create a new public lobby
             if(openPublicGames.Count() == 0)
             {
-                var gameInstance = await CreateGameInstance(db, GameType.PUBLIC, userId);
+                var gameInstance = await CreateGameInstance(db, GameType.PUBLIC, user.Id);
 
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
@@ -104,7 +108,7 @@ namespace GameService.Services
 
             chosenLobby.Participants.Add(new Participants()
             {
-                PlayerId = userId,
+                PlayerId = user.Id,
                 Score = 0,
                 AvatarName = GetRandomAvatar(chosenLobby)
             });
@@ -167,17 +171,19 @@ namespace GameService.Services
             // CLOSE ALL OTHER IN_LOBBY OPEN INSTANCES BY THIS PLAYER
 
             using var db = contextFactory.CreateDbContext();
-            var userId = httpContextAccessor.GetCurrentUserId();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
             try
             {
-                await CanPersonJoin(userId);
+                await CanPersonJoin(user.Id);
             }
             catch (ExistingLobbyGameException game)
             {
                 return game.ExistingGame;
             }
 
-            var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, userId);
+            var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, user.Id);
 
             await db.AddAsync(gameInstance);
             await db.SaveChangesAsync();
@@ -246,7 +252,9 @@ namespace GameService.Services
         {
             using var db = contextFactory.CreateDbContext();
 
-            var userId = httpContextAccessor.GetCurrentUserId();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
@@ -262,7 +270,7 @@ namespace GameService.Services
 
             try
             {
-                await CanPersonJoin(userId);
+                await CanPersonJoin(user.Id);
             }
             catch (ExistingLobbyGameException game)
             {
@@ -272,7 +280,7 @@ namespace GameService.Services
 
             gameInstance.Participants.Add(new Participants()
             {
-                PlayerId = userId,
+                PlayerId = user.Id,
                 Score = 0,
                 AvatarName = GetRandomAvatar(gameInstance)
             });
@@ -292,15 +300,16 @@ namespace GameService.Services
         public async Task<GameInstance> StartGame(GameInstance gameInstance = null)
         {
             using var a = contextFactory.CreateDbContext();
-            var userId = httpContextAccessor.GetCurrentUserId();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await a.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
-            if(gameInstance == null)
+            if (gameInstance == null)
             {
                 gameInstance = await a.GameInstance
                     .Include(x => x.Participants)
                     .ThenInclude(x => x.Player)
-                    .Where(x => x.GameCreatorId == userId && x.GameState == GameState.IN_LOBBY)
+                    .Where(x => x.GameCreatorId == user.Id && x.GameState == GameState.IN_LOBBY)
                     .FirstOrDefaultAsync();
             }
 
@@ -313,10 +322,10 @@ namespace GameService.Services
                 throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
 
             // Make sure no player is in another game
-            foreach (var user in allPlayers)
+            foreach (var us in allPlayers)
             {
-                if (user.Player.IsInGame)
-                    throw new ArgumentException($"Can't start game. `{user.Player.Username}` is in another game currently.");
+                if (us.Player.IsInGame)
+                    throw new ArgumentException($"Can't start game. `{us.Player.Username}` is in another game currently.");
             }
 
 

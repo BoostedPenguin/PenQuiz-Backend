@@ -37,12 +37,12 @@ namespace GameService.Services.Extensions
         /// <param name="httpContext"></param>
         /// <param name="contextFactory"></param>
         /// <returns></returns>
-        public static int GetCurrentUserId(this IHttpContextAccessor httpContext)
+        public static string GetCurrentUserGlobalId(this IHttpContextAccessor httpContext)
         {
-            return int.Parse(httpContext.HttpContext.User.Claims
+            return httpContext.HttpContext.User.Claims
                 .Where(x => x.Type == ClaimTypes.NameIdentifier)
                 .Select(x => x.Value)
-                .FirstOrDefault());
+                .FirstOrDefault();
         }
     }
 }

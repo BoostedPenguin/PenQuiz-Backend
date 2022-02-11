@@ -14,6 +14,8 @@ using GameService.Services.GameTimerServices;
 using GameService.Data.Models;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using GameService.Data;
 
 namespace GameService.Hubs
 {
@@ -47,6 +49,7 @@ namespace GameService.Hubs
         Task ShowGameMap();
         Task ShowRoundingAttacker(int userId, string[] availableAttackTerritoriesNames);
 
+        Task GetGameUserId(int userId);
         Task OnSelectedTerritory(SelectedTerritoryResponse selectedTerritoryResponse);
         Task CloseQuestionScreen();
         Task MCQuestionPreviewResult(MCPlayerQuestionAnswers previewResult);
@@ -61,6 +64,7 @@ namespace GameService.Hubs
         private readonly IGameTimerService timer;
         private readonly IGameService gameService;
         private readonly IGameLobbyService gameLobbyService;
+        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IGameControlService gameControlService;
         private readonly IHttpContextAccessor httpContext;
         private readonly ILogger<GameHub> logger;
@@ -69,7 +73,8 @@ namespace GameService.Hubs
             IGameService gameService, 
             IHttpContextAccessor httpContext, 
             ILogger<GameHub> logger,
-            IGameLobbyService gameLobbyService, 
+            IGameLobbyService gameLobbyService,
+            IDbContextFactory<DefaultContext> contextFactory,
             IGameControlService gameControlService)
         {
             this.timer = timer;
@@ -77,6 +82,8 @@ namespace GameService.Hubs
             this.httpContext = httpContext;
             this.logger = logger;
             this.gameLobbyService = gameLobbyService;
+            this.contextFactory = contextFactory;
+            this.contextFactory = contextFactory;
             this.gameControlService = gameControlService;
         }
 
@@ -84,10 +91,16 @@ namespace GameService.Hubs
         {
             try
             {
-                var userId = int.Parse(Context.User.Claims
+                var globalUserId = Context.User.Claims
                     .Where(x => x.Type == ClaimTypes.NameIdentifier)
                     .Select(x => x.Value)
-                    .FirstOrDefault());
+                    .FirstOrDefault();
+
+                using var db = contextFactory.CreateDbContext();
+                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+
+                await Clients.Caller.GetGameUserId(user.Id);
 
                 //timer.TimerStart();
                 var gameInstance = await gameService.OnPlayerLoginConnection();
@@ -100,7 +113,7 @@ namespace GameService.Hubs
                 }
 
                 await Clients.Caller.GetGameInstance(gameInstance);
-                await Clients.Group(gameInstance.InvitationLink).PlayerRejoined(userId);
+                await Clients.Group(gameInstance.InvitationLink).PlayerRejoined(user.Id);
                 await Clients.Caller.NavigateToGame();
                 
                 await Groups.AddToGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);

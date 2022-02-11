@@ -119,12 +119,14 @@ namespace GameService.Services
         {
             // Checks if there are any in-progress games and tries to put him back in that state
             using var db = contextFactory.CreateDbContext();
-            var userId = httpContextAccessor.GetCurrentUserId();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
             var ongoingGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
                 .Where(x => x.GameState == GameState.IN_PROGRESS && x.Participants
-                    .Any(y => y.PlayerId == userId))
+                    .Any(y => y.PlayerId == user.Id))
                 .ToListAsync();
 
             // There shouldn't be more than 1 active game for a given player at any time.
@@ -140,7 +142,7 @@ namespace GameService.Services
             if (ongoingGames.Count() == 1)
             {
                 var currentGameInstance = ongoingGames.First();
-                var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == userId);
+                var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == user.Id);
                 thisUser.IsBot = false;
                 
                 db.Update(thisUser);
@@ -173,14 +175,15 @@ namespace GameService.Services
         {
             using var db = contextFactory.CreateDbContext();
 
-            var userId = httpContextAccessor.GetCurrentUserId();
-            
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
             // Get game instances that are "active" for this person
             var activeGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
                 .Where(x => x.Participants
-                    .Any(x => x.PlayerId == userId) && (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS))
+                    .Any(x => x.PlayerId == user.Id) && (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS))
                 .ToListAsync();
 
             // Person wasn't in any active games
@@ -200,14 +203,14 @@ namespace GameService.Services
             // Only single instance
             var gameInstance = activeGames[0];
 
-            var thisUser = gameInstance.Participants.First(x => x.PlayerId == userId);
+            var thisUser = gameInstance.Participants.First(x => x.PlayerId == user.Id);
 
             switch (activeGames[0].GameState)
             {
                 case GameState.IN_LOBBY:
 
                     // On creator disconnect or lobby kill.
-                    if (userId == gameInstance.GameCreatorId)
+                    if (user.Id == gameInstance.GameCreatorId)
                     {
                         gameInstance.GameState = GameState.CANCELED;
                         //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
@@ -252,7 +255,7 @@ namespace GameService.Services
 
             return new PersonDisconnectedGameResult(
                 gameInstance.InvitationLink,
-                userId,
+                user.Id,
                 gameInstance.GameState,
                 gameInstance.Participants.Count(x => x.IsBot));
         }

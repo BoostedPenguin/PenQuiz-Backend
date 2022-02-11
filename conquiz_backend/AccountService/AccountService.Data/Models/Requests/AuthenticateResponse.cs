@@ -8,7 +8,7 @@ namespace AccountService.Data.Models.Requests
 {
     public class AuthenticateResponse
     {
-        public int Id { get; set; }
+        public string GlobalId { get; set; }
         public string Username { get; set; }
         public string JwtToken { get; set; }
 
@@ -17,7 +17,7 @@ namespace AccountService.Data.Models.Requests
 
         public AuthenticateResponse(Users user, string jwtToken, string refreshToken)
         {
-            Id = user.Id;
+            GlobalId = user.UserGlobalIdentifier;
             Username = user.Username;
             JwtToken = jwtToken;
             RefreshToken = refreshToken;

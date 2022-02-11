@@ -29,11 +29,12 @@ public class StatisticsService : IStatisticsService
     public async Task<UserStatisticsDto> GetUserGameStatistics()
     {
         using var db = contextFactory.CreateDbContext();
-        var userId = httpContextAccessor.GetCurrentUserId();
+        var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
         var games = await db.GameInstance
             .Include(x => x.Participants)
-            .Where(x => x.Participants.Any(y => y.PlayerId == userId) && x.GameState == GameState.FINISHED)
+            .Where(x => x.Participants.Any(y => y.PlayerId == user.Id) && x.GameState == GameState.FINISHED)
             .AsNoTracking()
             .ToListAsync();
 
@@ -49,7 +50,7 @@ public class StatisticsService : IStatisticsService
         foreach(var game in games)
         {
             game.Participants = game.Participants.OrderByDescending(x => x.Score).ToList();
-            if (game.Participants.First().PlayerId != userId) continue;
+            if (game.Participants.First().PlayerId != user.Id) continue;
             gamesWon++;
         }
 

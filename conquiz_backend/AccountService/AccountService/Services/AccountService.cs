@@ -243,7 +243,7 @@ namespace AccountService.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.UserGlobalIdentifier),
                     new Claim(ClaimTypes.Role, user.Role),
                     new Claim(ClaimTypes.Name, user.Username),
                 }),
