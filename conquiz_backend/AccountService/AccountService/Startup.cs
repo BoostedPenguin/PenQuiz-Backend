@@ -105,7 +105,10 @@ namespace AccountService
 
             app.UseRouting();
 
-            app.UseHttpsRedirection();
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Production)
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseCors();
 

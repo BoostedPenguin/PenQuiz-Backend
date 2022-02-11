@@ -176,7 +176,10 @@ namespace GameService
 
             app.UseCors();
 
-            app.UseHttpsRedirection();
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Production)
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseAuthentication();
 

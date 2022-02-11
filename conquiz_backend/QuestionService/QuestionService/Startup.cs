@@ -135,7 +135,10 @@ namespace QuestionService
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AccountService v1"));
             }
 
-            app.UseHttpsRedirection();
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Production)
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseRouting();
 
