@@ -32,9 +32,22 @@ namespace GameServiceUnitTests
             mockContextFactory = new TestDbContextFactory("GameLobbyService");
             mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
             var httpContext = new DefaultHttpContext();
+
+
+            // Arrange
+            var playerOne = new Users()
+            {
+                UserGlobalIdentifier = "123",
+                Username = "PlayerOne",
+            };
+            using var db = mockContextFactory.CreateDbContext();
+
+            db.Add(playerOne);
+            db.SaveChanges();
+
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, "1"),
+                new Claim(ClaimTypes.NameIdentifier, playerOne.UserGlobalIdentifier),
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
@@ -69,9 +82,19 @@ namespace GameServiceUnitTests
             // Second user trying to join lobby
             var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
             var httpContext = new DefaultHttpContext();
+
+            var playerTwo = new Users()
+            {
+                UserGlobalIdentifier = "152",
+                Username = "PlayerTwo",
+            };
+            using var db = mockContextFactory.CreateDbContext();
+            db.Add(playerTwo);
+            await db.SaveChangesAsync();
+
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, "2"),
+                new Claim(ClaimTypes.NameIdentifier, playerTwo.UserGlobalIdentifier),
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
@@ -92,9 +115,18 @@ namespace GameServiceUnitTests
             // Second user trying to join lobby
             var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
             var httpContext = new DefaultHttpContext();
+            var playerTwo = new Users()
+            {
+                UserGlobalIdentifier = "152",
+                Username = "PlayerTwo",
+            };
+            using var db = mockContextFactory.CreateDbContext();
+            db.Add(playerTwo);
+            await db.SaveChangesAsync();
+
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, "2"),
+                new Claim(ClaimTypes.NameIdentifier, playerTwo.UserGlobalIdentifier),
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
@@ -219,7 +251,7 @@ namespace GameServiceUnitTests
             var httpContext = new DefaultHttpContext();
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, playerOne.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, playerOne.UserGlobalIdentifier),
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);

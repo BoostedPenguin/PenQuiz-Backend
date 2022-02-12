@@ -184,6 +184,7 @@ namespace GameService.EventProcessing
                 if(existing != null)
                 {
                     logger.LogInformation($"User already exists in game service database. Skip.");
+                    return;
                 }
 
                 // Migrate existing people if they have a username but don't have a global identifier

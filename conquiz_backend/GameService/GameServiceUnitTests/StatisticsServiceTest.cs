@@ -92,7 +92,7 @@ namespace GameServiceUnitTests
             var httpContext = new DefaultHttpContext();
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, playerOne.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, playerOne.UserGlobalIdentifier),
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
