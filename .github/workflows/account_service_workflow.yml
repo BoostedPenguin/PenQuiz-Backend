@@ -42,7 +42,7 @@ jobs:
 
     - name: Test
       working-directory: ./conquiz_backend/AccountService
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --no-build
       
     - name: dotnet publish
       working-directory: ./conquiz_backend/AccountService
