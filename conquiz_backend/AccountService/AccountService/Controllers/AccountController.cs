@@ -121,6 +121,38 @@ namespace AccountService.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Mobile devices, supply "refresh-token" through parameter instead of cookie
+        /// </summary>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpPost("refresh-token-mobile")]
+        public async Task<IActionResult> RefreshTokenMobile(RFTokenRequest request)
+        {
+            try
+            {
+                var refreshToken = request.RefreshToken;
+
+                await PingRequiredServices();
+
+                if (refreshToken == null)
+                    return Unauthorized(new { message = "No refresh token received" });
+                var response = await accountService.RefreshToken(refreshToken, ipAddress());
+
+                if (response == null)
+                    return Unauthorized(new { message = "Invalid token" });
+
+                setTokenCookie(response.RefreshToken);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [AllowAnonymous]
         [HttpPost("revoke-cookie")]
         public async Task<IActionResult> RevokeCookie()
