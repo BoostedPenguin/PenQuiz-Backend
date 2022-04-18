@@ -231,7 +231,7 @@ namespace AccountService.Services
             {
                 Username = $"TestingUser - {r.Next(0, 10000)}",
                 Role = role == "admin" ? "admin" : role == "user" ? "user" : throw new ArgumentException($"Invalid role ${role}"),
-                Id = r.Next(0, 10000)
+                UserGlobalIdentifier = r.Next(0, 10000).ToString()
             });
         }
 

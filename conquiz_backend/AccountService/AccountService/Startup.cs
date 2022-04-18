@@ -77,6 +77,8 @@ namespace AccountService
             services.AddSingleton<IAccountService, Services.AccountService>();
 
             services.AddSingleton<IMessageBusClient, MessageBusClient>();
+            
+            services.AddSingleton<IAccountAdminService, AccountAdminService>();
 
             services.AddHttpClient();
 

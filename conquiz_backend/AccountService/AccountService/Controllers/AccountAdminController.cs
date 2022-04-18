@@ -28,7 +28,7 @@ namespace AccountService.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUnverifiedQuestions([FromQuery] int pageNumber, [FromQuery] int pageEntries)
+        public async Task<IActionResult> GetAccounts([FromQuery] int pageNumber, [FromQuery] int pageEntries)
         {
             try
             {
@@ -42,7 +42,7 @@ namespace AccountService.Controllers
             }
         }
 
-        [HttpPost("/ban")]
+        [HttpPost("ban")]
         public async Task<IActionResult> BanAccount(BanAccountRequest request)
         {
             try
@@ -57,7 +57,8 @@ namespace AccountService.Controllers
             }
         }
 
-        [HttpPost("/unban")]
+
+        [HttpPost("unban")]
         public async Task<IActionResult> UnbanAccount(BanAccountRequest request)
         {
             try
