@@ -10,7 +10,7 @@ namespace AccountService.Services
     public interface IAccountAdminService
     {
         Task BanAccount(BanAccountRequest request);
-        Task<PaginatedAccountsResponse> GetAccounts(int pageNumber, int pageEntries);
+        Task<PaginatedAccountsResponse> GetAccounts(int pageNumber, int pageEntries, string searchQuery);
         Task UnbanAccount(BanAccountRequest request);
     }
     public class AccountAdminService : IAccountAdminService
@@ -22,12 +22,22 @@ namespace AccountService.Services
             this.contextFactory = contextFactory;
         }
 
-        public async Task<PaginatedAccountsResponse> GetAccounts(int pageNumber, int pageEntries)
+        public async Task<PaginatedAccountsResponse> GetAccounts(int pageNumber, int pageEntries, string searchQuery)
         {
             using var db = contextFactory.CreateDbContext();
+
             var baseQuery = db.Users
                 .OrderByDescending(x => x.CreatedAt)
                 .AsNoTracking();
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                // If search query is provided search for a specific string in either email or username
+                baseQuery = db.Users
+                    .Where(x => x.Email.ToLower().Contains(searchQuery.ToLower()) || x.Username.ToLower().Contains(searchQuery.ToLower()))
+                    .OrderByDescending(x => x.CreatedAt)
+                    .AsNoTracking();
+            }
 
             var accounts = await baseQuery
                 .Skip((pageNumber - 1) * pageEntries)

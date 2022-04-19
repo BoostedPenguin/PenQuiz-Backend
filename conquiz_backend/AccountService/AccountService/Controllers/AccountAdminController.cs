@@ -28,11 +28,11 @@ namespace AccountService.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAccounts([FromQuery] int pageNumber, [FromQuery] int pageEntries)
+        public async Task<IActionResult> GetAccounts([FromQuery] int pageNumber, [FromQuery] int pageEntries, [FromQuery] string searchQuery)
         {
             try
             {
-                var questions = await adminService.GetAccounts(pageNumber, pageEntries);
+                var questions = await adminService.GetAccounts(pageNumber, pageEntries, searchQuery);
 
                 return Ok(questions);
             }
