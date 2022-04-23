@@ -27,7 +27,7 @@ namespace AccountService.Services
             using var db = contextFactory.CreateDbContext();
 
             var baseQuery = db.Users
-                .OrderByDescending(x => x.CreatedAt)
+                .OrderByDescending(x => x.LastLoggedAt)
                 .AsNoTracking();
 
             if (!string.IsNullOrEmpty(searchQuery))
