@@ -86,6 +86,7 @@ namespace GameService.Services.GameTimerServices
             response.IsNeutral = false;
 
             var participants = await db.PvpRounds
+                .Include(x => x.AttackedTerritory)
                 .Include(x => x.Round)
                 .ThenInclude(x => x.GameInstance)
                 .ThenInclude(x => x.Participants)
@@ -99,6 +100,11 @@ namespace GameService.Services.GameTimerServices
 
             response.AttackerId = participants.AttackerId;
             response.DefenderId = participants.DefenderId ?? 0;
+
+
+            // If the current attacked territory is capital, then we can presume this and next question are capital questions
+            if(participants.AttackedTerritory.IsCapital)
+                response.CapitalRoundsRemaining = 2;
 
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
@@ -287,6 +293,8 @@ namespace GameService.Services.GameTimerServices
             var question = await db.Questions
                 .Include(x => x.Answers)
                 .Include(x => x.PvpRoundNum)
+                .ThenInclude(x => x.AttackedTerritory)
+                .Include(x => x.PvpRoundNum)
                 .ThenInclude(x => x.Round)
                 .ThenInclude(x => x.GameInstance)
                 .ThenInclude(x => x.Participants)
@@ -319,6 +327,13 @@ namespace GameService.Services.GameTimerServices
 
             response.AttackerId = question.PvpRoundNum.AttackerId;
             response.DefenderId = question.PvpRoundNum.DefenderId ?? 0;
+
+
+            // If the current attacked territory is capital,
+            // And we got to number question (attacker and defender had same answer)
+            // Then we can presume this and next question are capital questions
+            if (question.PvpRoundNum.AttackedTerritory.IsCapital)
+                response.CapitalRoundsRemaining = 2;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

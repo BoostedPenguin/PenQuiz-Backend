@@ -97,6 +97,9 @@ namespace GameService.Services.GameTimerServices
             response.DefenderId = participants.DefenderId ?? 0;
 
 
+            // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
+            response.CapitalRoundsRemaining = 1;
+
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
             timerWrapper.StartTimer(ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION);
@@ -360,6 +363,9 @@ namespace GameService.Services.GameTimerServices
 
             response.AttackerId = question.CapitalRoundNumber.PvpRound.AttackerId;
             response.DefenderId = question.CapitalRoundNumber.PvpRound.DefenderId ?? 0;
+
+            // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
+            response.CapitalRoundsRemaining = 1;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
