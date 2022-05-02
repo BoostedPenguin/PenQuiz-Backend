@@ -17,6 +17,7 @@ namespace GameService.Data.Models
         public int Score { get; set; }
         public int FinalQuestionScore { get; set; }
 
+        public virtual GameCharacter GameCharacter { get; set; }
         public virtual GameInstance Game { get; set; }
         public virtual Users Player { get; set; }
     }

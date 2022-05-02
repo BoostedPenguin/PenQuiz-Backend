@@ -16,6 +16,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using GameService.Data;
+using GameService.Services.CharacterActions;
 
 namespace GameService.Hubs
 {
@@ -57,6 +58,9 @@ namespace GameService.Hubs
         Task GetRoundQuestion(QuestionClientResponse question);
         Task GameSendCountDownSeconds(int secondsForAction);
         Task TESTING(string message);
+
+        Task WizardGetAbilityUsesLeft(int usesLeft);
+        Task WizardUseMultipleChoiceHint(WizardUseMultipleChoiceHint useMultipleChoiceHint);
     }
     [Authorize]
     public class GameHub : Hub<IGameHub>
@@ -68,11 +72,13 @@ namespace GameService.Hubs
         private readonly IGameControlService gameControlService;
         private readonly IHttpContextAccessor httpContext;
         private readonly ILogger<GameHub> logger;
+        private readonly IWizardActions wizardActions;
 
         public GameHub(IGameTimerService timer, 
             IGameService gameService, 
             IHttpContextAccessor httpContext, 
             ILogger<GameHub> logger,
+            IWizardActions wizardActions,
             IGameLobbyService gameLobbyService,
             IDbContextFactory<DefaultContext> contextFactory,
             IGameControlService gameControlService)
@@ -81,6 +87,7 @@ namespace GameService.Hubs
             this.gameService = gameService;
             this.httpContext = httpContext;
             this.logger = logger;
+            this.wizardActions = wizardActions;
             this.gameLobbyService = gameLobbyService;
             this.contextFactory = contextFactory;
             this.contextFactory = contextFactory;
@@ -186,6 +193,19 @@ namespace GameService.Hubs
         }
         Stopwatch stopwatch = new Stopwatch();
 
+
+        public async Task WizardUseAbility()
+        {
+            try
+            {
+
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
+
         public async Task SelectTerritory(string mapTerritoryName)
         {
             try
@@ -223,11 +243,6 @@ namespace GameService.Hubs
             {
                 await Clients.Caller.GameException(ex.Message);
             }
-        }
-
-        public async Task AnswerNumberQuestion(int number)
-        {
-
         }
 
         public async Task FindPublicMatch()

@@ -5,6 +5,7 @@ using GameService.Data.Models;
 using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
+using GameService.Services.CharacterActions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -32,19 +33,43 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly IWizardActions wizardActions;
         private readonly IMessageBusClient messageBus;
 
         public PvpStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            IWizardActions wizardActions,
             IMessageBusClient messageBus)
         {
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.wizardActions = wizardActions;
             this.messageBus = messageBus;
             contextFactory = _contextFactory;
+        }
+
+        /// <summary>
+        /// Triggered after the primary function is complete, but the client response is still not sent
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        private async Task Before_Show_Pvp_MultipleChoice_Screen(DefaultContext context, QuestionClientResponse response, string invitationLink)
+        {
+            foreach(var particip in response.Participants)
+            {
+                switch (particip.GameCharacter.GetCharacterType)
+                {
+                    case CharacterType.WIZARD:
+                        await wizardActions.GetAvailableMultipleChoiceHints(particip, invitationLink);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
         }
 
         /// <summary>
@@ -79,7 +104,6 @@ namespace GameService.Services.GameTimerServices
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
             db.Update(question.Round);
-            await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
 
@@ -106,6 +130,9 @@ namespace GameService.Services.GameTimerServices
             if(participants.AttackedTerritory.IsCapital)
                 response.CapitalRoundsRemaining = 2;
 
+            await Before_Show_Pvp_MultipleChoice_Screen(db, response, data.GameLink);
+            
+            await db.SaveChangesAsync();
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
