@@ -1,7 +1,9 @@
 ﻿using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos;
 using GameService.Hubs;
+using GameService.MessageBus;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -30,11 +32,30 @@ namespace GameService.Services.GameTimerServices
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
+        private readonly IMessageBusClient messageBus;
+
+        private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
+        {
+            // Request questions only for the initial multiple questions for neutral attacking order
+            // After multiple choices are over, request a new batch for number questions for all untaken territories
+            messageBus.RequestQuestions(new RequestQuestionsDto()
+            {
+                Event = "Question_Request",
+                GameGlobalIdentifier = gameGlobalIdentifier,
+                MultipleChoiceQuestionsRoundId = rounds
+                    .Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
+                    .Select(x => x.Id)
+                    .ToList(),
+                NumberQuestionsRoundId = new List<int>(),
+                IsNeutralGeneration = isNeutralGeneration,
+            });
+        }
 
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory,
             IPvpStageTimerEvents pvpStageTimerEvents,
             IHubContext<GameHub, IGameHub> hubContext,
             INeutralMCTimerEvents neutralMCTimerEvents,
+            IMessageBusClient messageBus,
             ICapitalStageTimerEvents capitalStageTimerEvents,
             IFinalPvpQuestionService finalPvpQuestionService,
             ILogger<GameTimerService> logger,
@@ -44,6 +65,7 @@ namespace GameService.Services.GameTimerServices
             this.pvpStageTimerEvents = pvpStageTimerEvents;
             this.hubContext = hubContext;
             this.neutralMCTimerEvents = neutralMCTimerEvents;
+            this.messageBus = messageBus;
             this.capitalStageTimerEvents = capitalStageTimerEvents;
             this.finalPvpQuestionService = finalPvpQuestionService;
             this.logger = logger;
@@ -70,11 +92,16 @@ namespace GameService.Services.GameTimerServices
 
             // Default starter values
             actionTimer.Data.CurrentGameRoundNumber = 1;
+            actionTimer.Data.GameInstance = gm;
 
             GameTimers.Add(actionTimer);
 
             // Start timer
             actionTimer.Elapsed += ActionTimer_Elapsed;
+
+            // Request initial multiple choice questions from question service
+            RequestQuestions(gm.GameGlobalIdentifier, gm.Rounds.ToArray(), true);
+
 
             actionTimer.StartTimer(ActionState.GAME_START_PREVIEW_TIME, 50);
         }

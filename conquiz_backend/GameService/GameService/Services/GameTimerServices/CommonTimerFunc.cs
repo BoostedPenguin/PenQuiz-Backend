@@ -55,16 +55,25 @@ namespace GameService.Services.GameTimerServices
         public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
         {
             var game = await defaultContext.GameInstance
+                .Include(x => x.Rounds)
+                .ThenInclude(e => e.Question)
+                .ThenInclude(e => e.Answers)
+
                 .Include(x => x.Participants)   
                 .ThenInclude(x => x.Player)
+
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.NeutralRound)
                 .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
+
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.PvpRound)
                 .ThenInclude(x => x.PvpRoundAnswers)
+
                 .Include(x => x.ObjectTerritory)
                 .ThenInclude(x => x.MapTerritory)
+
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 

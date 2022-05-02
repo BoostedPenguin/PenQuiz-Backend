@@ -40,16 +40,22 @@ namespace GameService.Services
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
+            var playerGameTimer = GameTimerService.GameTimers.FirstOrDefault(e =>
+                e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
+
+            if(playerGameTimer == null)
+            {
+                throw new GameException("There is no open game where this player participates");
+            }
+
+            var gm = playerGameTimer.Data.GameInstance;
+
             var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
-            var currentRoundOverview = await db.Round
-                .Include(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
+
+            var currentRoundOverview = gm.Rounds
                 .Where(x =>
-                    x.GameInstance.GameState == GameState.IN_PROGRESS &&
-                    x.GameRoundNumber == x.GameInstance.GameRoundNumber &&
-                    x.GameInstance.Participants
-                        .Any(y => y.PlayerId == user.Id))
+                    x.GameRoundNumber == x.GameInstance.GameRoundNumber)
                 .Select(x => new
                 {
                     RoundId = x.Id,
@@ -58,9 +64,7 @@ namespace GameService.Services
                     x.GameInstanceId,
                     x.GameInstance.InvitationLink
                 })
-                .AsNoTracking()
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
 
             if (currentRoundOverview == null)
                 throw new GameException("The current round isn't valid");
@@ -71,12 +75,9 @@ namespace GameService.Services
             // Selecting territory for multiple choice neutral rounds
             if(currentRoundOverview.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
             {
-                var neutralRound = await db.Round
-                    .Include(x => x.NeutralRound)
-                    .ThenInclude(x => x.TerritoryAttackers)
-                    .ThenInclude(x => x.AttackedTerritory)
-                    .Where(x => x.Id == currentRoundOverview.RoundId)
-                    .FirstOrDefaultAsync();
+                var neutralRound = gm.Rounds
+                    .Where(x => x.Id == currentRoundOverview.RoundId).FirstOrDefault();
+
 
                 // Check if it's this player's turn for selecting a neutral territory or not
 
@@ -112,11 +113,15 @@ namespace GameService.Services
                 currentTurnsPlayer.AttackedTerritoryId = gameObjTerritory.Id;
 
                 // Set the ObjectTerritory as being attacked currently
-                gameObjTerritory.AttackedBy = currentTurnsPlayer.AttackerId;
-                db.Update(gameObjTerritory);
-                db.Update(currentTurnsPlayer);
+                var obj = gm.ObjectTerritory.First(e => e.Id == gameObjTerritory.Id);
+                obj.AttackedBy = currentTurnsPlayer.AttackerId;
+                
+                
+                // Store it in state, and update when the closing event triggers
+                // Makes sure entity does not track same entity twice
 
-                await db.SaveChangesAsync();
+                //db.Update(obj);
+                //await db.SaveChangesAsync();
 
                 return new SelectedTerritoryResponse()
                 {
@@ -283,31 +288,23 @@ namespace GameService.Services
             var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
-            // Not sure about performanec wise, also what happens if you include a null of null
-            var currentRound = await db.Round
-                .Include(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .ThenInclude(x => x.CapitalRoundUserAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .ThenInclude(x => x.CapitalRoundMultipleQuestion)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .ThenInclude(x => x.CapitalRoundNumberQuestion)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Where(x => x.GameRoundNumber == x.GameInstance.GameRoundNumber && x.GameInstance.GameState == GameState.IN_PROGRESS && x.GameInstance.Participants
-                    .Any(y => y.PlayerId == user.Id))
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+
+            var playerGameTimer = GameTimerService.GameTimers.FirstOrDefault(e =>
+                e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
+
+            if (playerGameTimer == null)
+            {
+                throw new GameException("There is no open game where this player participates");
+            }
+
+            var gm = playerGameTimer.Data.GameInstance;
+
+            var currentRound = gm.Rounds
+                .Where(x =>
+                    x.GameRoundNumber == x.GameInstance.GameRoundNumber)
+                .FirstOrDefault();
+
+
 
             if (currentRound == null)
                 throw new AnswerSubmittedGameException("User isn't participating in any in progress games.");
@@ -412,10 +409,6 @@ namespace GameService.Services
                     AnswerFinalQuestion(db, answerIdString, currentRound, user.Id);
                     break;
             }
-
-            db.Update(currentRound);
-
-            await db.SaveChangesAsync();
         }
     }
 }

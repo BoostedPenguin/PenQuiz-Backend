@@ -3,6 +3,7 @@ using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
 using GameService.Dtos;
+using GameService.Services.GameTimerServices;
 using Google.Apis.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -124,22 +125,30 @@ namespace GameService.EventProcessing
             db.SaveChanges();
         }
 
+
+        /// <summary>
+        /// Attaches the questions to the current game instance located in gametimerservice
+        /// On next event the questions will get saved to the database
+        /// </summary>
+        /// <param name="questionsResponse"></param>
         private void AddGameQuestions(QResponse questionsResponse)
         {
-            using var db = contextFactory.CreateDbContext();
-
-            var gm = db.GameInstance
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.Question)
-                .Where(x => x.GameGlobalIdentifier == questionsResponse.GameGlobalIdentifier)
-                .FirstOrDefault();
+            // Get the current timer
+            var gm = GameTimerService
+                .GameTimers
+                .FirstOrDefault(e => e.Data.GameGlobalIdentifier == questionsResponse.GameGlobalIdentifier)
+                .Data.GameInstance;
 
 
             if (gm == null)
             {
                 logger.LogWarning($"Game instance doesnt exist. Global ID: {questionsResponse.GameGlobalIdentifier}");
+                return;
+            }
+
+            if(gm.GameState != GameState.IN_PROGRESS)
+            {
+                logger.LogWarning($"Game instance is no longer in progress. Global ID: {questionsResponse.GameGlobalIdentifier}");
                 return;
             }
 
@@ -162,11 +171,12 @@ namespace GameService.EventProcessing
                 {
                     receivedQuestion.PvpRoundId = gameRound.PvpRound.Id;
                     receivedQuestion.RoundId = null;
-                }
-                db.AddAsync(receivedQuestion);
-            }
 
-            db.SaveChanges();
+                    gameRound.PvpRound.NumberQuestion = receivedQuestion;
+                    continue;
+                }
+                gameRound.Question = receivedQuestion;
+            }
         }
 
         private void AddUser(string userPublishedMessage)

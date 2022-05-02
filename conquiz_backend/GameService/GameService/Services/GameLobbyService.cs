@@ -30,7 +30,6 @@ namespace GameService.Services
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IMapGeneratorService mapGeneratorService;
-        private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
         private const int DefaultTerritoryScore = 500;
@@ -40,12 +39,11 @@ namespace GameService.Services
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
 
-        public GameLobbyService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService, IMessageBusClient messageBus) : base(_contextFactory)
+        public GameLobbyService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.mapGeneratorService = mapGeneratorService;
-            this.messageBus = messageBus;
         }
 
 
@@ -350,29 +348,9 @@ namespace GameService.Services
             a.Update(gameInstance);
             await a.SaveChangesAsync();
 
-
-            // Send request to question service to generate questions in the background
-            RequestQuestions(gameInstance.GameGlobalIdentifier, initialRounding, true);
-
             return await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
         }
 
-        private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
-        {
-            // Request questions only for the initial multiple questions for neutral attacking order
-            // After multiple choices are over, request a new batch for number questions for all untaken territories
-            messageBus.RequestQuestions(new RequestQuestionsDto()
-            {
-                Event = "Question_Request",
-                GameGlobalIdentifier = gameGlobalIdentifier,
-                MultipleChoiceQuestionsRoundId = rounds
-                    .Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
-                    .Select(x => x.Id)
-                    .ToList(),
-                NumberQuestionsRoundId = new List<int>(),
-                IsNeutralGeneration = isNeutralGeneration,
-            });
-        }
 
         public async Task<Round[]> CreateNeutralAttackRounding(DefaultContext context, int mapId, List<Participants> allPlayers, int gameInstanceId)
         {

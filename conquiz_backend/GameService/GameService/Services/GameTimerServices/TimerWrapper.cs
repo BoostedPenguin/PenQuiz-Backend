@@ -1,4 +1,5 @@
-﻿using GameService.Hubs;
+﻿using GameService.Data.Models;
+using GameService.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
@@ -91,7 +92,7 @@ namespace GameService.Services.GameTimerServices
                 GameLink = gameLink;
                 GameGlobalIdentifier = gameGlobalIdentifier;
             }
-
+            public GameInstance GameInstance { get; set; }
             public CountDownTimer CountDownTimer { get; set; }
             public int GameInstanceId { get; set; }
             public int LastNeutralMCRound { get; set; }
