@@ -213,7 +213,7 @@ namespace GameService.Hubs
         {
             try
             {
-                await gameControlService.AnswerQuestion(answerIdNumber);
+                gameControlService.AnswerQuestion(answerIdNumber);
             }
             catch(AnswerSubmittedGameException ex)
             {
@@ -223,11 +223,6 @@ namespace GameService.Hubs
             {
                 await Clients.Caller.GameException(ex.Message);
             }
-        }
-
-        public async Task AnswerNumberQuestion(int number)
-        {
-
         }
 
         public async Task FindPublicMatch()
