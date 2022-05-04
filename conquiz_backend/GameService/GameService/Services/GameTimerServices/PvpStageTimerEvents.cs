@@ -62,16 +62,10 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
 
-            // Show the question to the user
-            var question = await db.Questions
-                .Include(x => x.Answers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
-                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+
+            var question = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).Question;
+
 
             if (question == null)
                 throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
@@ -85,14 +79,8 @@ namespace GameService.Services.GameTimerServices
 
             response.IsNeutral = false;
 
-            var participants = await db.PvpRounds
-                .Include(x => x.AttackedTerritory)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.Round.GameRoundNumber == data.CurrentGameRoundNumber &&
-                    x.Round.GameInstanceId == data.GameInstanceId)
-                .FirstOrDefaultAsync();
+            var participants = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).PvpRound;
+
 
             response.Participants = participants.Round.GameInstance.Participants
                         .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
@@ -120,19 +108,9 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
 
-            var currentRound =
-                await db.Round
-                .Include(x => x.GameInstance)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+
+            var currentRound = gm.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault();
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -289,6 +267,7 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Stop();
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
+
 
             var question = await db.Questions
                 .Include(x => x.Answers)
@@ -501,14 +480,9 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
 
-            var currentRound = await db.Round
-                .Include(x => x.GameInstance)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+            var currentRound = gm.Rounds.Where(x => x.GameRoundNumber == x.GameInstance.GameRoundNumber).FirstOrDefault();
+
 
             currentRound.IsTerritoryVotingOpen = true;
 
@@ -517,9 +491,7 @@ namespace GameService.Services.GameTimerServices
 
             var currentAttacker = currentRound.PvpRound.AttackerId;
 
-            var userTerritoriesCount = await db.ObjectTerritory
-                .Where(x => x.GameInstanceId == data.GameInstanceId && x.TakenBy == currentAttacker)
-                .CountAsync();
+            var userTerritoriesCount = gm.ObjectTerritory.Where(x => x.TakenBy == currentAttacker).Count();
 
             // User already lost, move to next attacker
             if(userTerritoriesCount == 0)
@@ -534,8 +506,8 @@ namespace GameService.Services.GameTimerServices
                 return;
             }
 
-            var availableTerritories = await gameTerritoryService
-                .GetAvailableAttackTerritoriesNames(db, currentAttacker, data.GameInstanceId, false);
+            var availableTerritories = gameTerritoryService
+                .GetAvailableAttackTerritoriesNames(gm, currentAttacker, data.GameInstanceId, false);
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker, availableTerritories);
@@ -552,26 +524,24 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
 
-            var currentRound = await db.Round
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+
+            var currentRound = gm.Rounds
+                .Where(x => x.GameRoundNumber == x.GameInstance.GameRoundNumber).FirstOrDefault();
+
 
             // Player didn't select anything, assign him a random UNSELECTED territory
             if (currentRound.PvpRound.AttackedTerritoryId == null)
             {
-                var randomTerritory = 
-                    await gameTerritoryService.GetRandomTerritory(currentRound.PvpRound.AttackerId, data.GameInstanceId, false);
+                var readonlyRandomTerritory = 
+                    gameTerritoryService.GetRandomTerritory(gm, currentRound.PvpRound.AttackerId, data.GameInstanceId, false);
+
+                var randomTerritory = data.GameInstance.ObjectTerritory.First(x => x.Id == readonlyRandomTerritory.Id);
 
                 currentRound.PvpRound.AttackedTerritoryId = randomTerritory.Id;
 
                 currentRound.PvpRound.DefenderId = randomTerritory.TakenBy;
+
                 randomTerritory.AttackedBy = currentRound.PvpRound.AttackerId;
 
                 db.Update(randomTerritory);

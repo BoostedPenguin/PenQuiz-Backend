@@ -70,19 +70,12 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Stop();
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
 
-            var currentRound =
-                await db.Round
-                .Include(x => x.GameInstance)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var currentRound = gm.Rounds
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
+                .FirstOrDefault();
+
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -173,8 +166,12 @@ namespace GameService.Services.GameTimerServices
                     .First();
             }
 
-            var randomTerritory = await gameTerritoryService
-                .GetRandomTerritory(winnerId, currentRound.GameInstanceId);
+            // Servers as a read-only replica, entity does NOT track it
+            var readonlyRandomTerritory = gameTerritoryService
+                .GetRandomTerritory(gm, winnerId, currentRound.GameInstanceId);
+
+
+            var randomTerritory = data.GameInstance.ObjectTerritory.First(x => x.Id == readonlyRandomTerritory.Id);
 
             var selectedPersonObj = currentRound
                 .NeutralRound
@@ -220,7 +217,7 @@ namespace GameService.Services.GameTimerServices
             if (data.CurrentGameRoundNumber > data.LastNeutralNumberRound)
             {
                 // Create pvp question rounds if gm number neutral rounds are over
-                var rounds = await Create_Pvp_Rounds(db, timerWrapper, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
+                var rounds = Create_Pvp_Rounds(gm, timerWrapper, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
 
 
                 await db.AddRangeAsync(rounds);
@@ -259,33 +256,32 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
 
-            // Show the question to the user
-            var question = await db.Questions
-                .Include(x => x.Answers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
-                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
 
-            if (question == null)
+            var gm = data.GameInstance;
+
+
+            // Show the question to the user
+            var roundQuestion = gm.Rounds
+                .First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber);
+
+
+
+            if (roundQuestion.Question == null)
                 throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
 
 
             // Open this question for voting
-            question.Round.IsQuestionVotingOpen = true;
-            question.Round.QuestionOpenedAt = DateTime.Now;
+            roundQuestion.IsQuestionVotingOpen = true;
+            roundQuestion.QuestionOpenedAt = DateTime.Now;
 
-            db.Update(question.Round);
+            db.Update(roundQuestion);
             await db.SaveChangesAsync();
 
-            var response = mapper.Map<QuestionClientResponse>(question);
+            var response = mapper.Map<QuestionClientResponse>(roundQuestion.Question);
 
             // If the round is a neutral one, then everyone can attack
             response.IsNeutral = true;
-            response.Participants = question.Round.GameInstance.Participants.ToArray();
+            response.Participants = roundQuestion.GameInstance.Participants.ToArray();
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
@@ -298,12 +294,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
 
             var data = timerWrapper.Data;
-
-            var gm = db.GameInstance
-                .Include(x => x.Participants)
-                .Include(x => x.ObjectTerritory)
-                .AsSplitQuery()
-                .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
+            var gm = data.GameInstance;
 
             var particip = gm.Participants.ToList();
 
@@ -324,7 +315,7 @@ namespace GameService.Services.GameTimerServices
             data.CurrentGameRoundNumber = 40;
             gm.GameRoundNumber = 41;
 
-            var rounds = await Create_Pvp_Rounds(db, timerWrapper, gm.Participants.Select(x => x.PlayerId).ToList());
+            var rounds = Create_Pvp_Rounds(gm, timerWrapper, gm.Participants.Select(x => x.PlayerId).ToList());
 
             foreach (var round in rounds)
             {
@@ -386,13 +377,12 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
         }
 
-        private async Task<Round[]> Create_Pvp_Rounds(DefaultContext db, TimerWrapper timerWrapper, List<int> userIds)
+        private Round[] Create_Pvp_Rounds(GameInstance gm, TimerWrapper timerWrapper, List<int> userIds)
         {
             int RequiredPlayers = 3;
             var data = timerWrapper.Data;
 
-            var mapId = await db.Maps.Where(x => x.Name == "Antarctica").Select(x => x.Id).FirstAsync();
-            var totalTerritories = await mapGeneratorService.GetAmountOfTerritories(db, mapId);
+            var totalTerritories = mapGeneratorService.GetAmountOfTerritories(gm);
 
             var order = CommonTimerFunc.GenerateAttackOrder(userIds, totalTerritories, RequiredPlayers, false);
 

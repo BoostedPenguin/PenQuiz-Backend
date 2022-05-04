@@ -26,7 +26,7 @@ namespace GameServiceUnitTests
 
             var loggerMoq = Mock.Of<ILogger<MapGeneratorService>>();
             service = new MapGeneratorService(mockContextFactory, loggerMoq);
-            _ = service.ValidateMap();
+            _ = service.ValidateMap(mockContextFactory.CreateDbContext());
         }
 
         [Fact]
@@ -40,8 +40,8 @@ namespace GameServiceUnitTests
         [Fact]
         public async Task TestValidateMap()
         {
-            await service.ValidateMap();
             var db = mockContextFactory.CreateDbContext();
+            await service.ValidateMap(db);
             var maps = db.Maps.ToList();
 
             Assert.Single(maps);

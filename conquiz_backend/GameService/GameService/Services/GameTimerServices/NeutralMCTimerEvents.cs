@@ -30,7 +30,6 @@ namespace GameService.Services.GameTimerServices
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
-        private readonly Random r = new Random();
 
         public NeutralMCTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
@@ -123,7 +122,7 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Stop();
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
-
+            var gm = data.GameInstance;
 
             var currentRound = data.GameInstance.Rounds
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
@@ -195,8 +194,11 @@ namespace GameService.Services.GameTimerServices
             if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
             {
                 // Create number question rounds if gm multiple choice neutral rounds are over
-                var rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
-                await db.AddRangeAsync(rounds);
+                var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
+
+                rounds.ForEach(e => gm.Rounds.Add(e));
+
+                db.Update(gm);
                 await db.SaveChangesAsync();
 
                 data.LastNeutralNumberRound = db.Round
@@ -307,17 +309,14 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.StartTimer(ActionState.END_MULTIPLE_CHOICE_QUESTION);
         }
 
-        private async Task<Round[]> Create_Neutral_Number_Rounds(DefaultContext db, TimerWrapper timerWrapper)
+        private static List<Round> Create_Neutral_Number_Rounds(GameInstance gm, TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
-            var untakenTerritoriesCount = await db.ObjectTerritory
+            var untakenTerritoriesCount = gm.ObjectTerritory
                 .Where(x => x.TakenBy == null && x.GameInstanceId == data.GameInstanceId)
-                .CountAsync();
+                .Count();
 
-            var participantsIds = await db.Participants
-                .Where(x => x.GameId == data.GameInstanceId)
-                .Select(x => x.PlayerId)
-                .ToListAsync();
+            var participantsIds = gm.Participants.Select(x => x.PlayerId).ToList();
 
             var numberQuestionRounds = new List<Round>();
             for (var i = 0; i < untakenTerritoriesCount; i++)
@@ -350,7 +349,7 @@ namespace GameService.Services.GameTimerServices
                 numberQuestionRounds.Add(baseRound);
             }
 
-            return numberQuestionRounds.ToArray();
+            return numberQuestionRounds;
         }
 
 
@@ -360,11 +359,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var data = timerWrapper.Data;
 
-            var gm = db.GameInstance
-                .Include(x => x.Participants)
-                .Include(x => x.ObjectTerritory)
-                .AsSplitQuery()
-                .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
+            var gm = data.GameInstance;
 
             data.CurrentGameRoundNumber = data.LastNeutralMCRound + 1;
 
@@ -372,7 +367,7 @@ namespace GameService.Services.GameTimerServices
             gm.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
             // Create number question rounds if gm multiple choice neutral rounds are over
-            var rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
+            var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
             await db.AddRangeAsync(rounds);
             await db.SaveChangesAsync();
 

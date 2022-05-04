@@ -27,6 +27,7 @@ namespace GameService.Services
         Task<MapTerritory[]> GetBorders(DefaultContext context, int territoryId);
         MapTerritory[] GetBorders(int[] territoryId);
         Task<int> GetAmountOfTerritories(DefaultContext context, int mapId);
+        int GetAmountOfTerritories(GameInstance gm);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -305,6 +306,14 @@ namespace GameService.Services
             if (bothTerritories.Count > 2) throw new ArgumentException("There was 1 or more territory name, bound to this map, which was duplicated in our db.");
 
             return await AreTheyBorders(context, bothTerritories[0].Id, bothTerritories[1].Id);
+        }
+
+        public int GetAmountOfTerritories(GameInstance gm)
+        {
+            if (gm?.Map?.MapTerritory == null)
+                throw new ArgumentException("Provided game instance has null mapterritories");
+
+            return gm.Map.MapTerritory.Count;
         }
 
         public async Task<int> GetAmountOfTerritories(DefaultContext context, int mapId)

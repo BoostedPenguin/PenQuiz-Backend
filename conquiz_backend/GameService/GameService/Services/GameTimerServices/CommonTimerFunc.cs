@@ -74,6 +74,9 @@ namespace GameService.Services.GameTimerServices
                 .Include(x => x.ObjectTerritory)
                 .ThenInclude(x => x.MapTerritory)
 
+                .Include(x => x.Map)
+                .ThenInclude(x => x.MapTerritory)
+
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 
@@ -109,12 +112,14 @@ namespace GameService.Services.GameTimerServices
         }
         public static async Task<PvpStageIsGameOver> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db, IMessageBusClient messageBus)
         {
+            var gm = timerWrapper.Data.GameInstance;
             var data = timerWrapper.Data;
 
             // Check if there are any non-attacker territories left
-            var nonAttackerTerritoriesCount = await db.ObjectTerritory
+
+            var nonAttackerTerritoriesCount = gm.ObjectTerritory
                 .Where(x => x.GameInstanceId == data.GameInstanceId && x.TakenBy != round.AttackerId)
-                .CountAsync();
+                .Count();
 
 
             // This attacker controls all territories. Skip any other rounds and declare him winner.
@@ -126,9 +131,8 @@ namespace GameService.Services.GameTimerServices
             // Check if last pvp round
             if (data.CurrentGameRoundNumber > data.LastPvpRound)
             {
-
                 var allPlayerTerritoriesWoCapital = db.ObjectTerritory
-                    .Where(x => x.GameInstanceId == data.GameInstanceId && !x.IsCapital).ToList();
+                    .Where(x => !x.IsCapital).ToList();
 
                 var groupedBy = allPlayerTerritoriesWoCapital
                     .GroupBy(x => x.TakenBy)
@@ -240,7 +244,7 @@ namespace GameService.Services.GameTimerServices
             });
         }
 
-        public static void RequestQuestions(IMessageBusClient messageBus, string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
+        public static void RequestQuestions(IMessageBusClient messageBus, string gameGlobalIdentifier, IEnumerable<Round> rounds, bool isNeutralGeneration = false)
         {
             // Request questions only for the initial multiple questions for neutral attacking order
             // After multiple choices are over, request a new batch for number questions for all untaken territories
