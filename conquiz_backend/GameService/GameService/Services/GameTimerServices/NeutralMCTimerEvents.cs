@@ -368,7 +368,10 @@ namespace GameService.Services.GameTimerServices
 
             // Create number question rounds if gm multiple choice neutral rounds are over
             var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
-            await db.AddRangeAsync(rounds);
+
+            rounds.ForEach(e => gm.Rounds.Add(e));
+
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             data.LastNeutralNumberRound = db.Round
