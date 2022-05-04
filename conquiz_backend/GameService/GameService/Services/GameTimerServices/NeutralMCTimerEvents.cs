@@ -50,7 +50,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
 
             var gm = data.GameInstance;
-            var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+            var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
                 .FirstOrDefault();
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
@@ -68,7 +68,6 @@ namespace GameService.Services.GameTimerServices
                 // Set the ObjectTerritory as being attacked currently
                 data.GameInstance.ObjectTerritory.First(x => x.Id == randomTerritory.Id).AttackedBy = currentAttacker.AttackerId;
 
-                db.Update(data.GameInstance);
             }
 
             // This attacker voting is over, go to next attacker
@@ -81,7 +80,7 @@ namespace GameService.Services.GameTimerServices
                         currentRound.NeutralRound.TerritoryAttackers
                         .First(x => x.AttackOrderNumber == newAttackorderNumber);
 
-                    db.Update(currentRound);
+                    db.Update(data.GameInstance);
                     await db.SaveChangesAsync();
 
                     var availableTerritories = gameTerritoryService
@@ -101,7 +100,7 @@ namespace GameService.Services.GameTimerServices
                 // This was the last attacker, show a preview of all territories now, and then show the questions
                 case 3:
                     currentRound.IsTerritoryVotingOpen = false;
-                    db.Update(currentRound);
+                    db.Update(data.GameInstance);
                     await db.SaveChangesAsync();
 
                     await hubContext.Clients.Group(data.GameLink)
@@ -121,7 +120,7 @@ namespace GameService.Services.GameTimerServices
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
             timerWrapper.Stop();
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
 
             var currentRound = data.GameInstance.Rounds
@@ -187,7 +186,7 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Data.CurrentGameRoundNumber++;
             currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             // Request a new batch of number questions from the question service
@@ -247,14 +246,13 @@ namespace GameService.Services.GameTimerServices
 
             var gm = data.GameInstance;
             var currentRound = data.GameInstance.Rounds
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .FirstOrDefault();
+                .FirstOrDefault(x => x.GameRoundNumber == data.CurrentGameRoundNumber);
 
 
             // Open this round for territory voting
             currentRound.IsTerritoryVotingOpen = true;
 
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
@@ -279,10 +277,10 @@ namespace GameService.Services.GameTimerServices
 
             // Get the question and show it to the clients
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            using var db = contextFactory.CreateDbContext();
 
-
-            var currentRound = data.GameInstance.Rounds
+            var gm = timerWrapper.Data.GameInstance;
+            var currentRound = gm.Rounds
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefault();
 
@@ -295,7 +293,7 @@ namespace GameService.Services.GameTimerServices
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
-            db.Update(question.Round);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);

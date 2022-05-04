@@ -44,16 +44,16 @@ namespace GameService.Services.GameTimerServices
             return actionState switch
             {
                 // On game start preview time, not same as defaultpreviewtime
-                ActionState.GAME_START_PREVIEW_TIME => 3000,
+                ActionState.GAME_START_PREVIEW_TIME => 1000,
 
                 // Neutral round time to attack neutral territory
-                ActionState.OPEN_PLAYER_ATTACK_VOTING => 8000,
+                ActionState.OPEN_PLAYER_ATTACK_VOTING => 2000,
 
                 // Neutral round time to answer multiple choice question
-                ActionState.SHOW_MULTIPLE_CHOICE_QUESTION => 12000,
+                ActionState.SHOW_MULTIPLE_CHOICE_QUESTION => 2000,
 
                 // Universal, time to answer number question
-                ActionState.SHOW_NUMBER_QUESTION => 12000,
+                ActionState.SHOW_NUMBER_QUESTION => 2000,
 
                 // PVP Rounds time to attack enemy territory
                 ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING => 8000,
