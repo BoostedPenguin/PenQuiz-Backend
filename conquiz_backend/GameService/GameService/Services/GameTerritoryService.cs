@@ -11,9 +11,9 @@ namespace GameService.Services
 {
     public interface IGameTerritoryService
     {
-        Task<ObjectTerritory> GetRandomTerritory(int userId, int gameInstanceId, bool takenByCheck = true);
-        Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral);
-        Task<string[]> GetAvailableAttackTerritoriesNames(DefaultContext db, int userId, int gameInstanceId, bool isNeutral);
+        string[] GetAvailableAttackTerritoriesNames(GameInstance gm, int userId, int gameInstanceId, bool isNeutral);
+        ObjectTerritory GetRandomTerritory(GameInstance gm, int userId, int gameInstanceId, bool takenByCheck = true);
+        ObjectTerritory SelectTerritoryAvailability(GameInstance gm, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral);
     }
 
     public class GameTerritoryService : IGameTerritoryService
@@ -50,46 +50,36 @@ namespace GameService.Services
             public MapTerritory[] AllPlayerBorders { get; set; }
         }
 
-        private async Task<UserBorderInformation> GetBorderInformation(DefaultContext db, int userId, int gameInstanceId, bool takenByCheck = true)
+        private UserBorderInformation GetBorderInformation(GameInstance gm, int userId, int gameInstanceId, bool takenByCheck = true)
         {
-            var userTerritories = await db.ObjectTerritory
-                .Include(x => x.MapTerritory)
-                .Where(x => x.GameInstanceId == gameInstanceId && x.TakenBy == userId)
-                .ToListAsync();
+            var userTerritories = gm.ObjectTerritory.Where(x => x.TakenBy == userId);
 
 
             // There is a possibility where people get blocked off
             // So in case all takenterritories don't border anything, you need a random select
-            var allPlayerBorders = await mapGeneratorService.GetBorders(db, userTerritories.Select(x => x.MapTerritoryId).ToArray());
+            var allPlayerBorders = mapGeneratorService.GetBorders(userTerritories.Select(x => x.MapTerritoryId).ToArray());
 
             List<ObjectTerritory> untakenBorder;
 
             // Takes into account takenBy to ensure that the territory doesnt belong to anyone
             if (takenByCheck)
             {
-                untakenBorder = await db.ObjectTerritory
-                .Include(x => x.MapTerritory)
-                .Where(x =>
-                    x.GameInstanceId == gameInstanceId &&
-                    x.TakenBy == null &&
-                    x.AttackedBy == null)
-                .ToListAsync();
+                untakenBorder = gm.ObjectTerritory
+                    .Where(x => x.TakenBy == null && x.AttackedBy == null)
+                    .ToList();
             }
             else
             {
-                untakenBorder = await db.ObjectTerritory
-                    .Include(x => x.MapTerritory)
-                    .Where(x =>
-                        x.GameInstanceId == gameInstanceId &&
-                        x.AttackedBy == null)
-                    .ToListAsync();
+                untakenBorder = gm.ObjectTerritory
+                    .Where(x => x.AttackedBy == null)
+                    .ToList();
             }
 
             untakenBorder = untakenBorder.Except(userTerritories).ToList();
             var matchingBorders = untakenBorder.Where(x => allPlayerBorders.Any(y => x.MapTerritoryId == y.Id)).ToList();
             return new UserBorderInformation()
             {
-                UserTerritories = userTerritories,
+                UserTerritories = userTerritories.ToList(),
                 AllPlayerBorders = allPlayerBorders,
                 UntakenBorders = untakenBorder,
                 MatchingBorders = matchingBorders
@@ -103,9 +93,9 @@ namespace GameService.Services
         /// <param name="userId"></param>
         /// <param name="gameInstanceId"></param>
         /// <returns></returns>
-        public async Task<string[]> GetAvailableAttackTerritoriesNames(DefaultContext db, int userId, int gameInstanceId, bool isNeutral)
+        public string[] GetAvailableAttackTerritoriesNames(GameInstance gm, int userId, int gameInstanceId, bool isNeutral)
         {
-            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, isNeutral);
+            var userBorderInfo = GetBorderInformation(gm, userId, gameInstanceId, isNeutral);
 
 
             // If matching borders are available return them
@@ -129,9 +119,9 @@ namespace GameService.Services
         /// <param name="gameInstanceId"></param>
         /// <param name="selectedMapTerritoryId"></param>
         /// <returns></returns>
-        public async Task<ObjectTerritory> SelectTerritoryAvailability(DefaultContext db, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral)
+        public ObjectTerritory SelectTerritoryAvailability(GameInstance gm, int userId, int gameInstanceId, int selectedMapTerritoryId, bool isNeutral)
         {
-            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, isNeutral);
+            var userBorderInfo = GetBorderInformation(gm, userId, gameInstanceId, isNeutral);
 
             var selectedTerritory = userBorderInfo
                 .MatchingBorders
@@ -166,19 +156,17 @@ namespace GameService.Services
             }
         }
 
-        public async Task<ObjectTerritory> GetRandomTerritory(int userId, int gameInstanceId, bool takenByCheck = true)
+        public ObjectTerritory GetRandomTerritory(GameInstance gm, int userId, int gameInstanceId, bool takenByCheck = true)
         {
-            using var db = contextFactory.CreateDbContext();
+            var userBorderInfo = GetBorderInformation(gm, userId, gameInstanceId, takenByCheck);
 
-            var userBorderInfo = await GetBorderInformation(db, userId, gameInstanceId, takenByCheck);
-
-            if (userBorderInfo.MatchingBorders.Count() > 0)
+            if (userBorderInfo.MatchingBorders.Count > 0)
             {
-                return userBorderInfo.MatchingBorders[r.Next(0, userBorderInfo.MatchingBorders.Count())];
+                return userBorderInfo.MatchingBorders[r.Next(0, userBorderInfo.MatchingBorders.Count)];
             }
             else
             {
-                return userBorderInfo.UntakenBorders[r.Next(0, userBorderInfo.UntakenBorders.Count())];
+                return userBorderInfo.UntakenBorders[r.Next(0, userBorderInfo.UntakenBorders.Count)];
             }
         }
     }

@@ -31,7 +31,7 @@ namespace GameService.Services
 
     public interface IGameService
     {
-        Task CancelOngoingGames();
+        Task CancelOngoingGames(DefaultContext db);
         Task<GameInstance> OnPlayerLoginConnection();
         Task<PersonDisconnectedGameResult> PersonDisconnected();
     }
@@ -102,10 +102,8 @@ namespace GameService.Services
             this.gameTimerService = gameTimerService;
         }
 
-        public async Task CancelOngoingGames()
+        public async Task CancelOngoingGames(DefaultContext db)
         {
-            using var db = contextFactory.CreateDbContext();
-
             var ongoingGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .Where(x => x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS)

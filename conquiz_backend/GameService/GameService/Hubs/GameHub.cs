@@ -192,7 +192,7 @@ namespace GameService.Hubs
             {
 
                 stopwatch.Restart();
-                var response = await gameControlService.SelectTerritory(mapTerritoryName);
+                var response = gameControlService.SelectTerritory(mapTerritoryName);
 
                 await Clients.Group(response.GameLink).OnSelectedTerritory(response);
                 stopwatch.Stop();

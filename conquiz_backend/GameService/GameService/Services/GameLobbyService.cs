@@ -128,7 +128,7 @@ namespace GameService.Services
 
             if (map == null)
             {
-                await mapGeneratorService.ValidateMap();
+                await mapGeneratorService.ValidateMap(db);
             }
 
             var invitationLink = GenerateInvCode();

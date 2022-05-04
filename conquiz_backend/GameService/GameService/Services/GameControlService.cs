@@ -16,7 +16,7 @@ namespace GameService.Services
     public interface IGameControlService
     {
         void AnswerQuestion(string answerIdString);
-        Task<SelectedTerritoryResponse> SelectTerritory(string mapTerritoryName);
+        SelectedTerritoryResponse SelectTerritory(string mapTerritoryName);
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ namespace GameService.Services
             this.gameTerritoryService = gameTerritoryService;
         }
 
-        public async Task<SelectedTerritoryResponse> SelectTerritory(string mapTerritoryName)
+        public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
@@ -97,8 +97,8 @@ namespace GameService.Services
                 if (mapTerritory == null)
                     throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
-                var gameObjTerritory = await gameTerritoryService
-                    .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
+                var gameObjTerritory = gameTerritoryService
+                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
 
                 if (gameObjTerritory == null)
                     throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
@@ -145,8 +145,8 @@ namespace GameService.Services
                 if (mapTerritory == null)
                     throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
-                var gameObjTerritory = await gameTerritoryService
-                    .SelectTerritoryAvailability(db, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, false);
+                var gameObjTerritory = gameTerritoryService
+                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, false);
 
                 if (gameObjTerritory == null)
                     throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
@@ -156,11 +156,8 @@ namespace GameService.Services
                 pvpRound.PvpRound.DefenderId = gameObjTerritory.TakenBy;
 
                 // Set the ObjectTerritory as being attacked currently
-                gameObjTerritory.AttackedBy = pvpRound.PvpRound.AttackerId;
-                db.Update(gameObjTerritory);
-                db.Update(pvpRound);
-
-                await db.SaveChangesAsync();
+                var obj = gm.ObjectTerritory.First(e => e.Id == gameObjTerritory.Id);
+                obj.AttackedBy = pvpRound.PvpRound.AttackerId;
 
                 return new SelectedTerritoryResponse()
                 {

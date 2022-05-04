@@ -50,6 +50,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
 
+            var gm = data.GameInstance;
             var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefault();
 
@@ -60,7 +61,7 @@ namespace GameService.Services.GameTimerServices
             if (currentAttacker.AttackedTerritoryId == null)
             {
                 var randomTerritory =
-                    await gameTerritoryService.GetRandomTerritory(currentAttacker.AttackerId, data.GameInstanceId);
+                    gameTerritoryService.GetRandomTerritory(gm, currentAttacker.AttackerId, data.GameInstanceId);
 
                 // Set this territory as being attacked from this person
                 currentAttacker.AttackedTerritoryId = randomTerritory.Id;
@@ -84,8 +85,8 @@ namespace GameService.Services.GameTimerServices
                     db.Update(currentRound);
                     await db.SaveChangesAsync();
 
-                    var availableTerritories = await gameTerritoryService
-                        .GetAvailableAttackTerritoriesNames(db, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
+                    var availableTerritories = gameTerritoryService
+                        .GetAvailableAttackTerritoriesNames(gm, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
 
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink)
@@ -242,6 +243,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
 
+            var gm = data.GameInstance;
             var currentRound = data.GameInstance.Rounds
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefault();
@@ -256,8 +258,8 @@ namespace GameService.Services.GameTimerServices
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
 
-            var availableTerritories = await gameTerritoryService
-                .GetAvailableAttackTerritoriesNames(db, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
+            var availableTerritories = gameTerritoryService
+                .GetAvailableAttackTerritoriesNames(gm, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker.AttackerId, availableTerritories);

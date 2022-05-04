@@ -29,7 +29,8 @@ namespace GameService.Context
                 ApplyMigrations(contextFactory, logger);
             }
 
-            ValidateResources(
+            _ = ValidateResources(
+                db,
                 serviceScope.ServiceProvider.GetService<IMapGeneratorService>(),
                 serviceScope.ServiceProvider.GetService<IGameService>(), logger);
 
@@ -71,18 +72,20 @@ namespace GameService.Context
             logger.LogInformation("Migrations added");
         }
 
-        private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService, ILogger logger = null)
+        private static async Task ValidateResources(DefaultContext db,IMapGeneratorService mapGeneratorService, IGameService gameService, ILogger logger = null)
         {
             try
             {
                 // Validate map
-                mapGeneratorService.ValidateMap();
+                await mapGeneratorService.ValidateMap(db);
 
                 // Cancel all "stuck" games
-                gameService.CancelOngoingGames();
+                await gameService.CancelOngoingGames(db);
 
                 // Validate questions
                 //questionService.AddDefaultQuestions();
+
+                await MapGeneratorService.LoadDefaultMapBordersInMemory(db);
             }
             catch(Exception ex)
             {
