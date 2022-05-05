@@ -23,12 +23,14 @@ namespace GameService.EventProcessing
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IMapper mapper;
         private readonly ILogger<EventProcessor> logger;
+        private readonly IGameTimerService gameTimerService;
 
-        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, ILogger<EventProcessor> logger)
+        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, ILogger<EventProcessor> logger, IGameTimerService gameTimerService)
         {
             this.contextFactory = contextFactory;
             this.mapper = mapper;
             this.logger = logger;
+            this.gameTimerService = gameTimerService;
         }
         public void ProcessEvent(string message)
         {
@@ -134,7 +136,7 @@ namespace GameService.EventProcessing
         private void AddGameQuestions(QResponse questionsResponse)
         {
             // Get the current timer
-            var gm = GameTimerService
+            var gm = gameTimerService
                 .GameTimers
                 .FirstOrDefault(e => e.Data.GameGlobalIdentifier == questionsResponse.GameGlobalIdentifier)
                 .Data.GameInstance;

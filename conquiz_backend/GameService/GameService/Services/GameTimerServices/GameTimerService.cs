@@ -17,6 +17,8 @@ namespace GameService.Services.GameTimerServices
 {
     public interface IGameTimerService
     {
+        List<TimerWrapper> GameTimers { get; set; }
+
         void OnGameStart(GameInstance gm);
         void CancelGameTimer(GameInstance gm);
     }
@@ -31,7 +33,7 @@ namespace GameService.Services.GameTimerServices
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
-        public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
+        public List<TimerWrapper> GameTimers { get; set; } = new();
         private readonly IMessageBusClient messageBus;
 
         private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)

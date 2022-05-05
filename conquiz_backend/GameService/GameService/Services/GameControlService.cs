@@ -24,12 +24,14 @@ namespace GameService.Services
     /// </summary>
     public class GameControlService : IGameControlService
     {
+        private readonly IGameTimerService gameTimerService;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly string DefaultMap = "Antarctica";
-        public GameControlService(IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory, IGameTerritoryService gameTerritoryService)
+        public GameControlService(IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory, IGameTerritoryService gameTerritoryService)
         {
+            this.gameTimerService = gameTimerService;
             this.httpContextAccessor = httpContextAccessor;
             this.contextFactory = contextFactory;
             this.gameTerritoryService = gameTerritoryService;
@@ -40,7 +42,7 @@ namespace GameService.Services
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
-            var playerGameTimer = GameTimerService.GameTimers.FirstOrDefault(e =>
+            var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
                 e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
 
             if(playerGameTimer == null)
@@ -264,7 +266,7 @@ namespace GameService.Services
 
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
-            var playerGameTimer = GameTimerService.GameTimers.FirstOrDefault(e =>
+            var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
                 e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
 
             if (playerGameTimer == null)
