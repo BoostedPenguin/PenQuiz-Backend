@@ -26,20 +26,17 @@ namespace GameService.Services
     {
         private readonly IGameTimerService gameTimerService;
         private readonly IHttpContextAccessor httpContextAccessor;
-        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly string DefaultMap = "Antarctica";
-        public GameControlService(IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory, IGameTerritoryService gameTerritoryService)
+        public GameControlService(IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IGameTerritoryService gameTerritoryService)
         {
             this.gameTimerService = gameTimerService;
             this.httpContextAccessor = httpContextAccessor;
-            this.contextFactory = contextFactory;
             this.gameTerritoryService = gameTerritoryService;
         }
 
         public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)
         {
-            using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
             var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>

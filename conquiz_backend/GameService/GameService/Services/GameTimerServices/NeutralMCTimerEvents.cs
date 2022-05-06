@@ -47,7 +47,6 @@ namespace GameService.Services.GameTimerServices
         public async Task Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
 
             var gm = data.GameInstance;
             var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
@@ -79,9 +78,12 @@ namespace GameService.Services.GameTimerServices
                     var nextAttacker =
                         currentRound.NeutralRound.TerritoryAttackers
                         .First(x => x.AttackOrderNumber == newAttackorderNumber);
+                    using (var db = contextFactory.CreateDbContext())
+                    {
+                        db.Update(data.GameInstance);
+                        await db.SaveChangesAsync();
+                    }
 
-                    db.Update(data.GameInstance);
-                    await db.SaveChangesAsync();
 
                     var availableTerritories = gameTerritoryService
                         .GetAvailableAttackTerritoriesNames(gm, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
@@ -100,8 +102,11 @@ namespace GameService.Services.GameTimerServices
                 // This was the last attacker, show a preview of all territories now, and then show the questions
                 case 3:
                     currentRound.IsTerritoryVotingOpen = false;
-                    db.Update(data.GameInstance);
-                    await db.SaveChangesAsync();
+                    using (var db = contextFactory.CreateDbContext())
+                    {
+                        db.Update(data.GameInstance);
+                        await db.SaveChangesAsync();
+                    }
 
                     await hubContext.Clients.Group(data.GameLink)
                         .GetGameInstance(data.GameInstance);
@@ -120,7 +125,6 @@ namespace GameService.Services.GameTimerServices
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
             timerWrapper.Stop();
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
 
             var currentRound = data.GameInstance.Rounds
@@ -186,8 +190,11 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Data.CurrentGameRoundNumber++;
             currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
-            db.Update(gm);
-            await db.SaveChangesAsync();
+            using (var db = contextFactory.CreateDbContext())
+            {
+                db.Update(gm);
+                await db.SaveChangesAsync();
+            }
 
             // Request a new batch of number questions from the question service
             if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
@@ -197,14 +204,19 @@ namespace GameService.Services.GameTimerServices
 
                 rounds.ForEach(e => gm.Rounds.Add(e));
 
-                db.Update(gm);
-                await db.SaveChangesAsync();
+                using (var db = contextFactory.CreateDbContext())
+                {
+                    db.Update(gm);
+                    await db.SaveChangesAsync();
 
-                data.LastNeutralNumberRound = db.Round
-                    .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
-                    .OrderByDescending(x => x.GameRoundNumber)
-                    .Select(x => x.GameRoundNumber)
-                    .First();
+                    data.LastNeutralNumberRound = db.Round
+    .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
+    .OrderByDescending(x => x.GameRoundNumber)
+    .Select(x => x.GameRoundNumber)
+    .First();
+                }
+
+
 
 
                 CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
@@ -242,7 +254,6 @@ namespace GameService.Services.GameTimerServices
         public async Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
 
             var gm = data.GameInstance;
             var currentRound = data.GameInstance.Rounds
@@ -252,8 +263,11 @@ namespace GameService.Services.GameTimerServices
             // Open this round for territory voting
             currentRound.IsTerritoryVotingOpen = true;
 
-            db.Update(gm);
-            await db.SaveChangesAsync();
+            using (var db = contextFactory.CreateDbContext())
+            {
+                db.Update(gm);
+                await db.SaveChangesAsync();
+            }
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
@@ -277,7 +291,6 @@ namespace GameService.Services.GameTimerServices
 
             // Get the question and show it to the clients
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
 
             var gm = timerWrapper.Data.GameInstance;
             var currentRound = gm.Rounds
@@ -293,8 +306,11 @@ namespace GameService.Services.GameTimerServices
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
-            db.Update(gm);
-            await db.SaveChangesAsync();
+            using (var db = contextFactory.CreateDbContext())
+            {
+                db.Update(gm);
+                await db.SaveChangesAsync();
+            }
 
             var response = mapper.Map<QuestionClientResponse>(question);
 

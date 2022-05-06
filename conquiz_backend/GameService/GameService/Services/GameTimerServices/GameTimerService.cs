@@ -87,10 +87,7 @@ namespace GameService.Services.GameTimerServices
             actionTimer.Data.CountDownTimer = new TimerWrapper.CountDownTimer(hubContext, actionTimer.Data.GameLink);
 
             // Set the last neutral mc round 
-            using var db = contextFactory.CreateDbContext();
-            actionTimer.Data.LastNeutralMCRound = db.Round
-                .Where(x => x.GameInstanceId == gm.Id && x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
-                .Count();
+            actionTimer.Data.LastNeutralMCRound = gm.Rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL).Count();
 
             // Default starter values
             actionTimer.Data.CurrentGameRoundNumber = 1;
