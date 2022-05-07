@@ -1,7 +1,9 @@
-﻿using GameService.Context;
+﻿using AutoMapper;
+using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
 using GameService.Dtos;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
 using Microsoft.AspNetCore.SignalR;
@@ -30,6 +32,8 @@ namespace GameService.Services.GameTimerServices
         private readonly ICapitalStageTimerEvents capitalStageTimerEvents;
         private readonly IFinalPvpQuestionService finalPvpQuestionService;
         private readonly ILogger<GameTimerService> logger;
+        private readonly IMapper mapper;
+
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
@@ -61,6 +65,7 @@ namespace GameService.Services.GameTimerServices
             ICapitalStageTimerEvents capitalStageTimerEvents,
             IFinalPvpQuestionService finalPvpQuestionService,
             ILogger<GameTimerService> logger,
+            IMapper mapper,
             INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
             contextFactory = _contextFactory;
@@ -71,6 +76,7 @@ namespace GameService.Services.GameTimerServices
             this.capitalStageTimerEvents = capitalStageTimerEvents;
             this.finalPvpQuestionService = finalPvpQuestionService;
             this.logger = logger;
+            this.mapper = mapper;
             this.neutralNumberTimerEvents = neutralNumberTimerEvents;
         }
 
@@ -430,9 +436,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var data = timerWrapper.Data;
 
-            var gi = await db.GameInstance
-                .Where(x => x.Id == data.GameInstanceId)
-                .FirstOrDefaultAsync();
+            var gi = timerWrapper.Data.GameInstance;
 
             // Game is finished
             gi.GameState = GameState.FINISHED;
@@ -442,8 +446,9 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink)
                 .ShowGameMap();
 
-            var gm = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
-            await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
+            var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
+            await hubContext.Clients.Group(data.GameLink)
+                .GetGameInstanceDebug(res2);
 
             GameTimers.Remove(timerWrapper);
             timerWrapper.Data.CountDownTimer.Dispose();

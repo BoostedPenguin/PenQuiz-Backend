@@ -26,7 +26,7 @@ namespace GameService.Context
 
             if (!db.Database.IsInMemory())
             {
-                ApplyMigrations(contextFactory, logger);
+                ApplyMigrations(db, logger);
             }
 
             _ = ValidateResources(
@@ -61,12 +61,10 @@ namespace GameService.Context
             db.SaveChanges();
         }
 
-        private static void ApplyMigrations(IDbContextFactory<DefaultContext> contextFactory, ILogger logger = null)
+        private static void ApplyMigrations(DefaultContext context, ILogger logger = null)
         {
             logger.LogInformation("Attempting to apply migrations...");
             
-            using var context = contextFactory.CreateDbContext();
-
             context.Database.Migrate();
 
             logger.LogInformation("Migrations added");
