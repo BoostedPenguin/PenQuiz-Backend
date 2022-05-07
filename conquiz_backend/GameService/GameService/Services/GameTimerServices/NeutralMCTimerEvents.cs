@@ -92,8 +92,10 @@ namespace GameService.Services.GameTimerServices
                     await hubContext.Clients.Group(data.GameLink)
                         .ShowRoundingAttacker(nextAttacker.AttackerId, availableTerritories);
 
+
+                    var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
                     await hubContext.Clients.Group(data.GameLink)
-                        .GetGameInstance(data.GameInstance);
+                        .GetGameInstanceDebug(res1);
 
                     timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
 
@@ -108,8 +110,10 @@ namespace GameService.Services.GameTimerServices
                         await db.SaveChangesAsync();
                     }
 
+                    var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
                     await hubContext.Clients.Group(data.GameLink)
-                        .GetGameInstance(data.GameInstance);
+                        .GetGameInstanceDebug(res2);
+
 
                     timerWrapper.StartTimer(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION);
                     break;
@@ -278,8 +282,9 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker.AttackerId, availableTerritories);
 
+            var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstance(data.GameInstance);
+                .GetGameInstanceDebug(res2);
 
             timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
         }
@@ -314,9 +319,11 @@ namespace GameService.Services.GameTimerServices
 
             var response = mapper.Map<QuestionClientResponse>(question);
 
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants.ToArray());
+
+            response.Participants = participantsMapping;
             // If the round is a neutral one, then everyone can attack
             response.IsNeutral = true;
-            response.Participants = question.Round.GameInstance.Participants.ToArray();
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

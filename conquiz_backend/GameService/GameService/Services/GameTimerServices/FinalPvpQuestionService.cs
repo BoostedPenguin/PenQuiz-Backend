@@ -89,14 +89,16 @@ namespace GameService.Services.GameTimerServices
                 response.AttackerId = terAttackers[0].AttackerId;
                 response.DefenderId = terAttackers[1].AttackerId;
 
-                response.Participants = question.Round.GameInstance.Participants
+                var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants
                     .Where(x => terAttackers.Any(y => y.AttackerId == x.PlayerId))
-                    .ToArray();
+                    .ToArray());
+                response.Participants = participantsMapping;
             }
             else
             {
                 response.IsNeutral = true;
-                response.Participants = question.Round.GameInstance.Participants.ToArray();
+                var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants.ToArray());
+                response.Participants = participantsMapping;
             }
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);

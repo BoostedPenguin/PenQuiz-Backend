@@ -20,7 +20,7 @@ namespace GameService.Dtos.SignalR_Responses
         public List<AnswerClientResponse> Answers { get; set; }
 
 
-        public Participants[] Participants { get; set; }
+        public ParticipantsResponse[] Participants { get; set; }
         public int AttackerId { get; set; }
         public int DefenderId { get; set; }
     }

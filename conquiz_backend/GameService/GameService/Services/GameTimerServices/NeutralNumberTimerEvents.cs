@@ -59,8 +59,10 @@ namespace GameService.Services.GameTimerServices
                 .ShowGameMap();
 
             var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
+            var res1 = mapper.Map<GameInstanceResponse>(fullGame);
+
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstance(fullGame);
+                .GetGameInstanceDebug(res1);
 
             timerWrapper.StartTimer(ActionState.SHOW_NUMBER_QUESTION);
         }
@@ -281,7 +283,9 @@ namespace GameService.Services.GameTimerServices
 
             // If the round is a neutral one, then everyone can attack
             response.IsNeutral = true;
-            response.Participants = roundQuestion.GameInstance.Participants.ToArray();
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(roundQuestion.GameInstance.Participants.ToArray());
+
+            response.Participants = participantsMapping;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

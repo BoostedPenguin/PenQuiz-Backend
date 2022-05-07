@@ -16,6 +16,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using GameService.Data;
+using AutoMapper;
 
 namespace GameService.Hubs
 {
@@ -23,6 +24,7 @@ namespace GameService.Hubs
     {
         Task GameStarting();
         Task GetGameInstance(GameInstance instance);
+        Task GetGameInstanceDebug(GameInstanceResponse instance);
         Task LobbyCanceled(string message = "");
         Task CallerLeftGame();
         Task PersonLeftGame(int userId);
@@ -68,11 +70,13 @@ namespace GameService.Hubs
         private readonly IGameControlService gameControlService;
         private readonly IHttpContextAccessor httpContext;
         private readonly ILogger<GameHub> logger;
+        private readonly IMapper mapper;
 
         public GameHub(IGameTimerService timer, 
             IGameService gameService, 
             IHttpContextAccessor httpContext, 
             ILogger<GameHub> logger,
+            IMapper mapper,
             IGameLobbyService gameLobbyService,
             IDbContextFactory<DefaultContext> contextFactory,
             IGameControlService gameControlService)
@@ -81,6 +85,7 @@ namespace GameService.Hubs
             this.gameService = gameService;
             this.httpContext = httpContext;
             this.logger = logger;
+            this.mapper = mapper;
             this.gameLobbyService = gameLobbyService;
             this.contextFactory = contextFactory;
             this.contextFactory = contextFactory;
@@ -232,7 +237,9 @@ namespace GameService.Hubs
                 var result = await gameLobbyService.FindPublicMatch();
 
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
-                await Clients.Group(result.InvitationLink).GetGameInstance(result);
+                var res1 = mapper.Map<GameInstanceResponse>(result);
+
+                await Clients.Group(result.InvitationLink).GetGameInstanceDebug(res1);
                 await Clients.Caller.NavigateToLobby();
 
 
@@ -242,8 +249,9 @@ namespace GameService.Hubs
                 if(result.Participants.Count() == 3)
                 {
                     var gameInstance = await gameLobbyService.StartGame(result);
+                    var res2 = mapper.Map<GameInstanceResponse>(result);
 
-                    await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
+                    await Clients.Group(gameInstance.InvitationLink).GetGameInstanceDebug(res2);
 
                     await Clients.Group(gameInstance.InvitationLink).GameStarting();
 

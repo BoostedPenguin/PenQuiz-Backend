@@ -88,10 +88,11 @@ namespace GameService.Services.GameTimerServices
                     x.Round.GameInstanceId == data.GameInstanceId)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
-
-            response.Participants = participants.Round.GameInstance.Participants
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(participants.Round.GameInstance.Participants
                         .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
-                        .ToArray();
+                        .ToArray());
+
+            response.Participants = participantsMapping;
 
             response.AttackerId = participants.AttackerId;
             response.DefenderId = participants.DefenderId ?? 0;
@@ -352,14 +353,16 @@ namespace GameService.Services.GameTimerServices
             var response = mapper.Map<QuestionClientResponse>(question);
 
             response.IsNeutral = false;
-            response.Participants = question
+
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question
                 .CapitalRoundNumber
                 .PvpRound
                 .Round
                 .GameInstance
                 .Participants
                 .Where(x => x.PlayerId == question.CapitalRoundNumber.PvpRound.AttackerId || x.PlayerId == question.CapitalRoundNumber.PvpRound.DefenderId)
-                .ToArray();
+                .ToArray());
+            response.Participants = participantsMapping;
 
             response.AttackerId = question.CapitalRoundNumber.PvpRound.AttackerId;
             response.DefenderId = question.CapitalRoundNumber.PvpRound.DefenderId ?? 0;

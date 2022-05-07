@@ -81,10 +81,11 @@ namespace GameService.Services.GameTimerServices
 
             var participants = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).PvpRound;
 
-
-            response.Participants = participants.Round.GameInstance.Participants
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(participants.Round.GameInstance.Participants
                         .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
-                        .ToArray();
+                        .ToArray());
+
+            response.Participants = participantsMapping;
 
             response.AttackerId = participants.AttackerId;
             response.DefenderId = participants.DefenderId ?? 0;
@@ -296,13 +297,16 @@ namespace GameService.Services.GameTimerServices
             var response = mapper.Map<QuestionClientResponse>(question);
 
             response.IsNeutral = false;
-            response.Participants = question
+
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question
                 .PvpRoundNum
                 .Round
                 .GameInstance
                 .Participants
                 .Where(x => x.PlayerId == question.PvpRoundNum.AttackerId || x.PlayerId == question.PvpRoundNum.DefenderId)
-                .ToArray();
+                .ToArray());
+
+            response.Participants = participantsMapping;
 
             response.AttackerId = question.PvpRoundNum.AttackerId;
             response.DefenderId = question.PvpRoundNum.DefenderId ?? 0;
