@@ -59,14 +59,18 @@ namespace GameService.EventProcessing
         private void AddFinalQuestionResponse(string message)
         {
             var result = JsonSerializer.Deserialize<QResponse>(message);
-            using var db = contextFactory.CreateDbContext();
+            
+            var gm = gameTimerService
+                .GameTimers
+                .FirstOrDefault(e => e.Data.GameGlobalIdentifier == result.GameGlobalIdentifier)
+                .Data.GameInstance;
 
-            var finalRound = db.Round
-                .Include(x => x.GameInstance)
-                .Where(x => x.GameInstance.GameGlobalIdentifier == result.GameGlobalIdentifier && 
-                    x.Id == result.QuestionResponses.First().RoundId && 
-                    x.AttackStage == AttackStage.FINAL_NUMBER_PVP)
-                .FirstOrDefault();
+            var finalRound = gm.Rounds
+                .Where(e => e.Id == result.QuestionResponses
+                .First().RoundId && e.AttackStage == AttackStage.FINAL_NUMBER_PVP).FirstOrDefault();
+
+
+            // Get the current timer
 
 
             if (finalRound == null)
@@ -76,23 +80,24 @@ namespace GameService.EventProcessing
             }
 
             var mapped = mapper.Map<Questions>(result.QuestionResponses.First());
-            db.AddAsync(mapped);
 
-            db.SaveChanges();
+            finalRound.Question = mapped;
         }
 
         private void AddCapitalQuestions(string message)
         {
             var result = JsonSerializer.Deserialize<QResponse>(message);
 
-            using var db = contextFactory.CreateDbContext();
+            var gm = gameTimerService
+                .GameTimers
+                .FirstOrDefault(e => e.Data.GameGlobalIdentifier == result.GameGlobalIdentifier)
+                .Data.GameInstance;
 
-            var capitalRounds = db.CapitalRound
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .Where(x => x.PvpRound.Round.GameInstance.GameGlobalIdentifier == result.GameGlobalIdentifier)
-                .ToList();
+            var capitalRounds = gm.Rounds
+                .Where(e => e.PvpRound != null && e.PvpRound.CapitalRounds != null)
+                .SelectMany(e => e.PvpRound.CapitalRounds).ToList();
+
+
 
             var mapped = mapper.Map<Questions[]>(result.QuestionResponses);
 
@@ -114,17 +119,17 @@ namespace GameService.EventProcessing
                 {
                     receivedQuestion.CapitalRoundNumberId = capitalRound.Id;
                     receivedQuestion.CapitalRoundMCId = null;
+
+                    capitalRound.CapitalRoundNumberQuestion = receivedQuestion;
                 }
                 else
                 {
                     receivedQuestion.CapitalRoundMCId = capitalRound.Id;
                     receivedQuestion.CapitalRoundNumberId = null;
 
+                    capitalRound.CapitalRoundMultipleQuestion = receivedQuestion;
                 }
-                db.AddAsync(receivedQuestion);
             }
-
-            db.SaveChanges();
         }
 
 

@@ -269,19 +269,9 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             var db = contextFactory.CreateDbContext();
 
+            var gm = data.GameInstance;
+            var question = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault().PvpRound.NumberQuestion;
 
-            var question = await db.Questions
-                .Include(x => x.Answers)
-                .Include(x => x.PvpRoundNum)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Include(x => x.PvpRoundNum)
-                .ThenInclude(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.PvpRoundNum.Round.GameInstanceId == data.GameInstanceId &&
-                    x.PvpRoundNum.Round.GameRoundNumber == data.CurrentGameRoundNumber)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
 
             if (question == null)
                 throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
@@ -329,20 +319,9 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
 
-            var currentRound =
-                await db.Round
-                .Include(x => x.GameInstance)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.NumberQuestion)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+
+            var currentRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault();
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -516,9 +495,10 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker, availableTerritories);
 
-            var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
+            var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstance(fullGame);
+                .GetGameInstance(res1);
+
 
             timerWrapper.StartTimer(ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING);
         }
@@ -552,7 +532,6 @@ namespace GameService.Services.GameTimerServices
             }
 
 
-            var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
 
             currentRound.IsTerritoryVotingOpen = false;
             db.Update(currentRound);
@@ -577,8 +556,9 @@ namespace GameService.Services.GameTimerServices
                     currentRound.PvpRound.CapitalRounds.Select(x => x.Id).ToList());
             }
 
+            var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstance(fullGame);
+                .GetGameInstance(res1);
 
             timerWrapper.StartTimer(ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION);
         }

@@ -53,16 +53,15 @@ namespace GameService.Services.GameTimerServices
         {
             timerWrapper.Stop();
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowGameMap();
 
-            var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
-            var res1 = mapper.Map<GameInstanceResponse>(fullGame);
+            var res1 = mapper.Map<GameInstanceResponse>(gm);
 
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstanceDebug(res1);
+                .GetGameInstance(res1);
 
             timerWrapper.StartTimer(ActionState.SHOW_NUMBER_QUESTION);
         }
@@ -221,15 +220,12 @@ namespace GameService.Services.GameTimerServices
                 // Create pvp question rounds if gm number neutral rounds are over
                 var rounds = Create_Pvp_Rounds(gm, timerWrapper, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
 
+                rounds.ForEach(e => gm.Rounds.Add(e));
 
-                await db.AddRangeAsync(rounds);
+                db.Update(gm);
                 await db.SaveChangesAsync();
 
-                data.LastPvpRound = db.Round
-                    .Where(x => x.GameInstanceId == data.GameInstanceId)
-                    .OrderByDescending(x => x.GameRoundNumber)
-                    .Select(x => x.GameRoundNumber)
-                    .First();
+                data.LastPvpRound = gm.Rounds.OrderByDescending(e => e.GameRoundNumber).Select(e => e.GameRoundNumber).First();
 
                 CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, false);
             }
@@ -367,21 +363,17 @@ namespace GameService.Services.GameTimerServices
             gm.GameRoundNumber = 56;
 
             data.CurrentGameRoundNumber++;
-            await db.AddRangeAsync(rounds);
+
+            rounds.ForEach(e => gm.Rounds.Add(e));
             db.Update(gm);
             await db.SaveChangesAsync();
 
-
-            data.LastPvpRound = db.Round
-                .Where(x => x.GameInstanceId == data.GameInstanceId)
-                .OrderByDescending(x => x.GameRoundNumber)
-                .Select(x => x.GameRoundNumber)
-                .First();
+            data.LastPvpRound = gm.Rounds.OrderByDescending(e => e.GameRoundNumber).Select(e => e.GameRoundNumber).First();
 
             timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
         }
 
-        private Round[] Create_Pvp_Rounds(GameInstance gm, TimerWrapper timerWrapper, List<int> userIds)
+        private List<Round> Create_Pvp_Rounds(GameInstance gm, TimerWrapper timerWrapper, List<int> userIds)
         {
             int RequiredPlayers = 3;
             var data = timerWrapper.Data;
@@ -416,7 +408,7 @@ namespace GameService.Services.GameTimerServices
                 }
             }
 
-            var result = finalRounds.ToArray();
+            var result = finalRounds.ToList();
 
             return result;
         }

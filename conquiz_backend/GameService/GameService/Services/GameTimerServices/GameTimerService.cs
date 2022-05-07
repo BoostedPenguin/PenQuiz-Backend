@@ -19,7 +19,7 @@ namespace GameService.Services.GameTimerServices
 {
     public interface IGameTimerService
     {
-        List<TimerWrapper> GameTimers { get; set; }
+        List<TimerWrapper> GameTimers { get;}
 
         void OnGameStart(GameInstance gm);
         void CancelGameTimer(GameInstance gm);
@@ -37,7 +37,7 @@ namespace GameService.Services.GameTimerServices
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
-        public List<TimerWrapper> GameTimers { get; set; } = new();
+        public List<TimerWrapper> GameTimers { get; } = new();
         private readonly IMessageBusClient messageBus;
 
         private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
@@ -448,7 +448,7 @@ namespace GameService.Services.GameTimerServices
 
             var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstanceDebug(res2);
+                .GetGameInstance(res2);
 
             GameTimers.Remove(timerWrapper);
             timerWrapper.Data.CountDownTimer.Dispose();
@@ -457,14 +457,16 @@ namespace GameService.Services.GameTimerServices
 
         private async Task UnexpectedCriticalError(TimerWrapper timerWrapper, string message = "Unhandled game exception")
         {
-            using var db = contextFactory.CreateDbContext();
             timerWrapper.Stop();
+
+            using var db = contextFactory.CreateDbContext();
+            var gm = timerWrapper.Data.GameInstance;
+            gm.GameState = GameState.CANCELED;
+            db.Update(gm);
+            await db.SaveChangesAsync();
+
             timerWrapper.Data.CountDownTimer.Stop();
             timerWrapper.Data.CountDownTimer.Dispose();
-            var gm = await db.GameInstance.FirstOrDefaultAsync(x => x.Id == timerWrapper.Data.GameInstanceId);
-            gm.GameState = GameState.CANCELED;
-
-            await db.SaveChangesAsync();
 
             await hubContext.Clients.Group(timerWrapper.Data.GameLink).LobbyCanceled($"Unexpected error occured. Game closed.\n{message}");
             GameTimers.Remove(timerWrapper);

@@ -4,6 +4,17 @@ using System.Collections.Generic;
 
 namespace GameService.Dtos.SignalR_Responses
 {
+
+    public class OnPlayerLoginResponse
+    {
+        public OnPlayerLoginResponse(GameInstanceResponse gameInstanceResponse, int userId)
+        {
+            UserId = userId;
+            GameInstanceResponse = gameInstanceResponse;
+        }
+        public GameInstanceResponse GameInstanceResponse;
+        public int UserId;
+    }
     public class GameInstanceResponse
     {
         public int Id { get; set; }

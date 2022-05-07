@@ -23,8 +23,7 @@ namespace GameService.Hubs
     public interface IGameHub
     {
         Task GameStarting();
-        Task GetGameInstance(GameInstance instance);
-        Task GetGameInstanceDebug(GameInstanceResponse instance);
+        Task GetGameInstance(GameInstanceResponse instance);
         Task LobbyCanceled(string message = "");
         Task CallerLeftGame();
         Task PersonLeftGame(int userId);
@@ -66,29 +65,22 @@ namespace GameService.Hubs
         private readonly IGameTimerService timer;
         private readonly IGameService gameService;
         private readonly IGameLobbyService gameLobbyService;
-        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IGameControlService gameControlService;
-        private readonly IHttpContextAccessor httpContext;
         private readonly ILogger<GameHub> logger;
         private readonly IMapper mapper;
 
         public GameHub(IGameTimerService timer, 
             IGameService gameService, 
-            IHttpContextAccessor httpContext, 
             ILogger<GameHub> logger,
             IMapper mapper,
             IGameLobbyService gameLobbyService,
-            IDbContextFactory<DefaultContext> contextFactory,
             IGameControlService gameControlService)
         {
             this.timer = timer;
             this.gameService = gameService;
-            this.httpContext = httpContext;
             this.logger = logger;
             this.mapper = mapper;
             this.gameLobbyService = gameLobbyService;
-            this.contextFactory = contextFactory;
-            this.contextFactory = contextFactory;
             this.gameControlService = gameControlService;
         }
 
@@ -101,27 +93,23 @@ namespace GameService.Hubs
                     .Select(x => x.Value)
                     .FirstOrDefault();
 
-                using var db = contextFactory.CreateDbContext();
-                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+                var response = await gameService.OnPlayerLoginConnection();
 
-
-                await Clients.Caller.GetGameUserId(user.Id);
+                await Clients.Caller.GetGameUserId(response.UserId);
 
                 //timer.TimerStart();
-                var gameInstance = await gameService.OnPlayerLoginConnection();
-
                 // If there aren't any IN PROGRESS game instances for this player, don't send him anything
-                if (gameInstance == null)
+                if (response.GameInstanceResponse == null)
                 {
                     await base.OnConnectedAsync();
                     return;
                 }
 
-                await Clients.Caller.GetGameInstance(gameInstance);
-                await Clients.Group(gameInstance.InvitationLink).PlayerRejoined(user.Id);
+                await Clients.Caller.GetGameInstance(response.GameInstanceResponse);
+                await Clients.Group(response.GameInstanceResponse.InvitationLink).PlayerRejoined(response.UserId);
                 await Clients.Caller.NavigateToGame();
                 
-                await Groups.AddToGroupAsync(Context.ConnectionId, gameInstance.InvitationLink);
+                await Groups.AddToGroupAsync(Context.ConnectionId, response.GameInstanceResponse.InvitationLink);
 
             }
             catch (Exception ex)
@@ -239,7 +227,7 @@ namespace GameService.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
                 var res1 = mapper.Map<GameInstanceResponse>(result);
 
-                await Clients.Group(result.InvitationLink).GetGameInstanceDebug(res1);
+                await Clients.Group(result.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
 
 
@@ -251,7 +239,7 @@ namespace GameService.Hubs
                     var gameInstance = await gameLobbyService.StartGame(result);
                     var res2 = mapper.Map<GameInstanceResponse>(result);
 
-                    await Clients.Group(gameInstance.InvitationLink).GetGameInstanceDebug(res2);
+                    await Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
 
                     await Clients.Group(gameInstance.InvitationLink).GameStarting();
 
@@ -270,12 +258,10 @@ namespace GameService.Hubs
             {
                 var result = await gameLobbyService.CreateGameLobby();
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
-                //await Clients.Caller.GetGameInstance(result);
 
-                //var users = result.Participants.Select(x => x.Player).ToArray();
-                //var current = result.Participants.Where(x => x.PlayerId == httpContext.GetCurrentUserId()).FirstOrDefault();
-                //await Clients.Group(result.InvitationLink).AllLobbyPlayers(users);
-                await Clients.Group(result.InvitationLink).GetGameInstance(result);
+                var res1 = mapper.Map<GameInstanceResponse>(result);
+
+                await Clients.Group(result.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
             }
             catch(Exception ex)
@@ -290,7 +276,9 @@ namespace GameService.Hubs
             {
                 var gameInstance = await gameLobbyService.StartGame();
 
-                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(gameInstance);
+                var res1 = mapper.Map<GameInstanceResponse>(gameInstance);
+
+                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(res1);
 
                 await Clients.Group(gameInstance.InvitationLink).GameStarting();
 
@@ -314,7 +302,9 @@ namespace GameService.Hubs
                 //var users = game.Participants.Select(x => x.Player).ToArray();
                 //var current = result.Participants.Where(x => x.PlayerId == httpContext.GetCurrentUserId()).FirstOrDefault();
                 //await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
-                await Clients.Group(game.InvitationLink).GetGameInstance(game);
+                var res1 = mapper.Map<GameInstanceResponse>(game);
+
+                await Clients.Group(game.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
             }
             catch (Exception ex)

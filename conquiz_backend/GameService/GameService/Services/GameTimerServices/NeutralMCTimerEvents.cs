@@ -95,7 +95,7 @@ namespace GameService.Services.GameTimerServices
 
                     var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
                     await hubContext.Clients.Group(data.GameLink)
-                        .GetGameInstanceDebug(res1);
+                        .GetGameInstance(res1);
 
                     timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
 
@@ -112,7 +112,7 @@ namespace GameService.Services.GameTimerServices
 
                     var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
                     await hubContext.Clients.Group(data.GameLink)
-                        .GetGameInstanceDebug(res2);
+                        .GetGameInstance(res2);
 
 
                     timerWrapper.StartTimer(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION);
@@ -213,14 +213,10 @@ namespace GameService.Services.GameTimerServices
                     db.Update(gm);
                     await db.SaveChangesAsync();
 
-                    data.LastNeutralNumberRound = db.Round
-    .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
-    .OrderByDescending(x => x.GameRoundNumber)
-    .Select(x => x.GameRoundNumber)
-    .First();
+                    data.LastNeutralNumberRound = gm.Rounds.Where(e => e.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                        .OrderByDescending(e => e.GameRoundNumber)
+                        .Select(e => e.GameRoundNumber).First();
                 }
-
-
 
 
                 CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
@@ -284,7 +280,7 @@ namespace GameService.Services.GameTimerServices
 
             var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstanceDebug(res2);
+                .GetGameInstance(res2);
 
             timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
         }
@@ -395,12 +391,9 @@ namespace GameService.Services.GameTimerServices
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            data.LastNeutralNumberRound = db.Round
-                .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
-                .OrderByDescending(x => x.GameRoundNumber)
-                .Select(x => x.GameRoundNumber)
-                .First();
-
+            data.LastNeutralNumberRound = gm.Rounds.Where(e => e.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                .OrderByDescending(e => e.GameRoundNumber)
+                .Select(e => e.GameRoundNumber).First();
 
             CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
 

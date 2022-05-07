@@ -56,10 +56,10 @@ namespace GameService.Services.GameTimerServices
                 ActionState.SHOW_NUMBER_QUESTION => 2000,
 
                 // PVP Rounds time to attack enemy territory
-                ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING => 8000,
+                ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING => 2000,
 
                 // PVP Round time to answer multiple choice question
-                ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION => 12000,
+                ActionState.SHOW_PVP_MULTIPLE_CHOICE_QUESTION => 2000,
                 _ => throw new NotImplementedException(),
             };
         }

@@ -48,25 +48,12 @@ namespace GameService.Services.GameTimerServices
 
             // Get the question and show it to the clients
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
+            using var db = contextFactory.CreateDbContext();
 
-            // Show the question to the user
-            var question = await db.Questions
-                .Include(x => x.Answers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
-                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber 
-                    && x.Round.AttackStage == AttackStage.FINAL_NUMBER_PVP)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var question = gm.Rounds
+                .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP)
+                .Question;
 
             if (question == null)
                 throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
@@ -105,26 +92,16 @@ namespace GameService.Services.GameTimerServices
 
             timerWrapper.StartTimer(ActionState.END_FINAL_PVP_NUMBER_QUESTION);
         }
-        private Random r = new Random();
+        private readonly Random r = new Random();
         public async Task Final_Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper)
         {
             timerWrapper.Stop();
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            using var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
+            var currentRound = gm.Rounds
+                .First(e => e.GameRoundNumber == data.CurrentGameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
 
-            var currentRound =
-                await db.Round
-                .Include(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
-                    && x.AttackStage == AttackStage.FINAL_NUMBER_PVP
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
 
             currentRound.IsQuestionVotingOpen = false;
 
