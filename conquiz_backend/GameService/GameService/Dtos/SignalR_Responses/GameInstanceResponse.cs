@@ -71,7 +71,6 @@ namespace GameService.Dtos.SignalR_Responses
         public virtual ObjectTerritoryResponse AttackedTerritory { get; set; }
 
         public virtual ICollection<CapitalRoundResponse> CapitalRounds { get; set; }
-        public virtual ICollection<PvpRoundAnswers> PvpRoundAnswers { get; set; }
     }
 
     public class CapitalRoundResponse
@@ -80,11 +79,8 @@ namespace GameService.Dtos.SignalR_Responses
         public CapitalRoundAttackStage CapitalRoundAttackStage { get; set; } = CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION;
         public bool IsCompleted { get; set; } = false;
         public int PvpRoundId { get; set; }
-        public virtual PvpRound PvpRound { get; set; }
         public bool IsQuestionVotingOpen { get; set; }
         public DateTime? QuestionOpenedAt { get; set; }
-
-        public virtual ICollection<CapitalRoundAnswers> CapitalRoundUserAnswers { get; set; }
     }
 
 
