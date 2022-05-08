@@ -140,7 +140,7 @@ namespace GameService.Services.GameTimerServices
             // Check if last pvp round
             if (data.CurrentGameRoundNumber > data.LastPvpRound)
             {
-                var allPlayerTerritoriesWoCapital = db.ObjectTerritory
+                var allPlayerTerritoriesWoCapital = gm.ObjectTerritory
                     .Where(x => !x.IsCapital).ToList();
 
                 var groupedBy = allPlayerTerritoriesWoCapital

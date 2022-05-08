@@ -51,8 +51,10 @@ namespace GameService.Services.GameTimerServices
             var gm = data.GameInstance;
             using var db = contextFactory.CreateDbContext();
 
-            var question = gm.Rounds
-                .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP)
+            var currentRound = gm.Rounds
+                .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
+
+            var question = currentRound
                 .Question;
 
             if (question == null)
@@ -60,8 +62,8 @@ namespace GameService.Services.GameTimerServices
 
 
             // Open this question for voting
-            question.Round.IsQuestionVotingOpen = true;
-            question.Round.QuestionOpenedAt = DateTime.Now;
+            currentRound.IsQuestionVotingOpen = true;
+            currentRound.QuestionOpenedAt = DateTime.Now;
 
             db.Update(gm);
             await db.SaveChangesAsync();
@@ -69,22 +71,24 @@ namespace GameService.Services.GameTimerServices
             var response = mapper.Map<QuestionClientResponse>(question);
 
             // If the round is a neutral one, then everyone can attack
-            var terAttackers = question.Round.NeutralRound.TerritoryAttackers.ToList();
-            if (terAttackers.Count() == 2)
+            var terAttackers = currentRound.NeutralRound.TerritoryAttackers.ToList();
+            if (terAttackers.Count == 2)
             {
+                response.IsLastQuestion = true;
                 response.IsNeutral = false;
                 response.AttackerId = terAttackers[0].AttackerId;
                 response.DefenderId = terAttackers[1].AttackerId;
 
-                var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants
+                var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants
                     .Where(x => terAttackers.Any(y => y.AttackerId == x.PlayerId))
                     .ToArray());
                 response.Participants = participantsMapping;
             }
             else
             {
+                response.IsLastQuestion = true;
                 response.IsNeutral = true;
-                var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants.ToArray());
+                var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants.ToArray());
                 response.Participants = participantsMapping;
             }
 
