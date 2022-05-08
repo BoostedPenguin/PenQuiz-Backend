@@ -208,9 +208,10 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Data.CurrentGameRoundNumber++;
             currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
-            db.Update(randomTerritory);
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+
+            CommonTimerFunc.CalculateUserScore(gm);
 
 
             // Request a new batch of number questions from the question service
@@ -272,7 +273,7 @@ namespace GameService.Services.GameTimerServices
             roundQuestion.IsQuestionVotingOpen = true;
             roundQuestion.QuestionOpenedAt = DateTime.Now;
 
-            db.Update(roundQuestion);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(roundQuestion.Question);

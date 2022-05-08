@@ -72,7 +72,7 @@ namespace GameService.Services.GameTimerServices
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
-            db.Update(question.Round);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
@@ -220,8 +220,10 @@ namespace GameService.Services.GameTimerServices
                 currentRound.PvpRound.IsCurrentlyCapitalStage = true;
             }
 
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+            CommonTimerFunc.CalculateUserScore(gm);
+
 
             // Client response
             var response = new MCPlayerQuestionAnswers()
@@ -281,7 +283,7 @@ namespace GameService.Services.GameTimerServices
             question.PvpRoundNum.Round.QuestionOpenedAt = DateTime.Now;
 
             question.PvpRoundNum.Round.AttackStage = AttackStage.NUMBER_PVP;
-            db.Update(question);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
@@ -433,8 +435,10 @@ namespace GameService.Services.GameTimerServices
                 currentRound.PvpRound.IsCurrentlyCapitalStage = true;
             }
 
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+
+            CommonTimerFunc.CalculateUserScore(gm);
 
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
@@ -469,7 +473,7 @@ namespace GameService.Services.GameTimerServices
 
             currentRound.IsTerritoryVotingOpen = true;
 
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var currentAttacker = currentRound.PvpRound.AttackerId;
@@ -482,7 +486,7 @@ namespace GameService.Services.GameTimerServices
                 // Go to next round
                 timerWrapper.Data.CurrentGameRoundNumber++;
                 currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
-                db.Update(currentRound);
+                db.Update(gm);
                 await db.SaveChangesAsync();
 
                 timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING, 50);
@@ -528,13 +532,13 @@ namespace GameService.Services.GameTimerServices
 
                 randomTerritory.AttackedBy = currentRound.PvpRound.AttackerId;
 
-                db.Update(randomTerritory);
+                db.Update(gm);
             }
 
 
 
             currentRound.IsTerritoryVotingOpen = false;
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             // If the chosen territory is a capital add additional rounds
@@ -547,7 +551,7 @@ namespace GameService.Services.GameTimerServices
                     currentRound.PvpRound.CapitalRounds.Add(new CapitalRound());
                 }
 
-                db.Update(currentRound);
+                db.Update(gm);
                 await db.SaveChangesAsync();
 
                 // Request questions for these rounds

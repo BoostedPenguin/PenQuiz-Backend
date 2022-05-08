@@ -63,7 +63,7 @@ namespace GameService.Services.GameTimerServices
 
 
             question.CapitalRoundMultiple.IsQuestionVotingOpen = true;
-            db.Update(question.CapitalRoundMultiple);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
@@ -172,7 +172,7 @@ namespace GameService.Services.GameTimerServices
                                 terr.IsCapital = false;
                                 terr.TakenBy = baseRound.PvpRound.AttackerId;
                                 terr.AttackedBy = null;
-                                db.Update(terr);
+                                db.Update(gm);
                             }
 
 
@@ -212,7 +212,7 @@ namespace GameService.Services.GameTimerServices
                                     terr.IsCapital = false;
                                     terr.TakenBy = baseRound.PvpRound.AttackerId;
                                     terr.AttackedBy = null;
-                                    db.Update(terr);
+                                    db.Update(gm);
                                 }
 
 
@@ -248,8 +248,9 @@ namespace GameService.Services.GameTimerServices
                 baseRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
             }
 
-            db.Update(baseRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+            CommonTimerFunc.CalculateUserScore(gm);
 
             // Client response
             var response = new MCPlayerQuestionAnswers()
@@ -313,7 +314,7 @@ namespace GameService.Services.GameTimerServices
             question.CapitalRoundNumber.IsQuestionVotingOpen = true;
             question.CapitalRoundNumber.QuestionOpenedAt = DateTime.Now;
 
-            db.Update(question);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
@@ -459,7 +460,7 @@ namespace GameService.Services.GameTimerServices
                         terr.IsCapital = false;
                         terr.TakenBy = baseRound.PvpRound.AttackerId;
                         terr.AttackedBy = null;
-                        db.Update(terr);
+                        db.Update(gm);
                     }
 
                     // Player answered incorrecly, release isattacked lock on objterritory
@@ -484,8 +485,9 @@ namespace GameService.Services.GameTimerServices
             }
 
 
-            db.Update(baseRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+            CommonTimerFunc.CalculateUserScore(gm);
 
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 

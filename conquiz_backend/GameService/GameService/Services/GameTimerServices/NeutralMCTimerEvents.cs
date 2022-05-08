@@ -80,7 +80,7 @@ namespace GameService.Services.GameTimerServices
                         .First(x => x.AttackOrderNumber == newAttackorderNumber);
                     using (var db = contextFactory.CreateDbContext())
                     {
-                        db.Update(data.GameInstance);
+                        db.Update(gm);
                         await db.SaveChangesAsync();
                     }
 
@@ -106,7 +106,7 @@ namespace GameService.Services.GameTimerServices
                     currentRound.IsTerritoryVotingOpen = false;
                     using (var db = contextFactory.CreateDbContext())
                     {
-                        db.Update(data.GameInstance);
+                        db.Update(gm);
                         await db.SaveChangesAsync();
                     }
 
@@ -199,6 +199,7 @@ namespace GameService.Services.GameTimerServices
                 db.Update(gm);
                 await db.SaveChangesAsync();
             }
+            CommonTimerFunc.CalculateUserScore(gm);
 
             // Request a new batch of number questions from the question service
             if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
@@ -250,6 +251,9 @@ namespace GameService.Services.GameTimerServices
                 timerWrapper.StartTimer(ActionState.OPEN_PLAYER_ATTACK_VOTING);
             }
         }
+
+
+
 
         public async Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
         {

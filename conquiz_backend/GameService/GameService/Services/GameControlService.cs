@@ -91,13 +91,13 @@ namespace GameService.Services
                     throw new BorderSelectedGameException("You already selected a territory for this round");
 
 
-                var mapTerritory = gm.Map.MapTerritory.Where(x => x.TerritoryName == mapTerritoryName).FirstOrDefault();
+                var mapTerritory = gm.ObjectTerritory.Where(e => e.MapTerritory.TerritoryName == mapTerritoryName).FirstOrDefault();
 
                 if (mapTerritory == null)
                     throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
                 var gameObjTerritory = gameTerritoryService
-                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
+                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.MapTerritoryId, true);
 
                 if (gameObjTerritory == null)
                     throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
@@ -139,13 +139,13 @@ namespace GameService.Services
                 if(pvpRound.PvpRound.AttackedTerritoryId != null)
                     throw new BorderSelectedGameException("You already selected a territory for this round");
 
-                var mapTerritory = gm.Map.MapTerritory.Where(x => x.TerritoryName == mapTerritoryName).FirstOrDefault();
+                var mapTerritory = gm.ObjectTerritory.Where(e => e.MapTerritory.TerritoryName == mapTerritoryName).FirstOrDefault();
 
                 if (mapTerritory == null)
                     throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
                 var gameObjTerritory = gameTerritoryService
-                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.Id, false);
+                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.MapTerritoryId, false);
 
                 if (gameObjTerritory == null)
                     throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");

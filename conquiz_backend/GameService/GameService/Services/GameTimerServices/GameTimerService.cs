@@ -440,8 +440,7 @@ namespace GameService.Services.GameTimerServices
 
             // Game is finished
             gi.GameState = GameState.FINISHED;
-            db.Update(gi);
-            await db.SaveChangesAsync();
+
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowGameMap();
@@ -449,6 +448,10 @@ namespace GameService.Services.GameTimerServices
             var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(res2);
+
+            // Perform cleanup
+            db.Update(gi);
+            await db.SaveChangesAsync();
 
             GameTimers.Remove(timerWrapper);
             timerWrapper.Data.CountDownTimer.Dispose();

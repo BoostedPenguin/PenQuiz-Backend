@@ -310,10 +310,7 @@ namespace GameService.Services
 
         public int GetAmountOfTerritories(GameInstance gm)
         {
-            if (gm?.Map?.MapTerritory == null)
-                throw new ArgumentException("Provided game instance has null mapterritories");
-
-            return gm.Map.MapTerritory.Count;
+            return gm.ObjectTerritory.Count;
         }
 
         public async Task<int> GetAmountOfTerritories(DefaultContext context, int mapId)

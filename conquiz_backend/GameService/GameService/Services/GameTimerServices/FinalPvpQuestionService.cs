@@ -63,7 +63,7 @@ namespace GameService.Services.GameTimerServices
             question.Round.IsQuestionVotingOpen = true;
             question.Round.QuestionOpenedAt = DateTime.Now;
 
-            db.Update(question.Round);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
@@ -236,8 +236,9 @@ namespace GameService.Services.GameTimerServices
                 clientResponse.PlayerAnswers.ForEach(x => x.Winner = x.PlayerId == winnerId);
 
             }
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+            CommonTimerFunc.CalculateUserScore(gm);
 
             // Tell clients
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);

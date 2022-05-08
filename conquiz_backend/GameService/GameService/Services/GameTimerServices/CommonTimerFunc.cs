@@ -45,6 +45,32 @@ namespace GameService.Services.GameTimerServices
 
         private static readonly Random r = new Random();
 
+
+        /// <summary>
+        /// <br>Call this on MC / Number round question voting closing</br>
+        /// <br>Call this AFTER saving to database</br>
+        /// <br>Call this BEFORE sending response to client</br>
+        /// <para>The score overview of this person will NOT be persistant on the event you called it<br />
+        /// But serve as a read-only value until next event kicks in</para>
+        /// </summary>
+        /// <param name="game"></param>
+        public static void CalculateUserScore(GameInstance game)
+        {
+            foreach (var particip in game.Participants)
+            {
+                var totalParticipScore = game.ObjectTerritory
+                    .Where(x => x.TakenBy == particip.PlayerId)
+                    .Sum(x => x.TerritoryScore);
+
+                totalParticipScore += particip.FinalQuestionScore;
+
+                if (particip.Score != totalParticipScore)
+                {
+                    particip.Score = totalParticipScore;
+                }
+            }
+        }
+
         /// <summary>
         /// Gets all game instance details <br />
         /// Do not call this method often as it is slow. Use more precise queries instead.
@@ -74,28 +100,8 @@ namespace GameService.Services.GameTimerServices
                 .Include(x => x.ObjectTerritory)
                 .ThenInclude(x => x.MapTerritory)
 
-                .Include(x => x.Map)
-                .ThenInclude(x => x.MapTerritory)
-
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
-
-            foreach (var particip in game.Participants)
-            {
-                var totalParticipScore = game.ObjectTerritory
-                    .Where(x => x.TakenBy == particip.PlayerId)
-                    .Sum(x => x.TerritoryScore);
-
-                totalParticipScore += particip.FinalQuestionScore;
-
-                if (particip.Score != totalParticipScore)
-                {
-                    particip.Score = totalParticipScore;
-                    defaultContext.Update(particip);
-                }
-            }
-
-            await defaultContext.SaveChangesAsync();
 
 
             foreach (var round in game.Rounds)
@@ -107,7 +113,10 @@ namespace GameService.Services.GameTimerServices
                 }
             }
 
+
             game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
+            CalculateUserScore(game);
+
             return game;
         }
         public static async Task<PvpStageIsGameOver> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db, IMessageBusClient messageBus)
@@ -171,8 +180,9 @@ namespace GameService.Services.GameTimerServices
                             AttackOrderNumber = 0,
                         });
                     }
+                    gm.Rounds.Add(baseRound);
 
-                    await db.AddAsync(baseRound);
+                    db.Update(gm);
                     await db.SaveChangesAsync();
 
                     RequestFinalNumberQuestion(messageBus, data.GameGlobalIdentifier, baseRound.Id);
