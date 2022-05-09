@@ -29,20 +29,28 @@ namespace GameService.Context
                 ApplyMigrations(db, logger);
             }
 
-            _ = ValidateResources(
+            ValidateResources(
                 db,
                 serviceScope.ServiceProvider.GetService<IMapGeneratorService>(),
-                serviceScope.ServiceProvider.GetService<IGameService>(), logger);
+                serviceScope.ServiceProvider.GetService<IGameService>(), logger).Wait();
 
 
             logger.LogInformation("Database prepared!");
 
-            var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
+            try
+            {
+                var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
 
-            var users = grpcClient.ReturnAllAccounts();
+                var users = grpcClient.ReturnAllAccounts();
 
-            if (users == null) return;
-            FetchAccounts(contextFactory, users, logger);
+                if (users == null) return;
+                FetchAccounts(contextFactory, users, logger);
+            }
+            catch(Exception ex)
+            {
+                logger.LogError("GRPC service not loaded correctly. Did not fetch existing users from account service");
+                logger.LogError(ex.Message);
+            }
         }
 
         private static void FetchAccounts(IDbContextFactory<DefaultContext> contextFactory, IEnumerable<Users> users, ILogger logger = null)
@@ -83,7 +91,7 @@ namespace GameService.Context
                 // Validate questions
                 //questionService.AddDefaultQuestions();
 
-                await MapGeneratorService.LoadDefaultMapBordersInMemory(db);
+                await MapGeneratorService.LoadDefaultMapBordersInMemory(db, logger);
             }
             catch(Exception ex)
             {

@@ -99,7 +99,7 @@ namespace GameService.Services
             var nonRepeatingBorders = new List<MapTerritory>();
             foreach(var territoryId in territoryIds)
             {
-                var theseBorders = GetDefaultMapBorders(territoryId);
+                var theseBorders = GetDefaultMapBorders(territoryId, logger);
                 var uniqueBorders = theseBorders
                     .Where(x => nonRepeatingBorders.All(y => y.TerritoryName != x.TerritoryName)).ToList();
                 nonRepeatingBorders.AddRange(uniqueBorders);
@@ -115,7 +115,7 @@ namespace GameService.Services
         /// </summary>
         /// <param name="db"></param>
         /// <returns></returns>
-        public static async Task LoadDefaultMapBordersInMemory(DefaultContext db)
+        public static async Task LoadDefaultMapBordersInMemory(DefaultContext db, ILogger logger)
         {
             var allMapTerritories = await db.MapTerritory
                 .Include(x => x.Map)
@@ -131,10 +131,23 @@ namespace GameService.Services
                 .ToArrayAsync();
 
             AntarcticaMapTerritories = allMapTerritories;
+
+            if(AntarcticaMapTerritories == null || AntarcticaMapTerritories.Length == 0)
+            {
+                logger.LogError($"Warning! Did not load default map borders in memory");
+                return;
+            }
+            logger.LogInformation($"Successfully loaded default map borders in memory");
+
         }
 
-        public static MapTerritory[] GetDefaultMapBorders(int territoryId)
+        public static MapTerritory[] GetDefaultMapBorders(int territoryId, ILogger logger)
         {
+            if (AntarcticaMapTerritories == null || AntarcticaMapTerritories.Length == 0)
+            {
+                logger.LogError($"Warning! Did not load default map borders in memory");
+                throw new ArgumentException("Antarctica map borders not loaded!");
+            }
             var borderTerritories = AntarcticaMapTerritories.FirstOrDefault(x => x.Id == territoryId);
 
             if (borderTerritories is null)
