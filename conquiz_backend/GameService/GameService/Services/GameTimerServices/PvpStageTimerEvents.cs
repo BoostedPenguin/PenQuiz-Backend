@@ -56,14 +56,14 @@ namespace GameService.Services.GameTimerServices
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        private async Task Before_Show_Pvp_MultipleChoice_Screen(DefaultContext context, GameInstance gameInstance, string invitationLink)
+        private async Task Before_Response_Show_Pvp_MultipleChoice_Screen(GameInstance gameInstance)
         {
             foreach(var particip in gameInstance.Participants)
             {
                 switch (particip.GameCharacter.GetCharacterType)
                 {
                     case CharacterType.WIZARD:
-                        await wizardActions.GetAvailableMultipleChoiceHints(particip, invitationLink);
+                        await wizardActions.GetAvailableMultipleChoiceHints(particip, gameInstance.InvitationLink);
                         break;
 
                     default:
@@ -120,16 +120,13 @@ namespace GameService.Services.GameTimerServices
             if(participants.AttackedTerritory.IsCapital)
                 response.CapitalRoundsRemaining = 2;
 
-            await Before_Show_Pvp_MultipleChoice_Screen(db, gm, data.GameLink);
+            await Before_Response_Show_Pvp_MultipleChoice_Screen(gm);
             
-            await db.SaveChangesAsync();
-
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
             timerWrapper.StartTimer(ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION);
         }
 
-        ///TODO
         public async Task Close_Pvp_MultipleChoice_Question_Voting(TimerWrapper timerWrapper)
         {
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance

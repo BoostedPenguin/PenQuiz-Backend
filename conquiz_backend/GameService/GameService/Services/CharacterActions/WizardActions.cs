@@ -35,7 +35,7 @@ namespace GameService.Services.CharacterActions
         }
         static Random r = new Random();
 
-        public async Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink, DefaultContext context)
+        public async Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink)
         {
             // Get the character
             // Check if he can use choice hints
@@ -65,7 +65,6 @@ namespace GameService.Services.CharacterActions
                 }
             };
 
-            context.Update(wizardAbilities);
 
 
             await hubContext.Clients.Group(invitationLink).WizardUseMultipleChoiceHint(response);
