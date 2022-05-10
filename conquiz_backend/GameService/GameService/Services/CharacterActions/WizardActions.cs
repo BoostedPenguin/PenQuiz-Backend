@@ -15,7 +15,7 @@ namespace GameService.Services.CharacterActions
     public interface IWizardActions
     {
         Task GetAvailableMultipleChoiceHints(Participants participant, string invitationLink);
-        Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink, DefaultContext context);
+        Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink);
     }
 
     public class WizardActions : IWizardActions
