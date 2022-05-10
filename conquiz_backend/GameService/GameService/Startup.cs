@@ -145,12 +145,9 @@ namespace GameService
                 };
             });
 
-            services.AddSignalR().AddNewtonsoftJsonProtocol(x =>
-            {
-                x.PayloadSerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-            });
+            services.AddSignalR();
 
-            services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
+            services.AddControllers();
 
             //services.AddHostedService<BackgroundTaskService>();
 

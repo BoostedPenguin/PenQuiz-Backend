@@ -26,22 +26,31 @@ namespace GameService.Context
 
             if (!db.Database.IsInMemory())
             {
-                ApplyMigrations(contextFactory, logger);
+                ApplyMigrations(db, logger);
             }
 
             ValidateResources(
+                db,
                 serviceScope.ServiceProvider.GetService<IMapGeneratorService>(),
-                serviceScope.ServiceProvider.GetService<IGameService>(), logger);
+                serviceScope.ServiceProvider.GetService<IGameService>(), logger).Wait();
 
 
             logger.LogInformation("Database prepared!");
 
-            var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
+            try
+            {
+                var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
 
-            var users = grpcClient.ReturnAllAccounts();
+                var users = grpcClient.ReturnAllAccounts();
 
-            if (users == null) return;
-            FetchAccounts(contextFactory, users, logger);
+                if (users == null) return;
+                FetchAccounts(contextFactory, users, logger);
+            }
+            catch(Exception ex)
+            {
+                logger.LogError("GRPC service not loaded correctly. Did not fetch existing users from account service");
+                logger.LogError(ex.Message);
+            }
         }
 
         private static void FetchAccounts(IDbContextFactory<DefaultContext> contextFactory, IEnumerable<Users> users, ILogger logger = null)
@@ -60,29 +69,29 @@ namespace GameService.Context
             db.SaveChanges();
         }
 
-        private static void ApplyMigrations(IDbContextFactory<DefaultContext> contextFactory, ILogger logger = null)
+        private static void ApplyMigrations(DefaultContext context, ILogger logger = null)
         {
             logger.LogInformation("Attempting to apply migrations...");
             
-            using var context = contextFactory.CreateDbContext();
-
             context.Database.Migrate();
 
             logger.LogInformation("Migrations added");
         }
 
-        private static void ValidateResources(IMapGeneratorService mapGeneratorService, IGameService gameService, ILogger logger = null)
+        private static async Task ValidateResources(DefaultContext db,IMapGeneratorService mapGeneratorService, IGameService gameService, ILogger logger = null)
         {
             try
             {
                 // Validate map
-                mapGeneratorService.ValidateMap();
+                await mapGeneratorService.ValidateMap(db);
 
                 // Cancel all "stuck" games
-                gameService.CancelOngoingGames();
+                await gameService.CancelOngoingGames(db);
 
                 // Validate questions
                 //questionService.AddDefaultQuestions();
+
+                await MapGeneratorService.LoadDefaultMapBordersInMemory(db, logger);
             }
             catch(Exception ex)
             {

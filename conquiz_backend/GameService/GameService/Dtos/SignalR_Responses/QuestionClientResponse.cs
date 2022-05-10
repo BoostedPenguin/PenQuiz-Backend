@@ -8,6 +8,7 @@ namespace GameService.Dtos.SignalR_Responses
 {
     public class QuestionClientResponse
     {
+        public bool IsLastQuestion { get; set; } = false;
         public bool IsNeutral { get; set; }
         
         // NULL if round isn't pvp and the attacked territory isn't capital
@@ -20,7 +21,7 @@ namespace GameService.Dtos.SignalR_Responses
         public List<AnswerClientResponse> Answers { get; set; }
 
 
-        public Participants[] Participants { get; set; }
+        public ParticipantsResponse[] Participants { get; set; }
         public int AttackerId { get; set; }
         public int DefenderId { get; set; }
     }

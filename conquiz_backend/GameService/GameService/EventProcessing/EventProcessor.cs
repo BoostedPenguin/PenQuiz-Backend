@@ -3,6 +3,7 @@ using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
 using GameService.Dtos;
+using GameService.Services.GameTimerServices;
 using Google.Apis.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -22,12 +23,14 @@ namespace GameService.EventProcessing
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IMapper mapper;
         private readonly ILogger<EventProcessor> logger;
+        private readonly IGameTimerService gameTimerService;
 
-        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, ILogger<EventProcessor> logger)
+        public EventProcessor(IDbContextFactory<DefaultContext> contextFactory, IMapper mapper, ILogger<EventProcessor> logger, IGameTimerService gameTimerService)
         {
             this.contextFactory = contextFactory;
             this.mapper = mapper;
             this.logger = logger;
+            this.gameTimerService = gameTimerService;
         }
         public void ProcessEvent(string message)
         {
@@ -56,14 +59,18 @@ namespace GameService.EventProcessing
         private void AddFinalQuestionResponse(string message)
         {
             var result = JsonSerializer.Deserialize<QResponse>(message);
-            using var db = contextFactory.CreateDbContext();
+            
+            var gm = gameTimerService
+                .GameTimers
+                .FirstOrDefault(e => e.Data.GameGlobalIdentifier == result.GameGlobalIdentifier)
+                .Data.GameInstance;
 
-            var finalRound = db.Round
-                .Include(x => x.GameInstance)
-                .Where(x => x.GameInstance.GameGlobalIdentifier == result.GameGlobalIdentifier && 
-                    x.Id == result.QuestionResponses.First().RoundId && 
-                    x.AttackStage == AttackStage.FINAL_NUMBER_PVP)
-                .FirstOrDefault();
+            var finalRound = gm.Rounds
+                .Where(e => e.Id == result.QuestionResponses
+                .First().RoundId && e.AttackStage == AttackStage.FINAL_NUMBER_PVP).FirstOrDefault();
+
+
+            // Get the current timer
 
 
             if (finalRound == null)
@@ -73,23 +80,24 @@ namespace GameService.EventProcessing
             }
 
             var mapped = mapper.Map<Questions>(result.QuestionResponses.First());
-            db.AddAsync(mapped);
 
-            db.SaveChanges();
+            finalRound.Question = mapped;
         }
 
         private void AddCapitalQuestions(string message)
         {
             var result = JsonSerializer.Deserialize<QResponse>(message);
 
-            using var db = contextFactory.CreateDbContext();
+            var gm = gameTimerService
+                .GameTimers
+                .FirstOrDefault(e => e.Data.GameGlobalIdentifier == result.GameGlobalIdentifier)
+                .Data.GameInstance;
 
-            var capitalRounds = db.CapitalRound
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .Where(x => x.PvpRound.Round.GameInstance.GameGlobalIdentifier == result.GameGlobalIdentifier)
-                .ToList();
+            var capitalRounds = gm.Rounds
+                .Where(e => e.PvpRound != null && e.PvpRound.CapitalRounds != null)
+                .SelectMany(e => e.PvpRound.CapitalRounds).ToList();
+
+
 
             var mapped = mapper.Map<Questions[]>(result.QuestionResponses);
 
@@ -111,35 +119,43 @@ namespace GameService.EventProcessing
                 {
                     receivedQuestion.CapitalRoundNumberId = capitalRound.Id;
                     receivedQuestion.CapitalRoundMCId = null;
+
+                    capitalRound.CapitalRoundNumberQuestion = receivedQuestion;
                 }
                 else
                 {
                     receivedQuestion.CapitalRoundMCId = capitalRound.Id;
                     receivedQuestion.CapitalRoundNumberId = null;
 
+                    capitalRound.CapitalRoundMultipleQuestion = receivedQuestion;
                 }
-                db.AddAsync(receivedQuestion);
             }
-
-            db.SaveChanges();
         }
 
+
+        /// <summary>
+        /// Attaches the questions to the current game instance located in gametimerservice
+        /// On next event the questions will get saved to the database
+        /// </summary>
+        /// <param name="questionsResponse"></param>
         private void AddGameQuestions(QResponse questionsResponse)
         {
-            using var db = contextFactory.CreateDbContext();
-
-            var gm = db.GameInstance
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.Question)
-                .Where(x => x.GameGlobalIdentifier == questionsResponse.GameGlobalIdentifier)
-                .FirstOrDefault();
+            // Get the current timer
+            var gm = gameTimerService
+                .GameTimers
+                .FirstOrDefault(e => e.Data.GameGlobalIdentifier == questionsResponse.GameGlobalIdentifier)
+                .Data.GameInstance;
 
 
             if (gm == null)
             {
                 logger.LogWarning($"Game instance doesnt exist. Global ID: {questionsResponse.GameGlobalIdentifier}");
+                return;
+            }
+
+            if(gm.GameState != GameState.IN_PROGRESS)
+            {
+                logger.LogWarning($"Game instance is no longer in progress. Global ID: {questionsResponse.GameGlobalIdentifier}");
                 return;
             }
 
@@ -162,11 +178,12 @@ namespace GameService.EventProcessing
                 {
                     receivedQuestion.PvpRoundId = gameRound.PvpRound.Id;
                     receivedQuestion.RoundId = null;
-                }
-                db.AddAsync(receivedQuestion);
-            }
 
-            db.SaveChanges();
+                    gameRound.PvpRound.NumberQuestion = receivedQuestion;
+                    continue;
+                }
+                gameRound.Question = receivedQuestion;
+            }
         }
 
         private void AddUser(string userPublishedMessage)

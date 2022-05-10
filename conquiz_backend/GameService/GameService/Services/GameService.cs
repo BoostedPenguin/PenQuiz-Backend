@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using GameService.Services.GameTimerServices;
 using GameService.Data.Models;
 using GameService.Data;
+using AutoMapper;
+using GameService.Dtos.SignalR_Responses;
 
 namespace GameService.Services
 {
@@ -31,8 +33,8 @@ namespace GameService.Services
 
     public interface IGameService
     {
-        Task CancelOngoingGames();
-        Task<GameInstance> OnPlayerLoginConnection();
+        Task CancelOngoingGames(DefaultContext db);
+        Task<OnPlayerLoginResponse> OnPlayerLoginConnection();
         Task<PersonDisconnectedGameResult> PersonDisconnected();
     }
 
@@ -89,23 +91,26 @@ namespace GameService.Services
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IMapper mapper;
         private readonly IGameTimerService gameTimerService;
         public const string DefaultMap = "Antarctica";
 
         public const int RequiredPlayers = 3;
         public const int InvitationCodeLength = 4;
 
-        public GameService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IGameTimerService gameTimerService) : base(_contextFactory)
+        public GameService(IDbContextFactory<DefaultContext> _contextFactory, 
+            IHttpContextAccessor httpContextAccessor, 
+            IMapper mapper,
+            IGameTimerService gameTimerService) : base(_contextFactory)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
+            this.mapper = mapper;
             this.gameTimerService = gameTimerService;
         }
 
-        public async Task CancelOngoingGames()
+        public async Task CancelOngoingGames(DefaultContext db)
         {
-            using var db = contextFactory.CreateDbContext();
-
             var ongoingGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .Where(x => x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS)
@@ -115,31 +120,40 @@ namespace GameService.Services
             await db.SaveChangesAsync();
         }
 
-        public async Task<GameInstance> OnPlayerLoginConnection()
+        public async Task<OnPlayerLoginResponse> OnPlayerLoginConnection()
         {
             // Checks if there are any in-progress games and tries to put him back in that state
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
-            var ongoingGames = await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.GameState == GameState.IN_PROGRESS && x.Participants
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+
+            var ongoingGames = gameTimerService.GameTimers.Where(e =>
+                e.Data.GameInstance.GameState == GameState.IN_PROGRESS && e.Data.GameInstance.Participants
                     .Any(y => y.PlayerId == user.Id))
-                .ToListAsync();
+            .Select(e => e.Data.GameInstance)
+            .ToList();
 
             // There shouldn't be more than 1 active game for a given player at any time.
             // This is a bug, cancel all games for this player
-            if(ongoingGames.Count() > 1)
+            if(ongoingGames.Count > 1)
             {
                 ongoingGames.ForEach(x => x.GameState = GameState.CANCELED);
                 db.Update(ongoingGames);
                 await db.SaveChangesAsync();
+
+                foreach(var gm in ongoingGames)
+                {
+                    gameTimerService.CancelGameTimer(gm);
+                }
+
                 throw new GameException("There shouldn't be more than 1 active game for a given player at any time");
             }
 
-            if (ongoingGames.Count() == 1)
+            if (ongoingGames.Count == 1)
             {
                 var currentGameInstance = ongoingGames.First();
                 var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == user.Id);
@@ -148,12 +162,10 @@ namespace GameService.Services
                 db.Update(thisUser);
                 await db.SaveChangesAsync();
 
-                var gm = await CommonTimerFunc.GetFullGameInstance(currentGameInstance.Id, db);
-                
-                return currentGameInstance;
+                return new OnPlayerLoginResponse(mapper.Map<GameInstanceResponse>(currentGameInstance), thisUser.Id);
             }
 
-            return null;
+            return new OnPlayerLoginResponse(null, user.Id);
         }
 
 

@@ -48,81 +48,64 @@ namespace GameService.Services.GameTimerServices
 
             // Get the question and show it to the clients
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
+            using var db = contextFactory.CreateDbContext();
 
-            // Show the question to the user
-            var question = await db.Questions
-                .Include(x => x.Answers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
-                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber 
-                    && x.Round.AttackStage == AttackStage.FINAL_NUMBER_PVP)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var currentRound = gm.Rounds
+                .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
+
+            var question = currentRound
+                .Question;
 
             if (question == null)
                 throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
 
 
             // Open this question for voting
-            question.Round.IsQuestionVotingOpen = true;
-            question.Round.QuestionOpenedAt = DateTime.Now;
+            currentRound.IsQuestionVotingOpen = true;
+            currentRound.QuestionOpenedAt = DateTime.Now;
 
-            db.Update(question.Round);
+            db.Update(gm);
             await db.SaveChangesAsync();
 
             var response = mapper.Map<QuestionClientResponse>(question);
 
             // If the round is a neutral one, then everyone can attack
-            var terAttackers = question.Round.NeutralRound.TerritoryAttackers.ToList();
-            if (terAttackers.Count() == 2)
+            var terAttackers = currentRound.NeutralRound.TerritoryAttackers.ToList();
+            if (terAttackers.Count == 2)
             {
+                response.IsLastQuestion = true;
                 response.IsNeutral = false;
                 response.AttackerId = terAttackers[0].AttackerId;
                 response.DefenderId = terAttackers[1].AttackerId;
 
-                response.Participants = question.Round.GameInstance.Participants
+                var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants
                     .Where(x => terAttackers.Any(y => y.AttackerId == x.PlayerId))
-                    .ToArray();
+                    .ToArray());
+                response.Participants = participantsMapping;
             }
             else
             {
+                response.IsLastQuestion = true;
                 response.IsNeutral = true;
-                response.Participants = question.Round.GameInstance.Participants.ToArray();
+                var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants.ToArray());
+                response.Participants = participantsMapping;
             }
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
             timerWrapper.StartTimer(ActionState.END_FINAL_PVP_NUMBER_QUESTION);
         }
-        private Random r = new Random();
+        private readonly Random r = new Random();
         public async Task Final_Close_Pvp_Number_Question_Voting(TimerWrapper timerWrapper)
         {
             timerWrapper.Stop();
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            using var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
+            var currentRound = gm.Rounds
+                .First(e => e.GameRoundNumber == data.CurrentGameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
 
-            var currentRound =
-                await db.Round
-                .Include(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber 
-                    && x.AttackStage == AttackStage.FINAL_NUMBER_PVP
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -257,8 +240,9 @@ namespace GameService.Services.GameTimerServices
                 clientResponse.PlayerAnswers.ForEach(x => x.Winner = x.PlayerId == winnerId);
 
             }
-            db.Update(currentRound);
+            db.Update(gm);
             await db.SaveChangesAsync();
+            CommonTimerFunc.CalculateUserScore(gm);
 
             // Tell clients
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);

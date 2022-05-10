@@ -20,13 +20,14 @@ namespace GameService.Services
         /// Validate if the map and it's territories are in the database. If not regenerate the map itself.
         /// </summary>
         /// <returns></returns>
-        Task ValidateMap();
+        Task ValidateMap(DefaultContext db);
         Task<bool> AreTheyBorders(DefaultContext context, string territoryName, string territoryName2, string mapName);
         Task<bool> AreTheyBorders(DefaultContext context, int territoryId, int territoryId2);
         Task<MapTerritory[]> GetBorders(DefaultContext context, string territoryName, string mapName);
         Task<MapTerritory[]> GetBorders(DefaultContext context, int territoryId);
-        Task<MapTerritory[]> GetBorders(DefaultContext context, int[] territoryId);
+        MapTerritory[] GetBorders(int[] territoryId);
         Task<int> GetAmountOfTerritories(DefaultContext context, int mapId);
+        int GetAmountOfTerritories(GameInstance gm);
     }
 
     public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
@@ -93,18 +94,75 @@ namespace GameService.Services
             return await GetBorders(context, territory.Id);
         }
 
-        public async Task<MapTerritory[]> GetBorders(DefaultContext context, int[] territoryIds)
+        public MapTerritory[] GetBorders(int[] territoryIds)
         {
             var nonRepeatingBorders = new List<MapTerritory>();
             foreach(var territoryId in territoryIds)
             {
-                var theseBorders = await GetBorders(context, territoryId);
+                var theseBorders = GetDefaultMapBorders(territoryId, logger);
                 var uniqueBorders = theseBorders
                     .Where(x => nonRepeatingBorders.All(y => y.TerritoryName != x.TerritoryName)).ToList();
                 nonRepeatingBorders.AddRange(uniqueBorders);
             }
 
             return nonRepeatingBorders.ToArray();
+        }
+
+        private static MapTerritory[] AntarcticaMapTerritories;
+
+        /// <summary>
+        /// Loads all antarctica border details in memory so no need for redundant calls
+        /// </summary>
+        /// <param name="db"></param>
+        /// <returns></returns>
+        public static async Task LoadDefaultMapBordersInMemory(DefaultContext db, ILogger logger)
+        {
+            var allMapTerritories = await db.MapTerritory
+                .Include(x => x.Map)
+                .Include(x => x.BordersNextToTerritoryNavigation)
+                .ThenInclude(x => x.ThisTerritoryNavigation)
+
+                .Include(x => x.BordersThisTerritoryNavigation)
+                .ThenInclude(x => x.NextToTerritoryNavigation)
+
+                .Where(x => x.Map.Name == "Antarctica")
+                .AsSplitQuery()
+                .AsNoTracking()
+                .ToArrayAsync();
+
+            AntarcticaMapTerritories = allMapTerritories;
+
+            if(AntarcticaMapTerritories == null || AntarcticaMapTerritories.Length == 0)
+            {
+                logger.LogError($"Warning! Did not load default map borders in memory");
+                return;
+            }
+            logger.LogInformation($"Successfully loaded default map borders in memory");
+
+        }
+
+        public static MapTerritory[] GetDefaultMapBorders(int territoryId, ILogger logger)
+        {
+            if (AntarcticaMapTerritories == null || AntarcticaMapTerritories.Length == 0)
+            {
+                logger.LogError($"Warning! Did not load default map borders in memory");
+                throw new ArgumentException("Antarctica map borders not loaded!");
+            }
+            var borderTerritories = AntarcticaMapTerritories.FirstOrDefault(x => x.Id == territoryId);
+
+            if (borderTerritories is null)
+                throw new ArgumentException($"Antarctica map does not have a territory with id: {territoryId}");
+
+
+            var btRelations = new
+            {
+                left = borderTerritories.BordersNextToTerritoryNavigation
+            .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList(),
+                right = borderTerritories.BordersThisTerritoryNavigation
+            .Select(x => x.ThisTerritory == territoryId ? x.NextToTerritoryNavigation : x.ThisTerritoryNavigation).ToList()
+            };
+
+            return btRelations.left.Concat(btRelations.right).ToArray();
         }
 
 
@@ -208,9 +266,8 @@ namespace GameService.Services
         /// Should be ran on every start to validate if map exists or not
         /// </summary>
         /// <returns></returns>
-        public async Task ValidateMap()
+        public async Task ValidateMap(DefaultContext a)
         {
-            using var a = contextFactory.CreateDbContext();
             var fileTerritories = ReadMapJson();
 
             var antarctica = await a.Maps
@@ -262,6 +319,11 @@ namespace GameService.Services
             if (bothTerritories.Count > 2) throw new ArgumentException("There was 1 or more territory name, bound to this map, which was duplicated in our db.");
 
             return await AreTheyBorders(context, bothTerritories[0].Id, bothTerritories[1].Id);
+        }
+
+        public int GetAmountOfTerritories(GameInstance gm)
+        {
+            return gm.ObjectTerritory.Count;
         }
 
         public async Task<int> GetAmountOfTerritories(DefaultContext context, int mapId)

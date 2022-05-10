@@ -21,12 +21,13 @@ namespace GameService.Grpc
         private readonly IOptions<AppSettings> appSettings;
         private readonly IMapper mapper;
         private readonly ILogger<AccountDataClient> logger;
-
+        private readonly GrpcChannel channel;
         public AccountDataClient(IOptions<AppSettings> appSettings, IMapper mapper, ILogger<AccountDataClient> logger)
         {
             this.appSettings = appSettings;
             this.mapper = mapper;
             this.logger = logger;
+            this.channel = GrpcChannel.ForAddress(appSettings.Value.GrpcAccount);
         }
 
         public IEnumerable<Users> ReturnAllAccounts()
@@ -35,7 +36,6 @@ namespace GameService.Grpc
 
             AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
 
-            var channel = GrpcChannel.ForAddress(appSettings.Value.GrpcAccount);
             var client = new GrpcAccount.GrpcAccountClient(channel);
             var request = new GetAllRequest();
 

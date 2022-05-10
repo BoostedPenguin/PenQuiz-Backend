@@ -54,7 +54,7 @@ namespace GameServiceUnitTests
 
             mapGeneratorService = new MapGeneratorService(mockContextFactory, loggerMoq);
 
-            gameLobbyService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, new MapGeneratorService(mockContextFactory, loggerMoq), null);
+            gameLobbyService = new GameLobbyService(null, mockContextFactory, mockHttpContextAccessor.Object, new MapGeneratorService(mockContextFactory, loggerMoq));
         }
 
 
@@ -99,8 +99,8 @@ namespace GameServiceUnitTests
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
 
-            var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object, 
-                new MapGeneratorService(mockContextFactory, loggerMoq), null);
+            var secondaryUserService = new GameLobbyService(null, mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory, loggerMoq));
 
 
             var initialGame = await gameLobbyService.CreateGameLobby();
@@ -131,8 +131,8 @@ namespace GameServiceUnitTests
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
 
-            var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory, loggerMoq), null);
+            var secondaryUserService = new GameLobbyService(null, mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory, loggerMoq));
 
 
             var initialGame = await gameLobbyService.FindPublicMatch();
@@ -154,8 +154,8 @@ namespace GameServiceUnitTests
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
 
-            var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory, loggerMoq), null);
+            var secondaryUserService = new GameLobbyService(null, mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory, loggerMoq));
 
 
             var initialGame = await gameLobbyService.FindPublicMatch();
@@ -174,13 +174,13 @@ namespace GameServiceUnitTests
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
-            var secondaryUserService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory, loggerMoq), null);
+            var secondaryUserService = new GameLobbyService(null, mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory, loggerMoq));
 
 
             var initialGame = await gameLobbyService.CreateGameLobby();
 
-            var error = await Should.ThrowAsync<JoiningGameException>(() => 
+            var error = await Should.ThrowAsync<JoiningGameException>(() =>
             secondaryUserService.JoinGameLobby("12131"));
 
             error.Message.ShouldBe("The invitation link is invalid");
@@ -207,7 +207,7 @@ namespace GameServiceUnitTests
             };
 
             var mockContextFactory = new TestDbContextFactory("StartGameTest");
-            await new MapGeneratorService(mockContextFactory, loggerMoq).ValidateMap();
+            await new MapGeneratorService(mockContextFactory, loggerMoq).ValidateMap(mockContextFactory.CreateDbContext());
             using var db = mockContextFactory.CreateDbContext();
 
             db.Add(playerOne);
@@ -245,7 +245,7 @@ namespace GameServiceUnitTests
             // Second user trying to join lobby
             var mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
             var messageBusMock = new Mock<IMessageBusClient>();
-            messageBusMock.Setup(x => 
+            messageBusMock.Setup(x =>
                 x.RequestQuestions(It.IsAny<RequestQuestionsDto>()));
 
             var httpContext = new DefaultHttpContext();
@@ -255,8 +255,8 @@ namespace GameServiceUnitTests
             };
 
             mockHttpContextAccessor.Setup(h => h.HttpContext.User.Claims).Returns(claims);
-            var gameLobbyService = new GameLobbyService(mockContextFactory, mockHttpContextAccessor.Object,
-                new MapGeneratorService(mockContextFactory, loggerMoq), messageBusMock.Object);
+            var gameLobbyService = new GameLobbyService(null, mockContextFactory, mockHttpContextAccessor.Object,
+                new MapGeneratorService(mockContextFactory, loggerMoq));
 
             // Act
             var result = await gameLobbyService.StartGame();

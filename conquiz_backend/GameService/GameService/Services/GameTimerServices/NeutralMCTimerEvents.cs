@@ -30,7 +30,6 @@ namespace GameService.Services.GameTimerServices
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
-        private readonly Random r = new Random();
 
         public NeutralMCTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
@@ -48,15 +47,10 @@ namespace GameService.Services.GameTimerServices
         public async Task Close_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
 
-            var currentRound = await db.Round
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+            var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
+                .FirstOrDefault();
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
@@ -65,16 +59,15 @@ namespace GameService.Services.GameTimerServices
             if (currentAttacker.AttackedTerritoryId == null)
             {
                 var randomTerritory =
-                    await gameTerritoryService.GetRandomTerritory(currentAttacker.AttackerId, data.GameInstanceId);
+                    gameTerritoryService.GetRandomTerritory(gm, currentAttacker.AttackerId, data.GameInstanceId);
 
                 // Set this territory as being attacked from this person
                 currentAttacker.AttackedTerritoryId = randomTerritory.Id;
 
                 // Set the ObjectTerritory as being attacked currently
-                randomTerritory.AttackedBy = currentAttacker.AttackerId;
-                db.Update(randomTerritory);
+                data.GameInstance.ObjectTerritory.First(x => x.Id == randomTerritory.Id).AttackedBy = currentAttacker.AttackerId;
+
             }
-            var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
 
             // This attacker voting is over, go to next attacker
             switch (currentRound.NeutralRound.AttackOrderNumber)
@@ -85,19 +78,24 @@ namespace GameService.Services.GameTimerServices
                     var nextAttacker =
                         currentRound.NeutralRound.TerritoryAttackers
                         .First(x => x.AttackOrderNumber == newAttackorderNumber);
+                    using (var db = contextFactory.CreateDbContext())
+                    {
+                        db.Update(gm);
+                        await db.SaveChangesAsync();
+                    }
 
-                    db.Update(currentRound);
-                    await db.SaveChangesAsync();
 
-                    var availableTerritories = await gameTerritoryService
-                        .GetAvailableAttackTerritoriesNames(db, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
+                    var availableTerritories = gameTerritoryService
+                        .GetAvailableAttackTerritoriesNames(gm, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
 
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink)
                         .ShowRoundingAttacker(nextAttacker.AttackerId, availableTerritories);
 
+
+                    var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
                     await hubContext.Clients.Group(data.GameLink)
-                        .GetGameInstance(fullGame);
+                        .GetGameInstance(res1);
 
                     timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
 
@@ -106,11 +104,16 @@ namespace GameService.Services.GameTimerServices
                 // This was the last attacker, show a preview of all territories now, and then show the questions
                 case 3:
                     currentRound.IsTerritoryVotingOpen = false;
-                    db.Update(currentRound);
-                    await db.SaveChangesAsync();
+                    using (var db = contextFactory.CreateDbContext())
+                    {
+                        db.Update(gm);
+                        await db.SaveChangesAsync();
+                    }
 
+                    var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
                     await hubContext.Clients.Group(data.GameLink)
-                        .GetGameInstance(fullGame);
+                        .GetGameInstance(res2);
+
 
                     timerWrapper.StartTimer(ActionState.SHOW_MULTIPLE_CHOICE_QUESTION);
                     break;
@@ -126,20 +129,11 @@ namespace GameService.Services.GameTimerServices
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
             timerWrapper.Stop();
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
+            var gm = data.GameInstance;
 
-            var currentRound =
-                await db.Round
-                .Include(x => x.GameInstance)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber
-                    && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var currentRound = data.GameInstance.Rounds
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefault();
 
 
 
@@ -200,22 +194,30 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.Data.CurrentGameRoundNumber++;
             currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
-            db.Update(currentRound);
-            await db.SaveChangesAsync();
+            using (var db = contextFactory.CreateDbContext())
+            {
+                db.Update(gm);
+                await db.SaveChangesAsync();
+            }
+            CommonTimerFunc.CalculateUserScore(gm);
 
             // Request a new batch of number questions from the question service
             if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
             {
                 // Create number question rounds if gm multiple choice neutral rounds are over
-                var rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
-                await db.AddRangeAsync(rounds);
-                await db.SaveChangesAsync();
+                var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
 
-                data.LastNeutralNumberRound = db.Round
-                    .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
-                    .OrderByDescending(x => x.GameRoundNumber)
-                    .Select(x => x.GameRoundNumber)
-                    .First();
+                rounds.ForEach(e => gm.Rounds.Add(e));
+
+                using (var db = contextFactory.CreateDbContext())
+                {
+                    db.Update(gm);
+                    await db.SaveChangesAsync();
+
+                    data.LastNeutralNumberRound = gm.Rounds.Where(e => e.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                        .OrderByDescending(e => e.GameRoundNumber)
+                        .Select(e => e.GameRoundNumber).First();
+                }
 
 
                 CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
@@ -250,37 +252,39 @@ namespace GameService.Services.GameTimerServices
             }
         }
 
+
+
+
         public async Task Open_Neutral_MultipleChoice_Attacker_Territory_Selecting(TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
-            using var db = contextFactory.CreateDbContext();
 
-            var currentRound = await db.Round
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .ThenInclude(x => x.AttackedTerritory)
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+            var gm = data.GameInstance;
+            var currentRound = data.GameInstance.Rounds
+                .FirstOrDefault(x => x.GameRoundNumber == data.CurrentGameRoundNumber);
+
 
             // Open this round for territory voting
             currentRound.IsTerritoryVotingOpen = true;
 
-            db.Update(currentRound);
-            await db.SaveChangesAsync();
+            using (var db = contextFactory.CreateDbContext())
+            {
+                db.Update(gm);
+                await db.SaveChangesAsync();
+            }
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
 
-            var availableTerritories = await gameTerritoryService
-                .GetAvailableAttackTerritoriesNames(db, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
+            var availableTerritories = gameTerritoryService
+                .GetAvailableAttackTerritoriesNames(gm, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowRoundingAttacker(currentAttacker.AttackerId, availableTerritories);
 
-            var fullGame = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
+            var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
-                .GetGameInstance(fullGame);
+                .GetGameInstance(res2);
 
             timerWrapper.StartTimer(ActionState.CLOSE_PLAYER_ATTACK_VOTING);
         }
@@ -292,18 +296,14 @@ namespace GameService.Services.GameTimerServices
 
             // Get the question and show it to the clients
             var data = timerWrapper.Data;
-            var db = contextFactory.CreateDbContext();
 
+            var gm = timerWrapper.Data.GameInstance;
+            var currentRound = gm.Rounds
+                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
+                .FirstOrDefault();
+
+            var question = currentRound.Question;
             // Show the question to the user
-            var question = await db.Questions
-                .Include(x => x.Answers)
-                .Include(x => x.Round)
-                .ThenInclude(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Where(x => x.Round.GameInstanceId == data.GameInstanceId &&
-                    x.Round.GameRoundNumber == x.Round.GameInstance.GameRoundNumber)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
 
             if (question == null)
                 throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
@@ -311,31 +311,33 @@ namespace GameService.Services.GameTimerServices
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
-            db.Update(question.Round);
-            await db.SaveChangesAsync();
+            using (var db = contextFactory.CreateDbContext())
+            {
+                db.Update(gm);
+                await db.SaveChangesAsync();
+            }
 
             var response = mapper.Map<QuestionClientResponse>(question);
 
+            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants.ToArray());
+
+            response.Participants = participantsMapping;
             // If the round is a neutral one, then everyone can attack
             response.IsNeutral = true;
-            response.Participants = question.Round.GameInstance.Participants.ToArray();
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
             timerWrapper.StartTimer(ActionState.END_MULTIPLE_CHOICE_QUESTION);
         }
 
-        private async Task<Round[]> Create_Neutral_Number_Rounds(DefaultContext db, TimerWrapper timerWrapper)
+        private static List<Round> Create_Neutral_Number_Rounds(GameInstance gm, TimerWrapper timerWrapper)
         {
             var data = timerWrapper.Data;
-            var untakenTerritoriesCount = await db.ObjectTerritory
+            var untakenTerritoriesCount = gm.ObjectTerritory
                 .Where(x => x.TakenBy == null && x.GameInstanceId == data.GameInstanceId)
-                .CountAsync();
+                .Count();
 
-            var participantsIds = await db.Participants
-                .Where(x => x.GameId == data.GameInstanceId)
-                .Select(x => x.PlayerId)
-                .ToListAsync();
+            var participantsIds = gm.Participants.Select(x => x.PlayerId).ToList();
 
             var numberQuestionRounds = new List<Round>();
             for (var i = 0; i < untakenTerritoriesCount; i++)
@@ -368,7 +370,7 @@ namespace GameService.Services.GameTimerServices
                 numberQuestionRounds.Add(baseRound);
             }
 
-            return numberQuestionRounds.ToArray();
+            return numberQuestionRounds;
         }
 
 
@@ -378,11 +380,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var data = timerWrapper.Data;
 
-            var gm = db.GameInstance
-                .Include(x => x.Participants)
-                .Include(x => x.ObjectTerritory)
-                .AsSplitQuery()
-                .Where(x => x.Id == data.GameInstanceId).FirstOrDefault();
+            var gm = data.GameInstance;
 
             data.CurrentGameRoundNumber = data.LastNeutralMCRound + 1;
 
@@ -390,16 +388,16 @@ namespace GameService.Services.GameTimerServices
             gm.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
 
             // Create number question rounds if gm multiple choice neutral rounds are over
-            var rounds = await Create_Neutral_Number_Rounds(db, timerWrapper);
-            await db.AddRangeAsync(rounds);
+            var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
+
+            rounds.ForEach(e => gm.Rounds.Add(e));
+
+            db.Update(gm);
             await db.SaveChangesAsync();
 
-            data.LastNeutralNumberRound = db.Round
-                .Where(x => x.GameInstanceId == data.GameInstanceId && x.AttackStage == AttackStage.NUMBER_NEUTRAL)
-                .OrderByDescending(x => x.GameRoundNumber)
-                .Select(x => x.GameRoundNumber)
-                .First();
-
+            data.LastNeutralNumberRound = gm.Rounds.Where(e => e.AttackStage == AttackStage.NUMBER_NEUTRAL)
+                .OrderByDescending(e => e.GameRoundNumber)
+                .Select(e => e.GameRoundNumber).First();
 
             CommonTimerFunc.RequestQuestions(messageBus, data.GameGlobalIdentifier, rounds, true);
 

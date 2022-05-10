@@ -45,29 +45,17 @@ namespace GameService.Services.GameTimerServices
 
         private static readonly Random r = new Random();
 
-        /// <summary>
-        /// Gets all game instance details <br />
-        /// Do not call this method often as it is slow. Use more precise queries instead.
-        /// </summary>
-        /// <param name="gameInstanceId"></param>
-        /// <param name="defaultContext"></param>
-        /// <returns></returns>
-        public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
-        {
-            var game = await defaultContext.GameInstance
-                .Include(x => x.Participants)   
-                .ThenInclude(x => x.Player)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Include(x => x.Rounds)
-                .ThenInclude(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.ObjectTerritory)
-                .ThenInclude(x => x.MapTerritory)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 
+        /// <summary>
+        /// <br>Call this on MC / Number round question voting closing</br>
+        /// <br>Call this AFTER saving to database</br>
+        /// <br>Call this BEFORE sending response to client</br>
+        /// <para>The score overview of this person will NOT be persistant on the event you called it<br />
+        /// But serve as a read-only value until next event kicks in</para>
+        /// </summary>
+        /// <param name="game"></param>
+        public static void CalculateUserScore(GameInstance game)
+        {
             foreach (var particip in game.Participants)
             {
                 var totalParticipScore = game.ObjectTerritory
@@ -79,11 +67,41 @@ namespace GameService.Services.GameTimerServices
                 if (particip.Score != totalParticipScore)
                 {
                     particip.Score = totalParticipScore;
-                    defaultContext.Update(particip);
                 }
             }
+        }
 
-            await defaultContext.SaveChangesAsync();
+        /// <summary>
+        /// Gets all game instance details <br />
+        /// Do not call this method often as it is slow. Use more precise queries instead.
+        /// </summary>
+        /// <param name="gameInstanceId"></param>
+        /// <param name="defaultContext"></param>
+        /// <returns></returns>
+        public static async Task<GameInstance> GetFullGameInstance(int gameInstanceId, DefaultContext defaultContext)
+        {
+            var game = await defaultContext.GameInstance
+                .Include(x => x.Rounds)
+                .ThenInclude(e => e.Question)
+                .ThenInclude(e => e.Answers)
+
+                .Include(x => x.Participants)   
+                .ThenInclude(x => x.Player)
+
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.NeutralRound)
+                .ThenInclude(x => x.TerritoryAttackers)
+                .ThenInclude(x => x.AttackedTerritory)
+
+                .Include(x => x.Rounds)
+                .ThenInclude(x => x.PvpRound)
+                .ThenInclude(x => x.PvpRoundAnswers)
+
+                .Include(x => x.ObjectTerritory)
+                .ThenInclude(x => x.MapTerritory)
+
+                .AsSplitQuery()
+                .FirstOrDefaultAsync(x => x.Id == gameInstanceId);
 
 
             foreach (var round in game.Rounds)
@@ -95,17 +113,22 @@ namespace GameService.Services.GameTimerServices
                 }
             }
 
+
             game.Rounds = game.Rounds.OrderBy(x => x.GameRoundNumber).ToList();
+            CalculateUserScore(game);
+
             return game;
         }
         public static async Task<PvpStageIsGameOver> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db, IMessageBusClient messageBus)
         {
+            var gm = timerWrapper.Data.GameInstance;
             var data = timerWrapper.Data;
 
             // Check if there are any non-attacker territories left
-            var nonAttackerTerritoriesCount = await db.ObjectTerritory
+
+            var nonAttackerTerritoriesCount = gm.ObjectTerritory
                 .Where(x => x.GameInstanceId == data.GameInstanceId && x.TakenBy != round.AttackerId)
-                .CountAsync();
+                .Count();
 
 
             // This attacker controls all territories. Skip any other rounds and declare him winner.
@@ -117,9 +140,8 @@ namespace GameService.Services.GameTimerServices
             // Check if last pvp round
             if (data.CurrentGameRoundNumber > data.LastPvpRound)
             {
-
-                var allPlayerTerritoriesWoCapital = db.ObjectTerritory
-                    .Where(x => x.GameInstanceId == data.GameInstanceId && !x.IsCapital).ToList();
+                var allPlayerTerritoriesWoCapital = gm.ObjectTerritory
+                    .Where(x => !x.IsCapital).ToList();
 
                 var groupedBy = allPlayerTerritoriesWoCapital
                     .GroupBy(x => x.TakenBy)
@@ -158,8 +180,9 @@ namespace GameService.Services.GameTimerServices
                             AttackOrderNumber = 0,
                         });
                     }
+                    gm.Rounds.Add(baseRound);
 
-                    await db.AddAsync(baseRound);
+                    db.Update(gm);
                     await db.SaveChangesAsync();
 
                     RequestFinalNumberQuestion(messageBus, data.GameGlobalIdentifier, baseRound.Id);
@@ -231,7 +254,7 @@ namespace GameService.Services.GameTimerServices
             });
         }
 
-        public static void RequestQuestions(IMessageBusClient messageBus, string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
+        public static void RequestQuestions(IMessageBusClient messageBus, string gameGlobalIdentifier, IEnumerable<Round> rounds, bool isNeutralGeneration = false)
         {
             // Request questions only for the initial multiple questions for neutral attacking order
             // After multiple choices are over, request a new batch for number questions for all untaken territories

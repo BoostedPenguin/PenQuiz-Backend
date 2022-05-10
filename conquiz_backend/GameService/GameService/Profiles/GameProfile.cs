@@ -29,6 +29,20 @@ namespace GameService.Profiles
                 .ForMember(dest => dest.Id, org => org.Ignore());
             CreateMap<Answers, AnswerClientResponse>();
             CreateMap<Questions, QuestionClientResponse>();
+
+
+            CreateMap<GameInstance, GameInstanceResponse>();
+            CreateMap<Round, RoundResponse>();
+            CreateMap<Answers, AnswersResponse>();
+            CreateMap<PvpRound, PvpRoundResponse>();
+            CreateMap<CapitalRound, CapitalRoundResponse>();
+            CreateMap<NeutralRound, NeutralRoundResponse>();
+            CreateMap<AttackingNeutralTerritory, AttackingNeutralTerritoryResponse>();
+            CreateMap<AttackingNeutralTerritory, AttackingNeutralTerritoryResponse>();
+            CreateMap<Participants, ParticipantsResponse>();
+            CreateMap<Users, UsersResponse>();
+            CreateMap<ObjectTerritory, ObjectTerritoryResponse>();
+            CreateMap<MapTerritory, MapTerritoryResponse>();
         }
     }
 }

@@ -1,7 +1,11 @@
-﻿using GameService.Context;
+﻿using AutoMapper;
+using GameService.Context;
 using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
+using GameService.MessageBus;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,6 +19,8 @@ namespace GameService.Services.GameTimerServices
 {
     public interface IGameTimerService
     {
+        List<TimerWrapper> GameTimers { get;}
+
         void OnGameStart(GameInstance gm);
         void CancelGameTimer(GameInstance gm);
     }
@@ -26,27 +32,51 @@ namespace GameService.Services.GameTimerServices
         private readonly ICapitalStageTimerEvents capitalStageTimerEvents;
         private readonly IFinalPvpQuestionService finalPvpQuestionService;
         private readonly ILogger<GameTimerService> logger;
+        private readonly IMapper mapper;
+
         private readonly INeutralNumberTimerEvents neutralNumberTimerEvents;
         private readonly IPvpStageTimerEvents pvpStageTimerEvents;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
-        public static List<TimerWrapper> GameTimers = new List<TimerWrapper>();
+        public List<TimerWrapper> GameTimers { get; } = new();
+        private readonly IMessageBusClient messageBus;
+
+        private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
+        {
+            // Request questions only for the initial multiple questions for neutral attacking order
+            // After multiple choices are over, request a new batch for number questions for all untaken territories
+            messageBus.RequestQuestions(new RequestQuestionsDto()
+            {
+                Event = "Question_Request",
+                GameGlobalIdentifier = gameGlobalIdentifier,
+                MultipleChoiceQuestionsRoundId = rounds
+                    .Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
+                    .Select(x => x.Id)
+                    .ToList(),
+                NumberQuestionsRoundId = new List<int>(),
+                IsNeutralGeneration = isNeutralGeneration,
+            });
+        }
 
         public GameTimerService(IDbContextFactory<DefaultContext> _contextFactory,
             IPvpStageTimerEvents pvpStageTimerEvents,
             IHubContext<GameHub, IGameHub> hubContext,
             INeutralMCTimerEvents neutralMCTimerEvents,
+            IMessageBusClient messageBus,
             ICapitalStageTimerEvents capitalStageTimerEvents,
             IFinalPvpQuestionService finalPvpQuestionService,
             ILogger<GameTimerService> logger,
+            IMapper mapper,
             INeutralNumberTimerEvents neutralNumberTimerEvents)
         {
             contextFactory = _contextFactory;
             this.pvpStageTimerEvents = pvpStageTimerEvents;
             this.hubContext = hubContext;
             this.neutralMCTimerEvents = neutralMCTimerEvents;
+            this.messageBus = messageBus;
             this.capitalStageTimerEvents = capitalStageTimerEvents;
             this.finalPvpQuestionService = finalPvpQuestionService;
             this.logger = logger;
+            this.mapper = mapper;
             this.neutralNumberTimerEvents = neutralNumberTimerEvents;
         }
 
@@ -63,18 +93,20 @@ namespace GameService.Services.GameTimerServices
             actionTimer.Data.CountDownTimer = new TimerWrapper.CountDownTimer(hubContext, actionTimer.Data.GameLink);
 
             // Set the last neutral mc round 
-            using var db = contextFactory.CreateDbContext();
-            actionTimer.Data.LastNeutralMCRound = db.Round
-                .Where(x => x.GameInstanceId == gm.Id && x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
-                .Count();
+            actionTimer.Data.LastNeutralMCRound = gm.Rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL).Count();
 
             // Default starter values
             actionTimer.Data.CurrentGameRoundNumber = 1;
+            actionTimer.Data.GameInstance = gm;
 
             GameTimers.Add(actionTimer);
 
             // Start timer
             actionTimer.Elapsed += ActionTimer_Elapsed;
+
+            // Request initial multiple choice questions from question service
+            RequestQuestions(gm.GameGlobalIdentifier, gm.Rounds.ToArray(), true);
+
 
             actionTimer.StartTimer(ActionState.GAME_START_PREVIEW_TIME, 50);
         }
@@ -404,20 +436,22 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var data = timerWrapper.Data;
 
-            var gi = await db.GameInstance
-                .Where(x => x.Id == data.GameInstanceId)
-                .FirstOrDefaultAsync();
+            var gi = timerWrapper.Data.GameInstance;
 
             // Game is finished
             gi.GameState = GameState.FINISHED;
-            db.Update(gi);
-            await db.SaveChangesAsync();
+
 
             await hubContext.Clients.Group(data.GameLink)
                 .ShowGameMap();
 
-            var gm = await CommonTimerFunc.GetFullGameInstance(data.GameInstanceId, db);
-            await hubContext.Clients.Group(data.GameLink).GetGameInstance(gm);
+            var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
+            await hubContext.Clients.Group(data.GameLink)
+                .GetGameInstance(res2);
+
+            // Perform cleanup
+            db.Update(gi);
+            await db.SaveChangesAsync();
 
             GameTimers.Remove(timerWrapper);
             timerWrapper.Data.CountDownTimer.Dispose();
@@ -426,14 +460,16 @@ namespace GameService.Services.GameTimerServices
 
         private async Task UnexpectedCriticalError(TimerWrapper timerWrapper, string message = "Unhandled game exception")
         {
-            using var db = contextFactory.CreateDbContext();
             timerWrapper.Stop();
+
+            using var db = contextFactory.CreateDbContext();
+            var gm = timerWrapper.Data.GameInstance;
+            gm.GameState = GameState.CANCELED;
+            db.Update(gm);
+            await db.SaveChangesAsync();
+
             timerWrapper.Data.CountDownTimer.Stop();
             timerWrapper.Data.CountDownTimer.Dispose();
-            var gm = await db.GameInstance.FirstOrDefaultAsync(x => x.Id == timerWrapper.Data.GameInstanceId);
-            gm.GameState = GameState.CANCELED;
-
-            await db.SaveChangesAsync();
 
             await hubContext.Clients.Group(timerWrapper.Data.GameLink).LobbyCanceled($"Unexpected error occured. Game closed.\n{message}");
             GameTimers.Remove(timerWrapper);

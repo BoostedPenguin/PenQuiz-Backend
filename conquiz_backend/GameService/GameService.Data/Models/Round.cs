@@ -67,6 +67,10 @@ namespace GameService.Data.Models
     }
     public class CapitalRound
     {
+        public CapitalRound()
+        {
+            CapitalRoundUserAnswers = new HashSet<CapitalRoundAnswers>();
+        }
         public int Id { get; set; }
         public CapitalRoundAttackStage CapitalRoundAttackStage { get; set; } = CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION;
         public bool IsCompleted { get; set; } = false;

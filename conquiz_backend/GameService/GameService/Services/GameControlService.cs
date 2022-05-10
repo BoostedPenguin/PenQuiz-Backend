@@ -15,8 +15,8 @@ namespace GameService.Services
 {
     public interface IGameControlService
     {
-        Task AnswerQuestion(string answerIdString);
-        Task<SelectedTerritoryResponse> SelectTerritory(string mapTerritoryName);
+        void AnswerQuestion(string answerIdString);
+        SelectedTerritoryResponse SelectTerritory(string mapTerritoryName);
     }
 
     /// <summary>
@@ -24,32 +24,36 @@ namespace GameService.Services
     /// </summary>
     public class GameControlService : IGameControlService
     {
+        private readonly IGameTimerService gameTimerService;
         private readonly IHttpContextAccessor httpContextAccessor;
-        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly string DefaultMap = "Antarctica";
-        public GameControlService(IHttpContextAccessor httpContextAccessor, IDbContextFactory<DefaultContext> contextFactory, IGameTerritoryService gameTerritoryService)
+        public GameControlService(IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IGameTerritoryService gameTerritoryService)
         {
+            this.gameTimerService = gameTimerService;
             this.httpContextAccessor = httpContextAccessor;
-            this.contextFactory = contextFactory;
             this.gameTerritoryService = gameTerritoryService;
         }
 
-        public async Task<SelectedTerritoryResponse> SelectTerritory(string mapTerritoryName)
+        public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)
         {
-            using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
+                e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
 
-            var currentRoundOverview = await db.Round
-                .Include(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
+            if(playerGameTimer == null)
+            {
+                throw new GameException("There is no open game where this player participates");
+            }
+
+            var gm = playerGameTimer.Data.GameInstance;
+
+            var userId = gm.Participants.First(e => e.Player.UserGlobalIdentifier == globalUserId).PlayerId;
+
+            var currentRoundOverview = gm.Rounds
                 .Where(x =>
-                    x.GameInstance.GameState == GameState.IN_PROGRESS &&
-                    x.GameRoundNumber == x.GameInstance.GameRoundNumber &&
-                    x.GameInstance.Participants
-                        .Any(y => y.PlayerId == user.Id))
+                    x.GameRoundNumber == x.GameInstance.GameRoundNumber)
                 .Select(x => new
                 {
                     RoundId = x.Id,
@@ -58,9 +62,7 @@ namespace GameService.Services
                     x.GameInstanceId,
                     x.GameInstance.InvitationLink
                 })
-                .AsNoTracking()
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
 
             if (currentRoundOverview == null)
                 throw new GameException("The current round isn't valid");
@@ -71,19 +73,16 @@ namespace GameService.Services
             // Selecting territory for multiple choice neutral rounds
             if(currentRoundOverview.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
             {
-                var neutralRound = await db.Round
-                    .Include(x => x.NeutralRound)
-                    .ThenInclude(x => x.TerritoryAttackers)
-                    .ThenInclude(x => x.AttackedTerritory)
-                    .Where(x => x.Id == currentRoundOverview.RoundId)
-                    .FirstOrDefaultAsync();
+                var neutralRound = gm.Rounds
+                    .Where(x => x.Id == currentRoundOverview.RoundId).FirstOrDefault();
+
 
                 // Check if it's this player's turn for selecting a neutral territory or not
 
                 var currentTurnsPlayer = neutralRound
                     .NeutralRound
                     .TerritoryAttackers
-                    .FirstOrDefault(x => x.AttackOrderNumber == neutralRound.NeutralRound.AttackOrderNumber && x.AttackerId == user.Id);
+                    .FirstOrDefault(x => x.AttackOrderNumber == neutralRound.NeutralRound.AttackOrderNumber && x.AttackerId == userId);
 
                 if (currentTurnsPlayer == null)
                     throw new GameException("Unknown player turn.");
@@ -91,16 +90,14 @@ namespace GameService.Services
                 if (currentTurnsPlayer.AttackedTerritoryId != null)
                     throw new BorderSelectedGameException("You already selected a territory for this round");
 
-                var mapTerritory = await db.MapTerritory
-                    .Include(x => x.Map)
-                    .Where(x => x.TerritoryName == mapTerritoryName && x.Map.Name == DefaultMap)
-                    .FirstOrDefaultAsync();
+
+                var mapTerritory = gm.ObjectTerritory.Where(e => e.MapTerritory.TerritoryName == mapTerritoryName).FirstOrDefault();
 
                 if (mapTerritory == null)
                     throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
-                var gameObjTerritory = await gameTerritoryService
-                    .SelectTerritoryAvailability(db, user.Id, currentRoundOverview.GameInstanceId, mapTerritory.Id, true);
+                var gameObjTerritory = gameTerritoryService
+                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.MapTerritoryId, true);
 
                 if (gameObjTerritory == null)
                     throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
@@ -112,16 +109,20 @@ namespace GameService.Services
                 currentTurnsPlayer.AttackedTerritoryId = gameObjTerritory.Id;
 
                 // Set the ObjectTerritory as being attacked currently
-                gameObjTerritory.AttackedBy = currentTurnsPlayer.AttackerId;
-                db.Update(gameObjTerritory);
-                db.Update(currentTurnsPlayer);
+                var obj = gm.ObjectTerritory.First(e => e.Id == gameObjTerritory.Id);
+                obj.AttackedBy = currentTurnsPlayer.AttackerId;
+                
+                
+                // Store it in state, and update when the closing event triggers
+                // Makes sure entity does not track same entity twice
 
-                await db.SaveChangesAsync();
+                //db.Update(obj);
+                //await db.SaveChangesAsync();
 
                 return new SelectedTerritoryResponse()
                 {
                     GameLink = currentRoundOverview.InvitationLink,
-                    AttackedById = user.Id,
+                    AttackedById = userId,
                     TerritoryId = gameObjTerritory.Id
                 };
             }
@@ -129,31 +130,22 @@ namespace GameService.Services
             // Selecting territory for multiple choice pvp rounds
             else if (currentRoundOverview.AttackStage == AttackStage.MULTIPLE_PVP)
             {
-                var pvpRound = await db.Round
-                    .Include(x => x.PvpRound)
-                    .ThenInclude(x => x.PvpRoundAnswers)
-                    .Include(x => x.PvpRound)
-                    .ThenInclude(x => x.AttackedTerritory)
-                    .Where(x => x.Id == currentRoundOverview.RoundId)
-                    .FirstOrDefaultAsync();
+                var pvpRound = gm.Rounds.Where(x => x.Id == currentRoundOverview.RoundId).FirstOrDefault();
 
                 // Person who selected a territory is the attacker
-                if(pvpRound.PvpRound.AttackerId != user.Id)
+                if(pvpRound.PvpRound.AttackerId != userId)
                     throw new GameException("Not this players turn");
 
                 if(pvpRound.PvpRound.AttackedTerritoryId != null)
                     throw new BorderSelectedGameException("You already selected a territory for this round");
 
-                var mapTerritory = await db.MapTerritory
-                    .Include(x => x.Map)
-                    .Where(x => x.TerritoryName == mapTerritoryName && x.Map.Name == DefaultMap)
-                    .FirstOrDefaultAsync();
+                var mapTerritory = gm.ObjectTerritory.Where(e => e.MapTerritory.TerritoryName == mapTerritoryName).FirstOrDefault();
 
                 if (mapTerritory == null)
                     throw new GameException($"A territory with name `{mapTerritoryName}` for map `{DefaultMap}` doesn't exist");
 
-                var gameObjTerritory = await gameTerritoryService
-                    .SelectTerritoryAvailability(db, user.Id, currentRoundOverview.GameInstanceId, mapTerritory.Id, false);
+                var gameObjTerritory = gameTerritoryService
+                    .SelectTerritoryAvailability(gm, userId, currentRoundOverview.GameInstanceId, mapTerritory.MapTerritoryId, false);
 
                 if (gameObjTerritory == null)
                     throw new BorderSelectedGameException("The selected territory doesn't border any of your borders or is attacked by someone else");
@@ -163,16 +155,13 @@ namespace GameService.Services
                 pvpRound.PvpRound.DefenderId = gameObjTerritory.TakenBy;
 
                 // Set the ObjectTerritory as being attacked currently
-                gameObjTerritory.AttackedBy = pvpRound.PvpRound.AttackerId;
-                db.Update(gameObjTerritory);
-                db.Update(pvpRound);
-
-                await db.SaveChangesAsync();
+                var obj = gm.ObjectTerritory.First(e => e.Id == gameObjTerritory.Id);
+                obj.AttackedBy = pvpRound.PvpRound.AttackerId;
 
                 return new SelectedTerritoryResponse()
                 {
                     GameLink = currentRoundOverview.InvitationLink,
-                    AttackedById = user.Id,
+                    AttackedById = userId,
                     TerritoryId = gameObjTerritory.Id
                 };
             }
@@ -182,7 +171,7 @@ namespace GameService.Services
             }
         }
 
-        private async Task CapitalStageAnswer(DefaultContext db, string answerIdString, Round currentRound, DateTime answeredAt, int userId)
+        private static void CapitalStageAnswer(string answerIdString, ref Round currentRound, DateTime answeredAt, int userId)
         {
             var capitalRound =
                 currentRound
@@ -246,12 +235,9 @@ namespace GameService.Services
 
                     break;
             }
-
-            db.Update(currentRound);
-            await db.SaveChangesAsync();
         }
 
-        public void AnswerFinalQuestion(DefaultContext db, string answerIdString, Round currentRound, int userId)
+        public void AnswerFinalQuestion(string answerIdString, ref Round currentRound, int userId)
         {
 
             bool successNNeutral = long.TryParse(answerIdString, out long answerIdNNeutral);
@@ -269,45 +255,30 @@ namespace GameService.Services
             pAttacker.AnsweredAt = DateTime.Now;
             pAttacker.AttackerNumberQAnswer = answerIdNNeutral;
 
-            db.Update(currentRound);
         }
 
-        public async Task AnswerQuestion(string answerIdString)
+        public void AnswerQuestion(string answerIdString)
         {
             var answeredAt = DateTime.Now;
 
-            using var db = contextFactory.CreateDbContext();
-
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
+                e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
+
+            if (playerGameTimer == null)
+                throw new GameException("There is no open game where this player participates");
+
+            var gm = playerGameTimer.Data.GameInstance;
+
+            var currentRound = gm.Rounds
+                .Where(x =>
+                    x.GameRoundNumber == x.GameInstance.GameRoundNumber)
+                .FirstOrDefault();
+
+            var userId = gm.Participants.First(e => e.Player.UserGlobalIdentifier == globalUserId).PlayerId;
 
 
-            // Not sure about performanec wise, also what happens if you include a null of null
-            var currentRound = await db.Round
-                .Include(x => x.GameInstance)
-                .ThenInclude(x => x.Participants)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.PvpRoundAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .ThenInclude(x => x.CapitalRoundUserAnswers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .ThenInclude(x => x.CapitalRoundMultipleQuestion)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.PvpRound)
-                .ThenInclude(x => x.CapitalRounds)
-                .ThenInclude(x => x.CapitalRoundNumberQuestion)
-                .ThenInclude(x => x.Answers)
-                .Include(x => x.NeutralRound)
-                .ThenInclude(x => x.TerritoryAttackers)
-                .Include(x => x.Question)
-                .ThenInclude(x => x.Answers)
-                .Where(x => x.GameRoundNumber == x.GameInstance.GameRoundNumber && x.GameInstance.GameState == GameState.IN_PROGRESS && x.GameInstance.Participants
-                    .Any(y => y.PlayerId == user.Id))
-                .AsSplitQuery()
-                .FirstOrDefaultAsync();
 
             if (currentRound == null)
                 throw new AnswerSubmittedGameException("User isn't participating in any in progress games.");
@@ -316,7 +287,9 @@ namespace GameService.Services
             // Skip every check here and check externally
             if(currentRound.PvpRound?.IsCurrentlyCapitalStage == true)
             {
-                await CapitalStageAnswer(db, answerIdString, currentRound, answeredAt, user.Id);
+
+                // In-game-instance-uncertain
+                CapitalStageAnswer(answerIdString, ref currentRound, answeredAt, userId);
                 return;
             }
 
@@ -337,7 +310,7 @@ namespace GameService.Services
                     var playerAttacking = currentRound
                         .NeutralRound
                         .TerritoryAttackers
-                        .First(x => x.AttackerId == user.Id);
+                        .First(x => x.AttackerId == userId);
 
                     if (playerAttacking.AttackerMChoiceQAnswerId != null)
                         throw new AnswerSubmittedGameException("You already voted for this question");
@@ -354,7 +327,7 @@ namespace GameService.Services
                     var pAttacker = currentRound
                         .NeutralRound
                         .TerritoryAttackers
-                        .First(x => x.AttackerId == user.Id);
+                        .First(x => x.AttackerId == userId);
 
                     if(pAttacker.AttackerNumberQAnswer != null)
                         throw new AnswerSubmittedGameException("You already voted for this question");
@@ -373,13 +346,13 @@ namespace GameService.Services
                     if (!currentRound.Question.Answers.Any(x => x.Id == answerIdMPvp))
                         throw new AnswerSubmittedGameException("The provided answerID isn't valid for this question.");
                     
-                    if (user.Id != currentRound.PvpRound.AttackerId && user.Id != currentRound.PvpRound.DefenderId)
+                    if (userId != currentRound.PvpRound.AttackerId && userId != currentRound.PvpRound.DefenderId)
                         throw new AnswerSubmittedGameException("You can't vote for this question");
                     
                     var userAttacking = currentRound
                         .PvpRound
                         .PvpRoundAnswers
-                        .FirstOrDefault(x => x.UserId == user.Id);
+                        .FirstOrDefault(x => x.UserId == userId);
 
                     if (userAttacking != null && userAttacking.MChoiceQAnswerId != null)
                         throw new ArgumentException("This user already voted for this question");
@@ -387,7 +360,7 @@ namespace GameService.Services
                     var result = new PvpRoundAnswers()
                     {
                         MChoiceQAnswerId = answerIdMPvp,
-                        UserId = user.Id
+                        UserId = userId
                     };
                     currentRound.PvpRound.PvpRoundAnswers.Add(result);
                     break;
@@ -400,7 +373,7 @@ namespace GameService.Services
                     var pvpAttacker = currentRound
                         .PvpRound
                         .PvpRoundAnswers
-                        .First(x => x.UserId == user.Id);
+                        .First(x => x.UserId == userId);
 
                     if (pvpAttacker.NumberQAnswer != null)
                         throw new AnswerSubmittedGameException("You already voted for this question");
@@ -409,13 +382,9 @@ namespace GameService.Services
                     pvpAttacker.NumberQAnswer = answerIdNPvp;
                     break;
                 case AttackStage.FINAL_NUMBER_PVP:
-                    AnswerFinalQuestion(db, answerIdString, currentRound, user.Id);
+                    AnswerFinalQuestion(answerIdString, ref currentRound, userId);
                     break;
             }
-
-            db.Update(currentRound);
-
-            await db.SaveChangesAsync();
         }
     }
 }

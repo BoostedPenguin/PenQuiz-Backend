@@ -16,6 +16,7 @@ namespace GameService.Services
 {
     public interface IGameLobbyService
     {
+        Task CreateDebugLobby();
         Task<GameInstance> CreateGameLobby();
         Task<GameInstance> FindPublicMatch();
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
@@ -30,22 +31,22 @@ namespace GameService.Services
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IMapGeneratorService mapGeneratorService;
-        private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
         private const int DefaultTerritoryScore = 500;
         private const int DefaultCapitalScore = 1000;
+        private readonly IGameTimerService timer;
 
 
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
 
-        public GameLobbyService(IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService, IMessageBusClient messageBus) : base(_contextFactory)
+        public GameLobbyService(IGameTimerService timer, IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
         {
+            this.timer = timer;
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.mapGeneratorService = mapGeneratorService;
-            this.messageBus = messageBus;
         }
 
 
@@ -130,7 +131,7 @@ namespace GameService.Services
 
             if (map == null)
             {
-                await mapGeneratorService.ValidateMap();
+                await mapGeneratorService.ValidateMap(db);
             }
 
             var invitationLink = GenerateInvCode();
@@ -163,6 +164,73 @@ namespace GameService.Services
             });
 
             return gameInstance;
+        }
+
+
+        public async Task CreateDebugLobby()
+        {
+            using var context = contextFactory.CreateDbContext();
+
+            var gameInstance = new GameInstance()
+            {
+                GameGlobalIdentifier = Guid.NewGuid().ToString(),
+                GameType = GameType.PUBLIC,
+                GameState = GameState.IN_LOBBY,
+                InvitationLink = "1241",
+                GameCreatorId = 1,
+                Mapid = 1,
+                StartTime = DateTime.Now,
+                QuestionTimerSeconds = 30,
+            };
+
+            gameInstance.Participants.Add(new Participants()
+            {
+                PlayerId = 1,
+                Score = 0,
+                AvatarName = GetRandomAvatar(gameInstance)
+            });
+
+
+            gameInstance.Participants.Add(new Participants()
+            {
+                PlayerId = 2,
+                Score = 0,
+                AvatarName = GetRandomAvatar(gameInstance)
+            });
+
+
+            gameInstance.Participants.Add(new Participants()
+            {
+                PlayerId = 3,
+                Score = 0,
+                AvatarName = GetRandomAvatar(gameInstance)
+            });
+
+
+            await context.AddAsync(gameInstance);
+
+            await context.SaveChangesAsync();
+
+
+            // Create the game territories from the map territory templates
+            var gameTerritories = await CreateGameTerritories(context, 1, gameInstance.Id);
+
+            // Includes capitals
+            var modifiedTerritories = await ChooseCapitals(context, gameTerritories, gameInstance.Participants.ToArray());
+
+            // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
+            var initialRounding = await CreateNeutralAttackRounding(context, 1, gameInstance.Participants.ToList(), gameInstance.Id);
+
+            // Assign all object territories & rounds and change gamestate
+            gameInstance.GameState = GameState.IN_PROGRESS;
+            gameInstance.ObjectTerritory = gameTerritories;
+            gameInstance.Rounds = initialRounding;
+            gameInstance.GameRoundNumber = 1;
+
+            context.Update(gameInstance);
+            await context.SaveChangesAsync();
+
+            timer.OnGameStart(await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, context));
         }
 
         public async Task<GameInstance> CreateGameLobby()
@@ -350,29 +418,9 @@ namespace GameService.Services
             a.Update(gameInstance);
             await a.SaveChangesAsync();
 
-
-            // Send request to question service to generate questions in the background
-            RequestQuestions(gameInstance.GameGlobalIdentifier, initialRounding, true);
-
             return await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
         }
 
-        private void RequestQuestions(string gameGlobalIdentifier, Round[] rounds, bool isNeutralGeneration = false)
-        {
-            // Request questions only for the initial multiple questions for neutral attacking order
-            // After multiple choices are over, request a new batch for number questions for all untaken territories
-            messageBus.RequestQuestions(new RequestQuestionsDto()
-            {
-                Event = "Question_Request",
-                GameGlobalIdentifier = gameGlobalIdentifier,
-                MultipleChoiceQuestionsRoundId = rounds
-                    .Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL)
-                    .Select(x => x.Id)
-                    .ToList(),
-                NumberQuestionsRoundId = new List<int>(),
-                IsNeutralGeneration = isNeutralGeneration,
-            });
-        }
 
         public async Task<Round[]> CreateNeutralAttackRounding(DefaultContext context, int mapId, List<Participants> allPlayers, int gameInstanceId)
         {
