@@ -57,6 +57,11 @@ namespace GameService.Data.Models
     /// </summary>
     public abstract class GameCharacterAbilities
     {
+        public GameCharacterAbilities()
+        {
+
+        }
+
         public CharacterType CharacterType { get; set; }
         public int GameCharacterId { get; set; }
         public virtual GameCharacter GameCharacter { get; set; }

@@ -33,9 +33,57 @@ namespace GameService.Data
         public virtual DbSet<CapitalRound> CapitalRound { get; set; }
 
 
+        // Default character table
+        public virtual DbSet<Character> Characters { get; set; }
+        public virtual DbSet<GameCharacter> GameCharacters { get; set; }
+
+        // Characters
+        public virtual DbSet<KingCharacterAbilities> KingCharacterAbilities { get; set; }
+        public virtual DbSet<WizardCharacterAbilities> WizardCharacterAbilities { get; set; }
+        public virtual DbSet<VikingCharacterAbilities> VikingCharacterAbilities { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Character>(entity =>
+            {
 
+                entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.Property(e => e.Name).HasColumnName("name")
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(e => e.CharacterGlobalIdentifier).HasColumnName("characterGlobalIdentifier")
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.AvatarName)
+                    .IsRequired()
+                    .HasColumnName("avatarName")
+                    .HasDefaultValue("penguinAvatar.svg")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Description).HasColumnName("description")
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.AbilityDescription).HasColumnName("abilityDescription")
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.Price)
+                    .IsRequired(false)
+                    .HasColumnName("price");
+
+                entity.Property(e => e.PricingType)
+                    .HasConversion<string>()
+                    .HasColumnName("pricingType");
+
+                entity.Property(e => e.CharacterType)
+                    .HasConversion<string>()
+                    .HasColumnName("characterType");
+
+            });
 
             modelBuilder.Entity<Borders>(entity =>
             {
@@ -173,12 +221,6 @@ namespace GameService.Data
                 entity.Property(e => e.IsBot).HasColumnName("isBot").HasDefaultValue(false);
 
                 entity.Property(e => e.Score).HasColumnName("score");
-
-                entity.Property(e => e.AvatarName)
-                    .IsRequired()
-                    .HasColumnName("avatarName")
-                    .HasDefaultValue("penguinAvatar.svg")
-                    .HasMaxLength(50);
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.Participants)

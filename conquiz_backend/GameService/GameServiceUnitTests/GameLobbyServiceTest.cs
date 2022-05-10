@@ -225,17 +225,14 @@ namespace GameServiceUnitTests
 
             gm.Participants.Add(new Participants()
             {
-                AvatarName = "penguinAvatar1",
                 PlayerId = playerOne.Id,
             });
             gm.Participants.Add(new Participants()
             {
-                AvatarName = "penguinAvatar2",
                 PlayerId = playerTwo.Id,
             });
             gm.Participants.Add(new Participants()
             {
-                AvatarName = "penguinAvatar3",
                 PlayerId = playerThree.Id,
             });
 

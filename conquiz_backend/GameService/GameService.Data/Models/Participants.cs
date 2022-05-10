@@ -7,10 +7,17 @@ namespace GameService.Data.Models
     {
         public Participants()
         {
+
+        }
+
+        public Participants(GameCharacter character, int playerId)
+        {
+            PlayerId = playerId;
+            GameCharacter = character;
+            Score = 0;
         }
 
         public int Id { get; set; }
-        public string AvatarName { get; set; }
         public int PlayerId { get; set; }
         public int GameId { get; set; }
         public bool IsBot { get; set; }

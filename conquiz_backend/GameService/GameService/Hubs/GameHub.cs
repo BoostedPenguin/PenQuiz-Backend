@@ -71,13 +71,11 @@ namespace GameService.Hubs
         private readonly IGameLobbyService gameLobbyService;
         private readonly IGameControlService gameControlService;
         private readonly ILogger<GameHub> logger;
-        private readonly IWizardActions wizardActions;
         private readonly IMapper mapper;
 
         public GameHub(IGameTimerService timer, 
             IGameService gameService, 
             ILogger<GameHub> logger,
-            IWizardActions wizardActions,
             IMapper mapper,
             IGameLobbyService gameLobbyService,
             IGameControlService gameControlService)
@@ -85,7 +83,6 @@ namespace GameService.Hubs
             this.timer = timer;
             this.gameService = gameService;
             this.logger = logger;
-            this.wizardActions = wizardActions;
             this.mapper = mapper;
             this.gameLobbyService = gameLobbyService;
             this.gameControlService = gameControlService;
@@ -191,11 +188,11 @@ namespace GameService.Hubs
         {
             try
             {
-
+                await gameControlService.WizardUseAbility();
             }
             catch(Exception ex)
             {
-
+                logger.LogInformation($"Wizard ability not used: {ex.Message}");
             }
         }
 

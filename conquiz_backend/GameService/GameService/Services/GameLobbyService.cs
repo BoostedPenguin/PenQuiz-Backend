@@ -107,12 +107,9 @@ namespace GameService.Services
             var randomGameIndex = r.Next(0, openPublicGames.Count());
             var chosenLobby = openPublicGames[randomGameIndex];
 
-            chosenLobby.Participants.Add(new Participants()
-            {
-                PlayerId = user.Id,
-                Score = 0,
-                AvatarName = GetRandomAvatar(chosenLobby)
-            });
+            var newParticipant = await GenerateParticipant(db, chosenLobby.Participants.ToArray(), user.Id);
+
+            chosenLobby.Participants.Add(newParticipant);
 
 
             db.Update(chosenLobby);
@@ -156,12 +153,9 @@ namespace GameService.Services
                 QuestionTimerSeconds = 30,
             };
 
-            gameInstance.Participants.Add(new Participants()
-            {
-                PlayerId = userId,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
+            var newParticipant = await GenerateParticipant(db, null, userId);
+
+            gameInstance.Participants.Add(newParticipant);
 
             return gameInstance;
         }
@@ -182,29 +176,12 @@ namespace GameService.Services
                 StartTime = DateTime.Now,
                 QuestionTimerSeconds = 30,
             };
-
-            gameInstance.Participants.Add(new Participants()
-            {
-                PlayerId = 1,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
+            var allParticip = new List<Participants>();
 
 
-            gameInstance.Participants.Add(new Participants()
-            {
-                PlayerId = 2,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
-
-
-            gameInstance.Participants.Add(new Participants()
-            {
-                PlayerId = 3,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
+            allParticip.Add(await GenerateParticipant(context, allParticip.ToArray(), 1));
+            allParticip.Add(await GenerateParticipant(context, allParticip.ToArray(), 2));
+            allParticip.Add(await GenerateParticipant(context, allParticip.ToArray(), 3));
 
 
             await context.AddAsync(gameInstance);
@@ -345,13 +322,9 @@ namespace GameService.Services
                 return game.ExistingGame;
             }
 
+            var newParticipant = await GenerateParticipant(db, gameInstance.Participants.ToArray(), user.Id);
 
-            gameInstance.Participants.Add(new Participants()
-            {
-                PlayerId = user.Id,
-                Score = 0,
-                AvatarName = GetRandomAvatar(gameInstance)
-            });
+            gameInstance.Participants.Add(newParticipant);
 
             db.Update(gameInstance);
             await db.SaveChangesAsync();
@@ -532,22 +505,41 @@ namespace GameService.Services
             "penguinAvatar2",
             "penguinAvatar3",
         };
-        private string GetRandomAvatar(GameInstance game)
+
+        private async Task<Participants> GenerateParticipant(DefaultContext db, Participants[] participants, int userId)
         {
-            if (Avatars.Length < RequiredPlayers)
-                throw new ArgumentException("There aren't enough avatars for every player. Contact an administrator.");
+            var freeGameCharacters = await db.Characters.Where(e => e.PricingType == CharacterPricingType.FREE).ToArrayAsync();
 
-            var selectedAvatar = "";
-            while (string.IsNullOrEmpty(selectedAvatar))
+            // This is the first player, he gets automatically selected character
+            var randomCharacter = GetRandomCharacter(participants, freeGameCharacters);
+
+            var selectedGameCharacter = new GameCharacter(randomCharacter);
+
+            return new Participants(selectedGameCharacter, userId);
+        }
+
+        private Character GetRandomCharacter(Participants[] participants, Character[] characters)
+        {
+            if (characters.Length < 3)
+                throw new ArgumentException("There aren't enough playable characters for every player. Contact an administrator.");
+            
+            Character selectedCharacter = null;
+
+            while(selectedCharacter == null)
             {
-                var randomAvatar = Avatars[r.Next(0, Avatars.Length)];
+                var randomCharacter = characters[r.Next(0, characters.Length)];
 
-                var duplicate = game.Participants.FirstOrDefault(x => x.AvatarName == randomAvatar);
-                if (duplicate != null) continue;
+                var duplicate = participants
+                    ?.FirstOrDefault(e => e.GameCharacter?.GetCharacterType == randomCharacter.CharacterType);
 
-                selectedAvatar = randomAvatar;
+                if (duplicate != null) 
+                    continue;
+
+                selectedCharacter = randomCharacter;
             }
-            return selectedAvatar;
+
+            return selectedCharacter;
+
         }
     }
 }

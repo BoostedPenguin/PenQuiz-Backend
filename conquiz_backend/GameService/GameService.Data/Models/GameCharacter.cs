@@ -11,6 +11,10 @@ namespace GameService.Data.Models
     /// </summary>
     public class GameCharacter
     {
+        public GameCharacter()
+        {
+
+        }
         public GameCharacter(Character character)
         {
             this.Character = character;
@@ -36,35 +40,6 @@ namespace GameService.Data.Models
         public CharacterType GetCharacterType => Character.CharacterType;
 
         #region Sample Data
-
-        public void OnCharacterSelected()
-        {
-            // When assigning a participant to a game, give him the appropriate character type
-            // In this case give him wizard
-
-            var gm = new GameInstance();
-
-            var wizard = new Character()
-            {
-                Id = 5,
-                AbilityDescription = "smth",
-                CharacterType = CharacterType.WIZARD
-            };
-
-            //
-
-            var particip = new Participants()
-            {
-                PlayerId = 5,
-                Score = 0,
-                GameCharacter = new GameCharacter(wizard)
-            };
-
-
-
-
-            gm.Participants.Add(particip);
-        }
 
         public void Sss()
         {

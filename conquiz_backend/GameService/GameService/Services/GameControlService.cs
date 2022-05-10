@@ -2,6 +2,7 @@
 using GameService.Data;
 using GameService.Data.Models;
 using GameService.Dtos.SignalR_Responses;
+using GameService.Services.CharacterActions;
 using GameService.Services.Extensions;
 using GameService.Services.GameTimerServices;
 using Microsoft.AspNetCore.Http;
@@ -17,6 +18,7 @@ namespace GameService.Services
     {
         void AnswerQuestion(string answerIdString);
         SelectedTerritoryResponse SelectTerritory(string mapTerritoryName);
+        Task WizardUseAbility();
     }
 
     /// <summary>
@@ -24,32 +26,77 @@ namespace GameService.Services
     /// </summary>
     public class GameControlService : IGameControlService
     {
+        private readonly IWizardActions wizardActions;
         private readonly IGameTimerService gameTimerService;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly string DefaultMap = "Antarctica";
-        public GameControlService(IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IGameTerritoryService gameTerritoryService)
+        public GameControlService(IWizardActions wizardActions, IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IGameTerritoryService gameTerritoryService)
         {
+            this.wizardActions = wizardActions;
             this.gameTimerService = gameTimerService;
             this.httpContextAccessor = httpContextAccessor;
             this.gameTerritoryService = gameTerritoryService;
         }
 
-        public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)
+        public async Task WizardUseAbility()
+        {
+            var gm = GetCurrentUserGameInstance();
+
+            var currentRound = gm.Rounds
+                .Where(x =>
+                    x.GameRoundNumber == x.GameInstance.GameRoundNumber)
+                .FirstOrDefault();
+
+            var participant = gm.Participants.First(e => e.Player.UserGlobalIdentifier == httpContextAccessor.GetCurrentUserGlobalId());
+
+
+            if (currentRound.PvpRound?.IsCurrentlyCapitalStage == true)
+            {
+
+                var capitalRound =
+                    currentRound
+                    .PvpRound
+                    .CapitalRounds
+                    .FirstOrDefault(x => !x.IsCompleted && x.IsQuestionVotingOpen);
+
+
+                // If number question, skip execution
+                if (capitalRound.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION)
+                    return;
+                
+
+                await wizardActions.UseMultipleChoiceHint(capitalRound.CapitalRoundMultipleQuestion, participant, gm.InvitationLink);
+                return;
+            }
+
+            // If not multiple choice round return
+            if (currentRound.AttackStage != AttackStage.MULTIPLE_NEUTRAL && currentRound.AttackStage != AttackStage.MULTIPLE_PVP)
+                return;
+
+
+            await wizardActions.UseMultipleChoiceHint(currentRound.Question, participant, gm.InvitationLink);
+        }
+
+        private GameInstance GetCurrentUserGameInstance()
         {
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
 
             var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
                 e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
 
-            if(playerGameTimer == null)
-            {
+            if (playerGameTimer == null)
                 throw new GameException("There is no open game where this player participates");
-            }
 
-            var gm = playerGameTimer.Data.GameInstance;
+            return playerGameTimer.Data.GameInstance;
+        }
 
-            var userId = gm.Participants.First(e => e.Player.UserGlobalIdentifier == globalUserId).PlayerId;
+        public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)
+        {
+
+            var gm = GetCurrentUserGameInstance();
+
+            var userId = gm.Participants.First(e => e.Player.UserGlobalIdentifier == httpContextAccessor.GetCurrentUserGlobalId()).PlayerId;
 
             var currentRoundOverview = gm.Rounds
                 .Where(x =>
@@ -261,23 +308,14 @@ namespace GameService.Services
         {
             var answeredAt = DateTime.Now;
 
-            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-
-            var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
-                e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
-
-            if (playerGameTimer == null)
-                throw new GameException("There is no open game where this player participates");
-
-            var gm = playerGameTimer.Data.GameInstance;
+            var gm = GetCurrentUserGameInstance();
 
             var currentRound = gm.Rounds
                 .Where(x =>
                     x.GameRoundNumber == x.GameInstance.GameRoundNumber)
                 .FirstOrDefault();
 
-            var userId = gm.Participants.First(e => e.Player.UserGlobalIdentifier == globalUserId).PlayerId;
-
+            var userId = gm.Participants.First(e => e.Player.UserGlobalIdentifier == httpContextAccessor.GetCurrentUserGlobalId()).PlayerId;
 
 
             if (currentRound == null)

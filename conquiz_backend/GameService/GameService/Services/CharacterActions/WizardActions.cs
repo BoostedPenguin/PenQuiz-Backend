@@ -20,16 +20,14 @@ namespace GameService.Services.CharacterActions
 
     public class WizardActions : IWizardActions
     {
-        private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IMapper mapper;
 
-        public WizardActions(IDbContextFactory<DefaultContext> contextFactory,
+        public WizardActions(
             IHubContext<GameHub, IGameHub> hubContext,
             IMapper mapper
             )
         {
-            this.contextFactory = contextFactory;
             this.hubContext = hubContext;
             this.mapper = mapper;
         }
@@ -42,9 +40,12 @@ namespace GameService.Services.CharacterActions
             // Get the original question asked (only if multiple choice)
             // Send a message to the client with 1 correct value and 1 wrong one
 
-            var wizardAbilities = participant.GameCharacter.CharacterAbilities as WizardCharacterAbilities;
+            if (participant.GameCharacter.CharacterAbilities is not WizardCharacterAbilities wizardAbilities) 
+                return;
+            
 
-            if (!wizardAbilities.IsMCHintsAvailable) return;
+            if (!wizardAbilities.IsMCHintsAvailable) 
+                return;
 
             wizardAbilities.MCQuestionHintUseCount++;
 
