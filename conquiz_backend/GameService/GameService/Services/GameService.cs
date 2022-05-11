@@ -87,7 +87,7 @@ namespace GameService.Services
     /// <summary>
     /// Handles people's connection to the games and canceling existing games
     /// </summary>
-    public class GameService : DataService<DefaultModel>, IGameService
+    public class GameService : IGameService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
@@ -101,7 +101,7 @@ namespace GameService.Services
         public GameService(IDbContextFactory<DefaultContext> _contextFactory, 
             IHttpContextAccessor httpContextAccessor, 
             IMapper mapper,
-            IGameTimerService gameTimerService) : base(_contextFactory)
+            IGameTimerService gameTimerService) 
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;

@@ -22,6 +22,7 @@ using GameService.Grpc;
 using GameService.Services.GameTimerServices;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using GameService.Data;
+using GameService.Services.GameLobbyServices;
 
 namespace GameService
 {

@@ -4,6 +4,7 @@ using GameService.Data.Models;
 using GameService.Dtos;
 using GameService.MessageBus;
 using GameService.Services;
+using GameService.Services.GameLobbyServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

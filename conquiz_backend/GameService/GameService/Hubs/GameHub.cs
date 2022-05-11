@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using GameService.Data;
 using GameService.Services.CharacterActions;
 using AutoMapper;
+using GameService.Services.GameLobbyServices;
 
 namespace GameService.Hubs
 {
