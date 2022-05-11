@@ -2,6 +2,7 @@
 using GameService.Data.Models;
 using GameService.Grpc;
 using GameService.Services;
+using GameService.Services.CharacterActions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,6 +92,10 @@ namespace GameService.Context
                 // Validate questions
                 //questionService.AddDefaultQuestions();
 
+                // Validate that every character model exists in the database
+                await CharacterValidation.ValidateCharacters(db);
+
+                // Loads all Antarctica map borders in memory for subsequent games
                 await MapGeneratorService.LoadDefaultMapBordersInMemory(db, logger);
             }
             catch(Exception ex)
