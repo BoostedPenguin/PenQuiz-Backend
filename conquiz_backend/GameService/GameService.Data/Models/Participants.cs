@@ -10,12 +10,16 @@ namespace GameService.Data.Models
 
         }
 
-        public Participants(GameCharacter character, int playerId)
+        public Participants(GameCharacter character, int playerId, int inGameParticipantNumber)
         {
             PlayerId = playerId;
             GameCharacter = character;
             Score = 0;
+            InGameParticipantNumber = inGameParticipantNumber;
         }
+
+        // Randomly assigned unique number from 1-3 for each participant in a lobby
+        public int InGameParticipantNumber { get; set; }
 
         public int Id { get; set; }
         public int PlayerId { get; set; }

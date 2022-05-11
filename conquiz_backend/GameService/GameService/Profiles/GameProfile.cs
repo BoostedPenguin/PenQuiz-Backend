@@ -39,7 +39,10 @@ namespace GameService.Profiles
             CreateMap<NeutralRound, NeutralRoundResponse>();
             CreateMap<AttackingNeutralTerritory, AttackingNeutralTerritoryResponse>();
             CreateMap<AttackingNeutralTerritory, AttackingNeutralTerritoryResponse>();
-            CreateMap<Participants, ParticipantsResponse>();
+
+            CreateMap<Participants, ParticipantsResponse>()
+                .ForMember(dest => dest.AvatarName, opt => opt.MapFrom(e => e.GameCharacter.Character.AvatarName));
+
             CreateMap<Users, UsersResponse>();
             CreateMap<ObjectTerritory, ObjectTerritoryResponse>();
             CreateMap<MapTerritory, MapTerritoryResponse>();

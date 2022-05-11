@@ -11,7 +11,7 @@ namespace GameService.Services.GameLobbyServices
 {
     public partial class GameLobbyService : IGameLobbyService
     {
-        private async Task<GameInstance> CreateGameInstance(DefaultContext db, GameType gameType, int userId)
+        private async Task<GameInstance> CreateGameInstance(DefaultContext db, GameType gameType, Users user)
         {
             var map = await db.Maps.Where(x => x.Name == DefaultMap).FirstOrDefaultAsync();
 
@@ -36,14 +36,15 @@ namespace GameService.Services.GameLobbyServices
                 GameType = gameType,
                 GameState = GameState.IN_LOBBY,
                 InvitationLink = invitationLink,
-                GameCreatorId = userId,
+                GameCreatorId = user.Id,
                 Map = map,
                 StartTime = DateTime.Now,
                 QuestionTimerSeconds = 30,
             };
 
-            var newParticipant = await GenerateParticipant(db, null, userId);
+            var newParticipant = await GenerateParticipant(db, null, user.Id);
 
+            newParticipant.Player = user;
             gameInstance.Participants.Add(newParticipant);
 
             return gameInstance;
@@ -206,16 +207,42 @@ namespace GameService.Services.GameLobbyServices
             return allTerritories;
         }
 
+
+        private int GetRandomNumber(Participants[] participants)
+        {
+            var allNumbers = new int[3] { 1, 2, 3 };
+
+            int selectedNumber = 0;
+
+            while (selectedNumber == 0)
+            {
+                var randomNumber = allNumbers[r.Next(0, allNumbers.Length)];
+
+                var duplicate = participants
+                    ?.FirstOrDefault(e => e.InGameParticipantNumber == randomNumber);
+
+                if (duplicate != null)
+                    continue;
+
+                selectedNumber = randomNumber;
+            }
+
+            return selectedNumber;
+        }
+
         private async Task<Participants> GenerateParticipant(DefaultContext db, Participants[] participants, int userId)
         {
             var freeGameCharacters = await db.Characters.Where(e => e.PricingType == CharacterPricingType.FREE).ToArrayAsync();
 
+
             // This is the first player, he gets automatically selected character
             var randomCharacter = GetRandomCharacter(participants, freeGameCharacters);
 
+            var randomInGameNumber = GetRandomNumber(participants);
+
             var selectedGameCharacter = new GameCharacter(randomCharacter);
 
-            return new Participants(selectedGameCharacter, userId);
+            return new Participants(selectedGameCharacter, userId, randomInGameNumber);
         }
 
         private Character GetRandomCharacter(Participants[] participants, Character[] characters)

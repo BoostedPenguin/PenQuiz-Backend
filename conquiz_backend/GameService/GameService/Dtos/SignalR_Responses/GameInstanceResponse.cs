@@ -116,6 +116,7 @@ namespace GameService.Dtos.SignalR_Responses
     public class ParticipantsResponse
     {
         public int Id { get; set; }
+        public int InGameParticipantNumber { get; set; }
         public string AvatarName { get; set; }
         public int PlayerId { get; set; }
         public int GameId { get; set; }

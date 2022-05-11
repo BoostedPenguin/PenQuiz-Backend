@@ -55,28 +55,11 @@ namespace GameService.Services.GameLobbyServices
         }
 
 
-
-        // TODO
-        // As owner remove someone from group
-        public async Task<GameInstance> RemoveParticipantFromGame(int personToRemoveId)
-        {
-            using var db = contextFactory.CreateDbContext();
-
-            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
-
-            var gameInstance = await db.GameInstance
-                .Include(x => x.Participants)
-                .Where(x => x.GameCreatorId == user.Id && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
-            return null;
-        }
-
         public async Task<GameInstance> FindPublicMatch()
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             try
             {
@@ -89,6 +72,10 @@ namespace GameService.Services.GameLobbyServices
 
             var openPublicGames = await db.GameInstance
                 .Include(x => x.Participants)
+                .ThenInclude(e => e.Player)
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .ThenInclude(e => e.Character)
                 .Where(x => x.GameType == GameType.PUBLIC && x.GameState == GameState.IN_LOBBY && x.Participants.Count() < RequiredPlayers)
                 .ToListAsync();
 
@@ -96,16 +83,12 @@ namespace GameService.Services.GameLobbyServices
             // Create a new public lobby
             if(openPublicGames.Count() == 0)
             {
-                var gameInstance = await CreateGameInstance(db, GameType.PUBLIC, user.Id);
+                var gameInstance = await CreateGameInstance(db, GameType.PUBLIC, user);
 
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
-                return await db.GameInstance
-                    .Include(x => x.Participants)
-                    .ThenInclude(x => x.Player)
-                    .Where(x => x.Id == gameInstance.Id)
-                    .FirstOrDefaultAsync();
+                return gameInstance;
             }
 
             // Add player to a random lobby
@@ -120,11 +103,7 @@ namespace GameService.Services.GameLobbyServices
             db.Update(chosenLobby);
             await db.SaveChangesAsync();
 
-            return await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.Id == chosenLobby.Id)
-                .FirstOrDefaultAsync();
+            return chosenLobby;
         }
 
         public async Task CreateDebugLobby()
@@ -183,7 +162,7 @@ namespace GameService.Services.GameLobbyServices
 
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             try
             {
@@ -194,16 +173,12 @@ namespace GameService.Services.GameLobbyServices
                 return game.ExistingGame;
             }
 
-            var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, user.Id);
+            var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, user);
 
             await db.AddAsync(gameInstance);
             await db.SaveChangesAsync();
 
-            return await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.Id == gameInstance.Id)
-                .FirstOrDefaultAsync();
+            return gameInstance;
         }
 
         public async Task<GameInstance> JoinGameLobby(string lobbyUrl)
@@ -211,11 +186,14 @@ namespace GameService.Services.GameLobbyServices
             using var db = contextFactory.CreateDbContext();
 
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             var gameInstance = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .ThenInclude(e => e.Character)
                 .Where(x => x.InvitationLink == lobbyUrl && x.GameState == GameState.IN_LOBBY && x.GameType == GameType.PRIVATE)
                 .FirstOrDefaultAsync();
 
@@ -242,18 +220,14 @@ namespace GameService.Services.GameLobbyServices
             db.Update(gameInstance);
             await db.SaveChangesAsync();
 
-            return await db.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.Id == gameInstance.Id)
-                .FirstOrDefaultAsync();
+            return gameInstance;
         }
 
         public async Task<GameInstance> StartGame(GameInstance gameInstance = null)
         {
             using var a = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await a.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
             if (gameInstance == null)

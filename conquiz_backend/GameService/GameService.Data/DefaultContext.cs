@@ -214,6 +214,8 @@ namespace GameService.Data
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
+                entity.Property(e => e.InGameParticipantNumber).HasColumnName("inGameParticipantNumber");
+
                 entity.Property(e => e.GameId).HasColumnName("gameId");
 
                 entity.Property(e => e.PlayerId).HasColumnName("playerId");

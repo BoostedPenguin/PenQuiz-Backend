@@ -88,6 +88,14 @@ namespace GameService.Services.GameTimerServices
                 .Include(x => x.Participants)   
                 .ThenInclude(x => x.Player)
 
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .ThenInclude(e => e.CharacterAbilities)
+
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .ThenInclude(e => e.Character)
+
                 .Include(x => x.Rounds)
                 .ThenInclude(x => x.NeutralRound)
                 .ThenInclude(x => x.TerritoryAttackers)
