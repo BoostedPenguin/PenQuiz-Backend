@@ -81,7 +81,7 @@ namespace GameService.Services.GameLobbyServices
 
             // You shouldn't be able to participate in more than 1 lobby game open.
             // It happend because some error. Close all game lobbies.
-            if (lobbyGames.Count() > 1)
+            if (lobbyGames.Count > 1)
             {
                 lobbyGames.ForEach(x => x.GameState = GameState.CANCELED);
 
@@ -93,7 +93,7 @@ namespace GameService.Services.GameLobbyServices
 
             // User participates already in an open lobby.
             // Redirect him to this instead of creating a new instance.
-            if (lobbyGames.Count() == 1)
+            if (lobbyGames.Count == 1)
             {
                 throw new ExistingLobbyGameException(lobbyGames[0], "User participates already in an open lobby");
             }
@@ -151,7 +151,7 @@ namespace GameService.Services.GameLobbyServices
         }
 
 
-        private async Task<ObjectTerritory[]> CreateGameTerritories(DefaultContext a, int mapId, int gameInstanceId)
+        private static async Task<ObjectTerritory[]> CreateGameTerritories(DefaultContext a, int mapId, int gameInstanceId)
         {
             var originTerritories = await a.MapTerritory.Where(x => x.MapId == mapId).ToListAsync();
 

@@ -23,11 +23,6 @@ namespace GameService.Services.GameLobbyServices
         Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
 
-    public partial class GameLobbyService : IGameLobbyService
-    {
-
-    }
-
     /// <summary>
     /// Handles the lobby state of the game and starting a gameinstance
     /// </summary>
