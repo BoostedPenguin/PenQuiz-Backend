@@ -23,6 +23,7 @@ using GameService.Services.GameTimerServices;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using GameService.Data;
 using GameService.Services.GameLobbyServices;
+using GameService.Services.CharacterActions;
 
 namespace GameService
 {
@@ -79,6 +80,10 @@ namespace GameService
             services.AddSingleton<IGameControlService, GameControlService>();
 
             services.AddScoped<IAccountDataClient, AccountDataClient>();
+
+
+            // Characters
+            services.AddSingleton<IWizardActions, WizardActions>();
 
             services.AddHttpContextAccessor();
 

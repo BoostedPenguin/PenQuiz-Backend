@@ -61,8 +61,10 @@ namespace GameService.Data.Models
         {
 
         }
-
+        public int Id { get; set; }
         public CharacterType CharacterType { get; set; }
+
+        [ForeignKey("GameCharacter")]
         public int GameCharacterId { get; set; }
         public virtual GameCharacter GameCharacter { get; set; }
     }

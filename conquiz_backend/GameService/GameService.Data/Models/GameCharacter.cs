@@ -32,7 +32,7 @@ namespace GameService.Data.Models
                     break;
             }
         }
-
+        public int Id { get; set; }
         public int ParticipantId { get; set; }
         public int CharacterId { get; set; }
         public GameCharacterAbilities CharacterAbilities { get; set; }

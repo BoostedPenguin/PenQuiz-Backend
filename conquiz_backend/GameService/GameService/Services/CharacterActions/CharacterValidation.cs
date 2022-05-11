@@ -16,13 +16,14 @@ namespace GameService.Services.CharacterActions
 
             var allCharactersInDb = await db.Characters
                 .Where(e => allCharacter.Contains(e.CharacterType))
+                .AsNoTracking()
                 .ToListAsync();
 
             var charactersNotInDb = allCharacter
-                .Except(allCharactersInDb.Select(e => e.CharacterType));
+                .Except(allCharactersInDb.Select(e => e.CharacterType)).ToList();
 
             // If all characters exist in the db exit
-            if (charactersNotInDb.Count() == 0)
+            if (charactersNotInDb.Count == 0)
                 return;
 
             foreach(var cNotInDb in charactersNotInDb)
@@ -49,7 +50,9 @@ namespace GameService.Services.CharacterActions
                 Description = "Some description",
                 PricingType = CharacterPricingType.FREE,
                 CharacterGlobalIdentifier = Guid.NewGuid().ToString(),
-                AbilityDescription = $"Can fortify his capital against attacks, increasing the amount of required consecutive wins for the enemy. Amount of times he can fortify his capital"
+                AbilityDescription = $"Can fortify his capital against attacks, increasing the amount of required consecutive wins for the enemy. Amount of times he can fortify his capital",
+                CharacterType = CharacterType.VIKING,
+                AvatarName = "penguinAvatarViking",
             };
         }
 
@@ -63,6 +66,7 @@ namespace GameService.Services.CharacterActions
                 CharacterGlobalIdentifier = Guid.NewGuid().ToString(),
                 AbilityDescription = $"Has a permanent score bonus multiplier when you capture a territory. Multiplier: {CharacterAbilitiesGlobalValues.KingCharacterPointsMultiplier * 100}%",
                 CharacterType = CharacterType.KING,
+                AvatarName = "penguinAvatarKing",
             };
         }
 
