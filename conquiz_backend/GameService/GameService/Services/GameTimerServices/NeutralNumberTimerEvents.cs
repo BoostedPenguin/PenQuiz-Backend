@@ -30,6 +30,7 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly IGM_DataExtractionService dataExtractionService;
         private readonly IMapGeneratorService mapGeneratorService;
         private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
@@ -38,6 +39,7 @@ namespace GameService.Services.GameTimerServices
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            IGM_DataExtractionService dataExtractionService,
             IMapGeneratorService mapGeneratorService,
             IMessageBusClient messageBus)
         {
@@ -45,6 +47,7 @@ namespace GameService.Services.GameTimerServices
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.dataExtractionService = dataExtractionService;
             this.mapGeneratorService = mapGeneratorService;
             this.messageBus = messageBus;
         }
@@ -262,11 +265,9 @@ namespace GameService.Services.GameTimerServices
             // Show the question to the user
             var roundQuestion = gm.Rounds
                 .First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber);
-
-
-
-            if (roundQuestion.Question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
+            
+            
+            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
 
             // Open this question for voting
@@ -275,14 +276,6 @@ namespace GameService.Services.GameTimerServices
 
             db.Update(gm);
             await db.SaveChangesAsync();
-
-            var response = mapper.Map<QuestionClientResponse>(roundQuestion.Question);
-
-            // If the round is a neutral one, then everyone can attack
-            response.IsNeutral = true;
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(roundQuestion.GameInstance.Participants.ToArray());
-
-            response.Participants = participantsMapping;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

@@ -26,18 +26,21 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly IGM_DataExtractionService dataExtractionService;
         private readonly IMessageBusClient messageBus;
 
         public FinalPvpQuestionService(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            IGM_DataExtractionService dataExtractionService,
             IMessageBusClient messageBus)
         {
             contextFactory = _contextFactory;
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.dataExtractionService = dataExtractionService;
             this.messageBus = messageBus;
         }
 
@@ -54,12 +57,7 @@ namespace GameService.Services.GameTimerServices
             var currentRound = gm.Rounds
                 .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
 
-            var question = currentRound
-                .Question;
-
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
-
+            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
             // Open this question for voting
             currentRound.IsQuestionVotingOpen = true;
@@ -68,29 +66,6 @@ namespace GameService.Services.GameTimerServices
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            // If the round is a neutral one, then everyone can attack
-            var terAttackers = currentRound.NeutralRound.TerritoryAttackers.ToList();
-            if (terAttackers.Count == 2)
-            {
-                response.IsLastQuestion = true;
-                response.IsNeutral = false;
-                response.AttackerId = terAttackers[0].AttackerId;
-                response.DefenderId = terAttackers[1].AttackerId;
-
-                var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants
-                    .Where(x => terAttackers.Any(y => y.AttackerId == x.PlayerId))
-                    .ToArray());
-                response.Participants = participantsMapping;
-            }
-            else
-            {
-                response.IsLastQuestion = true;
-                response.IsNeutral = true;
-                var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants.ToArray());
-                response.Participants = participantsMapping;
-            }
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

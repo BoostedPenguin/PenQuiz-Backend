@@ -29,18 +29,21 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly IGM_DataExtractionService gM_DataExtractionService;
         private readonly IMessageBusClient messageBus;
 
         public NeutralMCTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            IGM_DataExtractionService gM_DataExtractionService,
             IMessageBusClient messageBus)
         {
             contextFactory = _contextFactory;
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.gM_DataExtractionService = gM_DataExtractionService;
             this.messageBus = messageBus;
         }
 
@@ -88,9 +91,10 @@ namespace GameService.Services.GameTimerServices
                     var availableTerritories = gameTerritoryService
                         .GetAvailableAttackTerritoriesNames(gm, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
 
+                    
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink)
-                        .ShowRoundingAttacker(nextAttacker.AttackerId, availableTerritories);
+                        .ShowRoundingAttacker(new RoundingAttackerRes(nextAttacker.AttackerId, availableTerritories));
 
 
                     var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
@@ -280,7 +284,7 @@ namespace GameService.Services.GameTimerServices
                 .GetAvailableAttackTerritoriesNames(gm, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowRoundingAttacker(currentAttacker.AttackerId, availableTerritories);
+                .ShowRoundingAttacker(new RoundingAttackerRes(currentAttacker.AttackerId, availableTerritories));
 
             var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
@@ -302,28 +306,16 @@ namespace GameService.Services.GameTimerServices
                 .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
                 .FirstOrDefault();
 
-            var question = currentRound.Question;
-            // Show the question to the user
-
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
-
+            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
 
             // Open this question for voting
-            question.Round.IsQuestionVotingOpen = true;
+            currentRound.Question.Round.IsQuestionVotingOpen = true;
             using (var db = contextFactory.CreateDbContext())
             {
                 db.Update(gm);
                 await db.SaveChangesAsync();
             }
 
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants.ToArray());
-
-            response.Participants = participantsMapping;
-            // If the round is a neutral one, then everyone can attack
-            response.IsNeutral = true;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

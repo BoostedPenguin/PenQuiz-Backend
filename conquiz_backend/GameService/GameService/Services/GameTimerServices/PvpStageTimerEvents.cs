@@ -32,17 +32,20 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly IGM_DataExtractionService dataExtractionService;
         private readonly IMessageBusClient messageBus;
 
         public PvpStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            IGM_DataExtractionService dataExtractionService,
             IMessageBusClient messageBus)
         {
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.dataExtractionService = dataExtractionService;
             this.messageBus = messageBus;
             contextFactory = _contextFactory;
         }
@@ -66,34 +69,12 @@ namespace GameService.Services.GameTimerServices
 
             var question = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).Question;
 
-
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
+            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
             db.Update(gm);
             await db.SaveChangesAsync();
-
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            response.IsNeutral = false;
-
-            var participants = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).PvpRound;
-
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(participants.Round.GameInstance.Participants
-                        .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
-                        .ToArray());
-
-            response.Participants = participantsMapping;
-
-            response.AttackerId = participants.AttackerId;
-            response.DefenderId = participants.DefenderId ?? 0;
-
-
-            // If the current attacked territory is capital, then we can presume this and next question are capital questions
-            if(participants.AttackedTerritory.IsCapital)
-                response.CapitalRoundsRemaining = 2;
 
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
@@ -274,11 +255,9 @@ namespace GameService.Services.GameTimerServices
             var gm = data.GameInstance;
             var question = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault().PvpRound.NumberQuestion;
 
+            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
-
-
+            
             question.PvpRoundNum.Round.IsQuestionVotingOpen = true;
             question.PvpRoundNum.Round.QuestionOpenedAt = DateTime.Now;
 
@@ -286,29 +265,7 @@ namespace GameService.Services.GameTimerServices
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            var response = mapper.Map<QuestionClientResponse>(question);
 
-            response.IsNeutral = false;
-
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question
-                .PvpRoundNum
-                .Round
-                .GameInstance
-                .Participants
-                .Where(x => x.PlayerId == question.PvpRoundNum.AttackerId || x.PlayerId == question.PvpRoundNum.DefenderId)
-                .ToArray());
-
-            response.Participants = participantsMapping;
-
-            response.AttackerId = question.PvpRoundNum.AttackerId;
-            response.DefenderId = question.PvpRoundNum.DefenderId ?? 0;
-
-
-            // If the current attacked territory is capital,
-            // And we got to number question (attacker and defender had same answer)
-            // Then we can presume this and next question are capital questions
-            if (question.PvpRoundNum.AttackedTerritory.IsCapital)
-                response.CapitalRoundsRemaining = 2;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
@@ -497,7 +454,7 @@ namespace GameService.Services.GameTimerServices
                 .GetAvailableAttackTerritoriesNames(gm, currentAttacker, data.GameInstanceId, false);
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowRoundingAttacker(currentAttacker, availableTerritories);
+                .ShowRoundingAttacker(new RoundingAttackerRes( currentAttacker, availableTerritories));
 
             var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)

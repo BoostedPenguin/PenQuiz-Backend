@@ -48,7 +48,7 @@ namespace GameService.Hubs
         // Things that require displaying of a timer do require ex. time to vote on something
         Task Game_Show_Main_Screen();
         Task ShowGameMap();
-        Task ShowRoundingAttacker(int userId, string[] availableAttackTerritoriesNames);
+        Task ShowRoundingAttacker(RoundingAttackerRes responseData);
 
         Task GetGameUserId(int userId);
         Task OnSelectedTerritory(SelectedTerritoryResponse selectedTerritoryResponse);
