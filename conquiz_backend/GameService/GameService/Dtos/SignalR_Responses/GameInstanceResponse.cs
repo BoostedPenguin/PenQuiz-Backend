@@ -7,13 +7,18 @@ namespace GameService.Dtos.SignalR_Responses
 
     public class OnPlayerLoginResponse
     {
-        public OnPlayerLoginResponse(GameInstanceResponse gameInstanceResponse, int userId)
+        public OnPlayerLoginResponse(GameInstanceResponse gameInstanceResponse, int userId, RoundingAttackerRes roundingAttackerRes = null, QuestionClientResponse questionClientResponse = null)
         {
             UserId = userId;
+            RoundingAttackerRes = roundingAttackerRes;
+            this.QuestionClientResponse = questionClientResponse;
             GameInstanceResponse = gameInstanceResponse;
         }
-        public GameInstanceResponse GameInstanceResponse;
-        public int UserId;
+
+        public GameInstanceResponse GameInstanceResponse { get; set; }
+        public int UserId { get; set; }
+        public RoundingAttackerRes RoundingAttackerRes { get; set; }
+        public QuestionClientResponse QuestionClientResponse { get; set; }
     }
     public class GameInstanceResponse
     {

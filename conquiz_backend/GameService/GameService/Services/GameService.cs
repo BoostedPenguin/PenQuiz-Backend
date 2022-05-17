@@ -219,7 +219,7 @@ namespace GameService.Services
 
 
 
-                return new OnPlayerLoginResponse(mapper.Map<GameInstanceResponse>(currentGameInstance), thisUser.Id);
+                return new OnPlayerLoginResponse(mapper.Map<GameInstanceResponse>(currentGameInstance), thisUser.Id, roundingAttackerResponse, currentStageQuestion);
             }
 
             return new OnPlayerLoginResponse(null, user.Id);
