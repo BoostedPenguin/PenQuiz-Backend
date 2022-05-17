@@ -30,7 +30,7 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
-        private readonly IGM_DataExtractionService dataExtractionService;
+        private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMapGeneratorService mapGeneratorService;
         private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
@@ -39,7 +39,7 @@ namespace GameService.Services.GameTimerServices
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
-            IGM_DataExtractionService dataExtractionService,
+            ICurrentStageQuestionService dataExtractionService,
             IMapGeneratorService mapGeneratorService,
             IMessageBusClient messageBus)
         {

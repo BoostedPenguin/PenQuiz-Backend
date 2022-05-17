@@ -28,13 +28,13 @@ namespace GameService.Services.GameTimerServices
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
-        private readonly IGM_DataExtractionService gM_DataExtractionService;
+        private readonly ICurrentStageQuestionService gM_DataExtractionService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
         public CapitalStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
-            IGM_DataExtractionService gM_DataExtractionService,
+            ICurrentStageQuestionService gM_DataExtractionService,
             IMapper mapper,
             IMessageBusClient messageBus)
         {

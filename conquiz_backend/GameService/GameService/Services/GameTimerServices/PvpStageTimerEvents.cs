@@ -32,14 +32,14 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
-        private readonly IGM_DataExtractionService dataExtractionService;
+        private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMessageBusClient messageBus;
 
         public PvpStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
-            IGM_DataExtractionService dataExtractionService,
+            ICurrentStageQuestionService dataExtractionService,
             IMessageBusClient messageBus)
         {
             this.hubContext = hubContext;

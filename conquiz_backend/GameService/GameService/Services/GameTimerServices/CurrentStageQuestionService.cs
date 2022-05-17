@@ -6,16 +6,16 @@ using System.Linq;
 
 namespace GameService.Services.GameTimerServices
 {
-    public interface IGM_DataExtractionService
+    public interface ICurrentStageQuestionService
     {
         QuestionClientResponse GetCurrentStageQuestion(GameInstance gm);
     }
 
-    public class GM_DataExtractionService : IGM_DataExtractionService
+    public class CurrentStageQuestionService : ICurrentStageQuestionService
     {
         private readonly IMapper mapper;
 
-        public GM_DataExtractionService(IMapper mapper)
+        public CurrentStageQuestionService(IMapper mapper)
         {
             this.mapper = mapper;
         }

@@ -29,14 +29,14 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
-        private readonly IGM_DataExtractionService gM_DataExtractionService;
+        private readonly ICurrentStageQuestionService gM_DataExtractionService;
         private readonly IMessageBusClient messageBus;
 
         public NeutralMCTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
-            IGM_DataExtractionService gM_DataExtractionService,
+            ICurrentStageQuestionService gM_DataExtractionService,
             IMessageBusClient messageBus)
         {
             contextFactory = _contextFactory;

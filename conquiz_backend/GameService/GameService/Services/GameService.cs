@@ -94,7 +94,7 @@ namespace GameService.Services
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly ILogger<GameService> logger;
         private readonly IGameTerritoryService gameTerritoryService;
-        private readonly IGM_DataExtractionService dataExtractionService;
+        private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMapper mapper;
         private readonly IGameTimerService gameTimerService;
         public const string DefaultMap = "Antarctica";
@@ -106,7 +106,7 @@ namespace GameService.Services
             IHttpContextAccessor httpContextAccessor, 
             ILogger<GameService> logger,
             IGameTerritoryService gameTerritoryService,
-            IGM_DataExtractionService dataExtractionService,
+            ICurrentStageQuestionService dataExtractionService,
             IMapper mapper,
             IGameTimerService gameTimerService) : base(_contextFactory)
         {
