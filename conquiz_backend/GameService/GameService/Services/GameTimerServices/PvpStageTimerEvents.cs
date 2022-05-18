@@ -255,7 +255,6 @@ namespace GameService.Services.GameTimerServices
             var gm = data.GameInstance;
             var question = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault().PvpRound.NumberQuestion;
 
-            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
             
             question.PvpRoundNum.Round.IsQuestionVotingOpen = true;
@@ -265,7 +264,7 @@ namespace GameService.Services.GameTimerServices
             db.Update(gm);
             await db.SaveChangesAsync();
 
-
+            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

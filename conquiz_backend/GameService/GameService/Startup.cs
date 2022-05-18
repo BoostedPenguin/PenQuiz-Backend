@@ -79,6 +79,10 @@ namespace GameService
 
             services.AddScoped<IAccountDataClient, AccountDataClient>();
 
+            // Helper stage services
+
+            services.AddSingleton<ICurrentStageQuestionService, CurrentStageQuestionService>();
+
             services.AddHttpContextAccessor();
 
             services.AddHttpClient();
