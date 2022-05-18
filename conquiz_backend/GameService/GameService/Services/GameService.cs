@@ -199,19 +199,63 @@ namespace GameService.Services
                 var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == user.Id);
                 thisUser.IsBot = false;
 
+                var timerNextEvent = gameTimerService.GameTimers
+                    .Where(e => e.Data.GameInstance == currentGameInstance)
+                    .FirstOrDefault()
+                    .Data
+                    .NextAction;
 
                 QuestionClientResponse currentStageQuestion = null;
+                MCPlayerQuestionAnswers mCPlayerQuestionAnswers = null;
                 // Check if the current round is either pvp or neutral
                 var roundingAttackerResponse = GetCurrentRoundingAttackerRes(currentGameInstance);
 
+
                 try
                 {
-                    currentStageQuestion = dataExtractionService.GetCurrentStageQuestion(currentGameInstance);
+                    // To check if the rest of the players are currently on a question screen, check the next event of the timer
+                    // If the following event will be CLOSE_QUESTION, then you get the current stage
+
+                    var closingQuestionEvents = new List<ActionState>()
+                    {
+                        ActionState.END_MULTIPLE_CHOICE_QUESTION,
+                        ActionState.END_NUMBER_QUESTION,
+                        ActionState.END_FINAL_PVP_NUMBER_QUESTION,
+                        ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION,
+                        ActionState.END_CAPITAL_PVP_NUMBER_QUESTION,
+                        ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION,
+                        ActionState.END_PVP_NUMBER_QUESTION,
+                    };
+
+
+                    if (closingQuestionEvents.Contains(timerNextEvent))
+                        currentStageQuestion = dataExtractionService.GetCurrentStageQuestion(currentGameInstance);
+
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex.Message);
                 }
+
+                //try
+                //{
+                //    var showingQuestionPreviewEvents = new List<ActionState>()
+                //    {
+                //        ActionState.OPEN_PLAYER_ATTACK_VOTING,
+                //        ActionState.SHOW_PREVIEW_GAME_MAP,
+                //        ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING
+                //    };
+
+                //    // MC Question preview
+                //    // Check if timer next event is OPEN_PLAYER_ATTACK_VOTING, SHOW_PREVIEW_GAME_MAP, OPEN_PVP_PLAYER_ATTACK_VOTING
+                //    if (showingQuestionPreviewEvents.Contains(timerNextEvent))
+                //        mCPlayerQuestionAnswers = QuestionResponseResultService.GenerateMCQuestionPreviewResult(currentGameInstance);
+                //}
+                //catch(Exception ex)
+                //{
+                //    logger.LogError(ex.Message);
+                //}
+
 
                 // Send to user the game instance response // GetGameInstance
                 var gameInstanceRes = mapper.Map<GameInstanceResponse>(currentGameInstance);
@@ -219,7 +263,11 @@ namespace GameService.Services
 
 
 
-                return new OnPlayerLoginResponse(mapper.Map<GameInstanceResponse>(currentGameInstance), thisUser.Id, roundingAttackerResponse, currentStageQuestion);
+                return new OnPlayerLoginResponse(gameInstanceRes, thisUser.PlayerId, 
+                    roundingAttackerRes: roundingAttackerResponse,
+                    questionClientResponse: currentStageQuestion,
+                    mCPlayerQuestionAnswers: mCPlayerQuestionAnswers
+                    );
             }
 
             return new OnPlayerLoginResponse(null, user.Id);

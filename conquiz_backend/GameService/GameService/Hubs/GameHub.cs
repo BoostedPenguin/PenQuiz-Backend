@@ -105,6 +105,16 @@ namespace GameService.Hubs
                     return;
                 }
 
+                // Show the available attack territories
+                if(response.RoundingAttackerRes is not null)
+                    await Clients.Caller.ShowRoundingAttacker(response.RoundingAttackerRes);
+
+                if (response.QuestionClientResponse is not null)
+                    await Clients.Caller.GetRoundQuestion(response.QuestionClientResponse);
+
+                //if(response.MCPlayerQuestionAnswers is not null)
+                //    await Clients.Caller.MCQuestionPreviewResult(response.MCPlayerQuestionAnswers);
+
                 await Clients.Caller.GetGameInstance(response.GameInstanceResponse);
                 await Clients.Group(response.GameInstanceResponse.InvitationLink).PlayerRejoined(response.UserId);
                 await Clients.Caller.NavigateToGame();
