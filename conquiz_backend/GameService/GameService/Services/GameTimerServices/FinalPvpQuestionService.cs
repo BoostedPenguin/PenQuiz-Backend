@@ -79,7 +79,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
             var currentRound = gm.Rounds
-                .First(e => e.GameRoundNumber == data.CurrentGameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
+                .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
 
 
             currentRound.IsQuestionVotingOpen = false;

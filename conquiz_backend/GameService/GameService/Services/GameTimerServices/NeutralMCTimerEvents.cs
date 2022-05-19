@@ -52,8 +52,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var gm = data.GameInstance;
-            var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
-                .FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
@@ -135,9 +134,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             var gm = data.GameInstance;
 
-            var currentRound = data.GameInstance.Rounds
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
 
 
@@ -195,8 +192,7 @@ namespace GameService.Services.GameTimerServices
 
 
             // Go to next round
-            timerWrapper.Data.CurrentGameRoundNumber++;
-            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            currentRound.GameInstance.GameRoundNumber++;
 
             using (var db = contextFactory.CreateDbContext())
             {
@@ -206,7 +202,7 @@ namespace GameService.Services.GameTimerServices
             CommonTimerFunc.CalculateUserScore(gm);
 
             // Request a new batch of number questions from the question service
-            if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
+            if (gm.GameRoundNumber > data.LastNeutralMCRound)
             {
                 // Create number question rounds if gm multiple choice neutral rounds are over
                 var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
@@ -245,7 +241,7 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
-            if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
+            if (gm.GameRoundNumber > data.LastNeutralMCRound)
             {
                 // Next action should be a number question related one
                 timerWrapper.StartTimer(ActionState.SHOW_PREVIEW_GAME_MAP);
@@ -264,8 +260,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var gm = data.GameInstance;
-            var currentRound = data.GameInstance.Rounds
-                .FirstOrDefault(x => x.GameRoundNumber == data.CurrentGameRoundNumber);
+            var currentRound = data.GetBaseRound;
 
 
             // Open this round for territory voting
@@ -302,9 +297,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var gm = timerWrapper.Data.GameInstance;
-            var currentRound = gm.Rounds
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
             var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
 
@@ -337,7 +330,7 @@ namespace GameService.Services.GameTimerServices
                 var baseRound = new Round()
                 {
                     // After this method executes we switch to the next round automatically thus + 1 now
-                    GameRoundNumber = data.CurrentGameRoundNumber + i,
+                    GameRoundNumber = gm.GameRoundNumber + i,
                     AttackStage = AttackStage.NUMBER_NEUTRAL,
                     Description = $"Number question. Attacker vs NEUTRAL territory",
                     IsQuestionVotingOpen = false,
@@ -374,10 +367,9 @@ namespace GameService.Services.GameTimerServices
 
             var gm = data.GameInstance;
 
-            data.CurrentGameRoundNumber = data.LastNeutralMCRound + 1;
 
             // Go to next round
-            gm.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            gm.GameRoundNumber = data.LastNeutralMCRound + 1;
 
             // Create number question rounds if gm multiple choice neutral rounds are over
             var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);

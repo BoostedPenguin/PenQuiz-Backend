@@ -92,7 +92,7 @@ namespace GameService.Services.GameTimerServices
 
             var gm = data.GameInstance;
 
-            var currentRound = gm.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -190,8 +190,7 @@ namespace GameService.Services.GameTimerServices
 
             if(!bothPlayersAnsweredCorrectly && nextAction != ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION)
             {
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                currentRound.GameInstance.GameRoundNumber++;
             }
             
 
@@ -253,8 +252,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
 
             var gm = data.GameInstance;
-            var question = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault().PvpRound.NumberQuestion;
-
+            var question = data.GetBaseRound.PvpRound.NumberQuestion;
 
             
             question.PvpRoundNum.Round.IsQuestionVotingOpen = true;
@@ -279,7 +277,7 @@ namespace GameService.Services.GameTimerServices
 
             var gm = data.GameInstance;
 
-            var currentRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
             currentRound.IsQuestionVotingOpen = false;
 
@@ -380,8 +378,7 @@ namespace GameService.Services.GameTimerServices
             if (pvpRoundFinished)
             {
                 // Go to next round
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                currentRound.GameInstance.GameRoundNumber++;
             }
 
 
@@ -440,8 +437,8 @@ namespace GameService.Services.GameTimerServices
             if(userTerritoriesCount == 0)
             {
                 // Go to next round
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                currentRound.GameInstance.GameRoundNumber++;
+
                 db.Update(gm);
                 await db.SaveChangesAsync();
 

@@ -56,9 +56,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var gm = timerWrapper.Data.GameInstance;
 
-            var question = gm.Rounds
-                .Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber)
-                .First()
+            var question = data.GetBaseRound
                 .PvpRound.CapitalRounds.First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION).CapitalRoundMultipleQuestion;
             
             // Get mapped response for clients
@@ -81,7 +79,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
-            var baseRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).First();
+            var baseRound = data.GetBaseRound;
 
 
             var capitalRound = baseRound.PvpRound.CapitalRounds.FirstOrDefault(x => !x.IsCompleted &&
@@ -228,8 +226,7 @@ namespace GameService.Services.GameTimerServices
 
             if (pvpRoundFinished && !bothPlayersAnsweredCorrectly)
             {
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                baseRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                baseRound.GameInstance.GameRoundNumber++;
             }
 
             db.Update(gm);
@@ -285,9 +282,7 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
 
-            var question = gm.Rounds
-                .Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber)
-                .First()
+            var question = data.GetBaseRound
                 .PvpRound.CapitalRounds.First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION).CapitalRoundNumberQuestion;
 
 
@@ -310,7 +305,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
-            var baseRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).First();
+            var baseRound = data.GetBaseRound;
 
 
             var capitalRound = baseRound.PvpRound.CapitalRounds.FirstOrDefault(x => !x.IsCompleted &&
@@ -442,8 +437,7 @@ namespace GameService.Services.GameTimerServices
             if(pvpRoundFinished)
             {
                 // Go to next round
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                baseRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                baseRound.GameInstance.GameRoundNumber++;
             }
 
 

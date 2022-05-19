@@ -92,6 +92,9 @@ namespace GameService.Services.GameTimerServices
                 GameLink = gameLink;
                 GameGlobalIdentifier = gameGlobalIdentifier;
             }
+
+            public Round GetBaseRound => GameInstance.Rounds.FirstOrDefault(e => e.GameRoundNumber == GameInstance.GameRoundNumber);
+
             public GameInstance GameInstance { get; set; }
             public CountDownTimer CountDownTimer { get; set; }
             public int GameInstanceId { get; set; }
@@ -102,7 +105,6 @@ namespace GameService.Services.GameTimerServices
             // This is the invitation link which also acts as a group ID for signalR
             public string GameLink { get; set; }
             public string GameGlobalIdentifier { get; set; }
-            public int CurrentGameRoundNumber { get; set; }
             public ActionState NextAction { get; set; }
         }
     }

@@ -138,7 +138,7 @@ namespace GameService.Services.GameTimerServices
             }
 
             // Check if last pvp round
-            if (data.CurrentGameRoundNumber > data.LastPvpRound)
+            if (gm.GameRoundNumber > data.LastPvpRound)
             {
                 var allPlayerTerritoriesWoCapital = gm.ObjectTerritory
                     .Where(x => !x.IsCapital).ToList();
@@ -159,7 +159,7 @@ namespace GameService.Services.GameTimerServices
                 {
                     var baseRound = new Round()
                     {
-                        GameRoundNumber = data.CurrentGameRoundNumber,
+                        GameRoundNumber = gm.GameRoundNumber,
                         AttackStage = AttackStage.FINAL_NUMBER_PVP,
                         Description = $"Final Number question. Attacker vs other attackers",
                         IsQuestionVotingOpen = false,
