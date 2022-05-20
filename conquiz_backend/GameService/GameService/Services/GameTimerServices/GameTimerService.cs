@@ -96,7 +96,6 @@ namespace GameService.Services.GameTimerServices
             actionTimer.Data.LastNeutralMCRound = gm.Rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL).Count();
 
             // Default starter values
-            actionTimer.Data.CurrentGameRoundNumber = 1;
             actionTimer.Data.GameInstance = gm;
 
             GameTimers.Add(actionTimer);

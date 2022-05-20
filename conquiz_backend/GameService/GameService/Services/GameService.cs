@@ -12,6 +12,7 @@ using GameService.Data.Models;
 using GameService.Data;
 using AutoMapper;
 using GameService.Dtos.SignalR_Responses;
+using Microsoft.Extensions.Logging;
 
 namespace GameService.Services
 {
@@ -91,6 +92,9 @@ namespace GameService.Services
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly ILogger<GameService> logger;
+        private readonly IGameTerritoryService gameTerritoryService;
+        private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMapper mapper;
         private readonly IGameTimerService gameTimerService;
         public const string DefaultMap = "Antarctica";
@@ -100,11 +104,17 @@ namespace GameService.Services
 
         public GameService(IDbContextFactory<DefaultContext> _contextFactory, 
             IHttpContextAccessor httpContextAccessor, 
+            ILogger<GameService> logger,
+            IGameTerritoryService gameTerritoryService,
+            ICurrentStageQuestionService dataExtractionService,
             IMapper mapper,
             IGameTimerService gameTimerService) 
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
+            this.logger = logger;
+            this.gameTerritoryService = gameTerritoryService;
+            this.dataExtractionService = dataExtractionService;
             this.mapper = mapper;
             this.gameTimerService = gameTimerService;
         }
@@ -118,6 +128,36 @@ namespace GameService.Services
             ongoingGames.ForEach(x => x.GameState = GameState.CANCELED);
 
             await db.SaveChangesAsync();
+        }
+
+        private RoundingAttackerRes GetCurrentRoundingAttackerRes(GameInstance currentGameInstance)
+        {
+            var currentRound = currentGameInstance.Rounds
+                .FirstOrDefault(x => x.GameRoundNumber == currentGameInstance.GameRoundNumber);
+
+            // User can only choose to attack during PVP Mc rounds or Neutral MC rounds
+            if (currentRound.AttackStage is AttackStage.MULTIPLE_NEUTRAL)
+            {
+                var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
+                    .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
+
+                var availableTerritories = gameTerritoryService
+                    .GetAvailableAttackTerritoriesNames(currentGameInstance, currentAttacker.AttackerId, currentGameInstance.Id, true);
+
+                return new RoundingAttackerRes(currentAttacker.AttackerId, availableTerritories);
+            }
+
+            if (currentRound.AttackStage is AttackStage.MULTIPLE_PVP)
+            {
+                var currentAttacker = currentRound.PvpRound.AttackerId;
+
+                var availableTerritories = gameTerritoryService
+                    .GetAvailableAttackTerritoriesNames(currentGameInstance, currentAttacker, currentGameInstance.Id, false);
+
+                return new RoundingAttackerRes(currentAttacker, availableTerritories);
+            }
+
+            return null;
         }
 
         public async Task<OnPlayerLoginResponse> OnPlayerLoginConnection()
@@ -158,11 +198,76 @@ namespace GameService.Services
                 var currentGameInstance = ongoingGames.First();
                 var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == user.Id);
                 thisUser.IsBot = false;
-                
-                db.Update(thisUser);
-                await db.SaveChangesAsync();
 
-                return new OnPlayerLoginResponse(mapper.Map<GameInstanceResponse>(currentGameInstance), thisUser.Id);
+                var timerNextEvent = gameTimerService.GameTimers
+                    .Where(e => e.Data.GameInstance == currentGameInstance)
+                    .FirstOrDefault()
+                    .Data
+                    .NextAction;
+
+                QuestionClientResponse currentStageQuestion = null;
+                MCPlayerQuestionAnswers mCPlayerQuestionAnswers = null;
+                // Check if the current round is either pvp or neutral
+                var roundingAttackerResponse = GetCurrentRoundingAttackerRes(currentGameInstance);
+
+
+                try
+                {
+                    // To check if the rest of the players are currently on a question screen, check the next event of the timer
+                    // If the following event will be CLOSE_QUESTION, then you get the current stage
+
+                    var closingQuestionEvents = new List<ActionState>()
+                    {
+                        ActionState.END_MULTIPLE_CHOICE_QUESTION,
+                        ActionState.END_NUMBER_QUESTION,
+                        ActionState.END_FINAL_PVP_NUMBER_QUESTION,
+                        ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION,
+                        ActionState.END_CAPITAL_PVP_NUMBER_QUESTION,
+                        ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION,
+                        ActionState.END_PVP_NUMBER_QUESTION,
+                    };
+
+
+                    if (closingQuestionEvents.Contains(timerNextEvent))
+                        currentStageQuestion = dataExtractionService.GetCurrentStageQuestion(currentGameInstance);
+
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex.Message);
+                }
+
+                //try
+                //{
+                //    var showingQuestionPreviewEvents = new List<ActionState>()
+                //    {
+                //        ActionState.OPEN_PLAYER_ATTACK_VOTING,
+                //        ActionState.SHOW_PREVIEW_GAME_MAP,
+                //        ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING
+                //    };
+
+                //    // MC Question preview
+                //    // Check if timer next event is OPEN_PLAYER_ATTACK_VOTING, SHOW_PREVIEW_GAME_MAP, OPEN_PVP_PLAYER_ATTACK_VOTING
+                //    if (showingQuestionPreviewEvents.Contains(timerNextEvent))
+                //        mCPlayerQuestionAnswers = QuestionResponseResultService.GenerateMCQuestionPreviewResult(currentGameInstance);
+                //}
+                //catch(Exception ex)
+                //{
+                //    logger.LogError(ex.Message);
+                //}
+
+
+                // Send to user the game instance response // GetGameInstance
+                var gameInstanceRes = mapper.Map<GameInstanceResponse>(currentGameInstance);
+
+
+
+
+                return new OnPlayerLoginResponse(gameInstanceRes, thisUser.PlayerId, 
+                    roundingAttackerRes: roundingAttackerResponse,
+                    questionClientResponse: currentStageQuestion,
+                    mCPlayerQuestionAnswers: mCPlayerQuestionAnswers
+                    );
             }
 
             return new OnPlayerLoginResponse(null, user.Id);

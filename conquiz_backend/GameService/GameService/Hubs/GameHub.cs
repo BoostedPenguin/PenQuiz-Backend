@@ -50,7 +50,7 @@ namespace GameService.Hubs
         // Things that require displaying of a timer do require ex. time to vote on something
         Task Game_Show_Main_Screen();
         Task ShowGameMap();
-        Task ShowRoundingAttacker(int userId, string[] availableAttackTerritoriesNames);
+        Task ShowRoundingAttacker(RoundingAttackerRes responseData);
 
         Task GetGameUserId(int userId);
         Task OnSelectedTerritory(SelectedTerritoryResponse selectedTerritoryResponse);
@@ -109,6 +109,16 @@ namespace GameService.Hubs
                     await base.OnConnectedAsync();
                     return;
                 }
+
+                // Show the available attack territories
+                if(response.RoundingAttackerRes is not null)
+                    await Clients.Caller.ShowRoundingAttacker(response.RoundingAttackerRes);
+
+                if (response.QuestionClientResponse is not null)
+                    await Clients.Caller.GetRoundQuestion(response.QuestionClientResponse);
+
+                //if(response.MCPlayerQuestionAnswers is not null)
+                //    await Clients.Caller.MCQuestionPreviewResult(response.MCPlayerQuestionAnswers);
 
                 await Clients.Caller.GetGameInstance(response.GameInstanceResponse);
                 await Clients.Group(response.GameInstanceResponse.InvitationLink).PlayerRejoined(response.UserId);

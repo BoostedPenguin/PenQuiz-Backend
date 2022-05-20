@@ -84,6 +84,9 @@ namespace GameService
 
             // Characters
             services.AddSingleton<IWizardActions, WizardActions>();
+            // Helper stage services
+
+            services.AddSingleton<ICurrentStageQuestionService, CurrentStageQuestionService>();
 
             services.AddHttpContextAccessor();
 

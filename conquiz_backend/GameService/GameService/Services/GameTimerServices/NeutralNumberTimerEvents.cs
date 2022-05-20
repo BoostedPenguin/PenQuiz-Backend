@@ -30,6 +30,7 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMapGeneratorService mapGeneratorService;
         private readonly IMessageBusClient messageBus;
         private readonly Random r = new Random();
@@ -38,6 +39,7 @@ namespace GameService.Services.GameTimerServices
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            ICurrentStageQuestionService dataExtractionService,
             IMapGeneratorService mapGeneratorService,
             IMessageBusClient messageBus)
         {
@@ -45,6 +47,7 @@ namespace GameService.Services.GameTimerServices
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.dataExtractionService = dataExtractionService;
             this.mapGeneratorService = mapGeneratorService;
             this.messageBus = messageBus;
         }
@@ -73,9 +76,8 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
 
-            var currentRound = gm.Rounds
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
-                .FirstOrDefault();
+
+            var currentRound = data.GetBaseRound;
 
 
             currentRound.IsQuestionVotingOpen = false;
@@ -205,8 +207,7 @@ namespace GameService.Services.GameTimerServices
             //}
 
             // Go to next round
-            timerWrapper.Data.CurrentGameRoundNumber++;
-            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            currentRound.GameInstance.GameRoundNumber++;
 
             db.Update(gm);
             await db.SaveChangesAsync();
@@ -216,10 +217,10 @@ namespace GameService.Services.GameTimerServices
 
             // Request a new batch of number questions from the question service
 
-            if (data.CurrentGameRoundNumber > data.LastNeutralNumberRound)
+            if (gm.GameRoundNumber > data.LastNeutralNumberRound)
             {
                 // Create pvp question rounds if gm number neutral rounds are over
-                var rounds = Create_Pvp_Rounds(gm, timerWrapper, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
+                var rounds = Create_Pvp_Rounds(gm, currentRound.NeutralRound.TerritoryAttackers.Select(x => x.AttackerId).ToList());
 
                 rounds.ForEach(e => gm.Rounds.Add(e));
 
@@ -235,7 +236,7 @@ namespace GameService.Services.GameTimerServices
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
 
-            if (data.CurrentGameRoundNumber > data.LastNeutralNumberRound)
+            if (gm.GameRoundNumber > data.LastNeutralNumberRound)
             {
                 // Next action should be a pvp question related one
                 timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
@@ -262,11 +263,9 @@ namespace GameService.Services.GameTimerServices
             // Show the question to the user
             var roundQuestion = gm.Rounds
                 .First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber);
-
-
-
-            if (roundQuestion.Question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
+            
+            
+            var response = dataExtractionService.GetCurrentStageQuestion(gm);
 
 
             // Open this question for voting
@@ -275,14 +274,6 @@ namespace GameService.Services.GameTimerServices
 
             db.Update(gm);
             await db.SaveChangesAsync();
-
-            var response = mapper.Map<QuestionClientResponse>(roundQuestion.Question);
-
-            // If the round is a neutral one, then everyone can attack
-            response.IsNeutral = true;
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(roundQuestion.GameInstance.Participants.ToArray());
-
-            response.Participants = participantsMapping;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
@@ -313,10 +304,10 @@ namespace GameService.Services.GameTimerServices
                 x.TakenBy = particip[2].PlayerId;
             });
 
-            data.CurrentGameRoundNumber = 40;
+            // PVP Rounds are always 18 rounds (3x6)
             gm.GameRoundNumber = 41;
 
-            var rounds = Create_Pvp_Rounds(gm, timerWrapper, gm.Participants.Select(x => x.PlayerId).ToList());
+            var rounds = Create_Pvp_Rounds(gm, gm.Participants.Select(x => x.PlayerId).ToList());
 
             foreach (var round in rounds)
             {
@@ -360,10 +351,11 @@ namespace GameService.Services.GameTimerServices
                 });
             }
 
-            data.CurrentGameRoundNumber = 55;
+            // PVP Rounds are always 18 rounds (3x6)
+            // Base round is 41
+            // 41 + 18 = 59 is last round
             gm.GameRoundNumber = 56;
 
-            data.CurrentGameRoundNumber++;
 
             rounds.ForEach(e => gm.Rounds.Add(e));
             db.Update(gm);
@@ -374,10 +366,9 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
         }
 
-        private List<Round> Create_Pvp_Rounds(GameInstance gm, TimerWrapper timerWrapper, List<int> userIds)
+        private List<Round> Create_Pvp_Rounds(GameInstance gm, List<int> userIds)
         {
             int RequiredPlayers = 3;
-            var data = timerWrapper.Data;
 
             var totalTerritories = mapGeneratorService.GetAmountOfTerritories(gm);
 
@@ -385,7 +376,7 @@ namespace GameService.Services.GameTimerServices
 
             var finalRounds = new List<Round>();
 
-            var roundCounter = data.CurrentGameRoundNumber;
+            var roundCounter = gm.GameRoundNumber;
 
             foreach (var fullRound in order.UserRoundAttackOrders)
             {
@@ -393,7 +384,7 @@ namespace GameService.Services.GameTimerServices
                 {
                     var baseRound = new Round()
                     {
-                        GameInstanceId = data.GameInstanceId,
+                        GameInstanceId = gm.Id,
                         GameRoundNumber = roundCounter++,
                         AttackStage = AttackStage.MULTIPLE_PVP,
                         Description = $"MultipleChoice question. Attacker vs PVP territory",

@@ -29,18 +29,21 @@ namespace GameService.Services.GameTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
+        private readonly ICurrentStageQuestionService gM_DataExtractionService;
         private readonly IMessageBusClient messageBus;
 
         public NeutralMCTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
+            ICurrentStageQuestionService gM_DataExtractionService,
             IMessageBusClient messageBus)
         {
             contextFactory = _contextFactory;
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
+            this.gM_DataExtractionService = gM_DataExtractionService;
             this.messageBus = messageBus;
         }
 
@@ -49,8 +52,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var gm = data.GameInstance;
-            var currentRound = data.GameInstance.Rounds.Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber)
-                .FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
             var currentAttacker = currentRound.NeutralRound.TerritoryAttackers
                 .First(x => x.AttackOrderNumber == currentRound.NeutralRound.AttackOrderNumber);
@@ -88,9 +90,10 @@ namespace GameService.Services.GameTimerServices
                     var availableTerritories = gameTerritoryService
                         .GetAvailableAttackTerritoriesNames(gm, nextAttacker.AttackerId, currentRound.GameInstanceId, true);
 
+                    
                     // Notify the group who is the next attacker
                     await hubContext.Clients.Group(data.GameLink)
-                        .ShowRoundingAttacker(nextAttacker.AttackerId, availableTerritories);
+                        .ShowRoundingAttacker(new RoundingAttackerRes(nextAttacker.AttackerId, availableTerritories));
 
 
                     var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
@@ -131,9 +134,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             var gm = data.GameInstance;
 
-            var currentRound = data.GameInstance.Rounds
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
 
 
@@ -191,8 +192,7 @@ namespace GameService.Services.GameTimerServices
 
 
             // Go to next round
-            timerWrapper.Data.CurrentGameRoundNumber++;
-            currentRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            currentRound.GameInstance.GameRoundNumber++;
 
             using (var db = contextFactory.CreateDbContext())
             {
@@ -202,7 +202,7 @@ namespace GameService.Services.GameTimerServices
             CommonTimerFunc.CalculateUserScore(gm);
 
             // Request a new batch of number questions from the question service
-            if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
+            if (gm.GameRoundNumber > data.LastNeutralMCRound)
             {
                 // Create number question rounds if gm multiple choice neutral rounds are over
                 var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);
@@ -241,7 +241,7 @@ namespace GameService.Services.GameTimerServices
 
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
-            if (data.CurrentGameRoundNumber > data.LastNeutralMCRound)
+            if (gm.GameRoundNumber > data.LastNeutralMCRound)
             {
                 // Next action should be a number question related one
                 timerWrapper.StartTimer(ActionState.SHOW_PREVIEW_GAME_MAP);
@@ -260,8 +260,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var gm = data.GameInstance;
-            var currentRound = data.GameInstance.Rounds
-                .FirstOrDefault(x => x.GameRoundNumber == data.CurrentGameRoundNumber);
+            var currentRound = data.GetBaseRound;
 
 
             // Open this round for territory voting
@@ -280,7 +279,7 @@ namespace GameService.Services.GameTimerServices
                 .GetAvailableAttackTerritoriesNames(gm, currentAttacker.AttackerId, currentRound.GameInstanceId, true);
 
             await hubContext.Clients.Group(data.GameLink)
-                .ShowRoundingAttacker(currentAttacker.AttackerId, availableTerritories);
+                .ShowRoundingAttacker(new RoundingAttackerRes(currentAttacker.AttackerId, availableTerritories));
 
             var res2 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
@@ -298,32 +297,18 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
 
             var gm = timerWrapper.Data.GameInstance;
-            var currentRound = gm.Rounds
-                .Where(x => x.GameRoundNumber == data.CurrentGameRoundNumber && x.GameInstanceId == data.GameInstanceId)
-                .FirstOrDefault();
+            var currentRound = data.GetBaseRound;
 
-            var question = currentRound.Question;
-            // Show the question to the user
-
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
-
+            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
 
             // Open this question for voting
-            question.Round.IsQuestionVotingOpen = true;
+            currentRound.Question.Round.IsQuestionVotingOpen = true;
             using (var db = contextFactory.CreateDbContext())
             {
                 db.Update(gm);
                 await db.SaveChangesAsync();
             }
 
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question.Round.GameInstance.Participants.ToArray());
-
-            response.Participants = participantsMapping;
-            // If the round is a neutral one, then everyone can attack
-            response.IsNeutral = true;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
@@ -345,7 +330,7 @@ namespace GameService.Services.GameTimerServices
                 var baseRound = new Round()
                 {
                     // After this method executes we switch to the next round automatically thus + 1 now
-                    GameRoundNumber = data.CurrentGameRoundNumber + i,
+                    GameRoundNumber = gm.GameRoundNumber + i,
                     AttackStage = AttackStage.NUMBER_NEUTRAL,
                     Description = $"Number question. Attacker vs NEUTRAL territory",
                     IsQuestionVotingOpen = false,
@@ -382,10 +367,9 @@ namespace GameService.Services.GameTimerServices
 
             var gm = data.GameInstance;
 
-            data.CurrentGameRoundNumber = data.LastNeutralMCRound + 1;
 
             // Go to next round
-            gm.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+            gm.GameRoundNumber = data.LastNeutralMCRound + 1;
 
             // Create number question rounds if gm multiple choice neutral rounds are over
             var rounds = Create_Neutral_Number_Rounds(gm, timerWrapper);

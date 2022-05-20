@@ -28,16 +28,19 @@ namespace GameService.Services.GameTimerServices
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
+        private readonly ICurrentStageQuestionService gM_DataExtractionService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
         public CapitalStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
+            ICurrentStageQuestionService gM_DataExtractionService,
             IMapper mapper,
             IMessageBusClient messageBus)
         {
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
+            this.gM_DataExtractionService = gM_DataExtractionService;
             this.mapper = mapper;
             this.messageBus = messageBus;
             contextFactory = _contextFactory;
@@ -53,39 +56,18 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var gm = timerWrapper.Data.GameInstance;
 
-            var question = gm.Rounds
-                .Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber)
-                .First()
+            var question = data.GetBaseRound
                 .PvpRound.CapitalRounds.First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION).CapitalRoundMultipleQuestion;
+            
+            // Get mapped response for clients
+            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
 
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
-
-
+            // Open for voting the capital question
             question.CapitalRoundMultiple.IsQuestionVotingOpen = true;
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            response.IsNeutral = false;
-
-            var pvpRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).First().PvpRound;
-
-            
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(gm.Participants
-                .Where(e => e.PlayerId == pvpRound.AttackerId || e.PlayerId == pvpRound.DefenderId)
-                .ToArray());
-
-            response.Participants = participantsMapping;
-
-            response.AttackerId = pvpRound.AttackerId;
-            response.DefenderId = pvpRound.DefenderId ?? 0;
-
-
-            // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
-            response.CapitalRoundsRemaining = 1;
-
+            // Send data to client
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
             timerWrapper.StartTimer(ActionState.END_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION);
@@ -97,7 +79,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
-            var baseRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).First();
+            var baseRound = data.GetBaseRound;
 
 
             var capitalRound = baseRound.PvpRound.CapitalRounds.FirstOrDefault(x => !x.IsCompleted &&
@@ -244,8 +226,7 @@ namespace GameService.Services.GameTimerServices
 
             if (pvpRoundFinished && !bothPlayersAnsweredCorrectly)
             {
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                baseRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                baseRound.GameInstance.GameRoundNumber++;
             }
 
             db.Update(gm);
@@ -301,41 +282,17 @@ namespace GameService.Services.GameTimerServices
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
 
-            var question = gm.Rounds
-                .Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber)
-                .First()
+            var question = data.GetBaseRound
                 .PvpRound.CapitalRounds.First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION).CapitalRoundNumberQuestion;
 
 
-            if (question == null)
-                throw new ArgumentException($"There was no question generated for gameinstanceid: {data.GameInstanceId}, gameroundnumber: {data.CurrentGameRoundNumber}.");
-
+            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
 
             question.CapitalRoundNumber.IsQuestionVotingOpen = true;
             question.CapitalRoundNumber.QuestionOpenedAt = DateTime.Now;
 
             db.Update(gm);
             await db.SaveChangesAsync();
-
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            response.IsNeutral = false;
-
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(question
-                .CapitalRoundNumber
-                .PvpRound
-                .Round
-                .GameInstance
-                .Participants
-                .Where(x => x.PlayerId == question.CapitalRoundNumber.PvpRound.AttackerId || x.PlayerId == question.CapitalRoundNumber.PvpRound.DefenderId)
-                .ToArray());
-            response.Participants = participantsMapping;
-
-            response.AttackerId = question.CapitalRoundNumber.PvpRound.AttackerId;
-            response.DefenderId = question.CapitalRoundNumber.PvpRound.DefenderId ?? 0;
-
-            // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
-            response.CapitalRoundsRemaining = 1;
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
@@ -348,7 +305,7 @@ namespace GameService.Services.GameTimerServices
             var data = timerWrapper.Data;
             using var db = contextFactory.CreateDbContext();
             var gm = data.GameInstance;
-            var baseRound = gm.Rounds.Where(e => e.GameRoundNumber == data.CurrentGameRoundNumber).First();
+            var baseRound = data.GetBaseRound;
 
 
             var capitalRound = baseRound.PvpRound.CapitalRounds.FirstOrDefault(x => !x.IsCompleted &&
@@ -480,8 +437,7 @@ namespace GameService.Services.GameTimerServices
             if(pvpRoundFinished)
             {
                 // Go to next round
-                timerWrapper.Data.CurrentGameRoundNumber++;
-                baseRound.GameInstance.GameRoundNumber = timerWrapper.Data.CurrentGameRoundNumber;
+                baseRound.GameInstance.GameRoundNumber++;
             }
 
 
