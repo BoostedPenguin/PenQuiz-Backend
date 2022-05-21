@@ -94,7 +94,6 @@ namespace GameService.Hubs
                     .FirstOrDefault();
 
                 var response = await gameService.OnPlayerLoginConnection();
-
                 await Clients.Caller.GetGameUserId(response.UserId);
 
                 //timer.TimerStart();
@@ -239,6 +238,36 @@ namespace GameService.Hubs
                 await Clients.Group(game.InvitationLink).GetGameInstance(res1);
             }
             catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// As of 21/05/2022 SignalR does NOT provide a way to remove a user from a group
+        /// This method currently only works for BOT users
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
+        public async Task RemovePlayerFromLobby(int playerId)
+        {
+            try
+            {
+                var game = await gameLobbyService.RemovePlayerFromLobby(playerId);
+
+                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
+
+                if(!string.IsNullOrEmpty(game.RemovedPlayerId))
+                {
+                    await Clients.User(game.RemovedPlayerId).LobbyCanceled("You were kicked from the game lobby!");
+
+                    await Groups.RemoveFromGroupAsync(game.RemovedPlayerId, game.GameInstance.InvitationLink);
+                }
+
+                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
+            }
+            catch(Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }

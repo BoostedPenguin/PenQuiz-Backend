@@ -21,6 +21,7 @@ namespace GameService.Services
         Task<GameInstance> CreateGameLobby();
         Task<GameInstance> FindPublicMatch();
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
+        Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
         Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
 
@@ -293,6 +294,62 @@ namespace GameService.Services
                 return await CreateGameBot(db);
 
             return availableBot;
+        }
+
+
+        public async Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+
+            // Get the game where this user is the owner and is currently in lobby
+            var gm = await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.GameState == GameState.IN_LOBBY && x.GameType == GameType.PRIVATE && x.GameCreatorId == user.Id)
+                .FirstOrDefaultAsync();
+
+            if (gm is null)
+                throw new ArgumentException("You are not the host of this lobby and can't remove players.");
+
+            var selectedUser = gm.Participants.Where(e => e.PlayerId == playerId).FirstOrDefault();
+
+            if (selectedUser.PlayerId == gm.GameCreatorId)
+                throw new ArgumentException("You are trying to remove yourself!");
+
+            if (selectedUser is null)
+            {
+                if (!selectedUser.Player.IsBot)
+                    throw new ArgumentException("You are trying to remove a person who isn't in the lobby!");
+
+
+                // The given id was invalid, remove the first bot you find in lobby
+                var anyBot = gm.Participants.Where(e => e.Player.IsBot).FirstOrDefault();
+
+                // No bot present to remove
+                if (anyBot is null) return new RemovePlayerFromLobbyResponse()
+                {
+                    GameInstance = gm,
+                };
+
+                db.Remove(anyBot);
+            }
+            else
+            {
+                db.Remove(selectedUser);
+            }
+
+
+            await db.SaveChangesAsync();
+
+            return new RemovePlayerFromLobbyResponse()
+            {
+                GameInstance = gm,
+                RemovedPlayerId = selectedUser.Player.UserGlobalIdentifier,
+            };
         }
 
         public async Task<GameInstance> AddGameBot()

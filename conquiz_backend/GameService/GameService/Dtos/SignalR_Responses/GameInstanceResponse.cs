@@ -129,7 +129,7 @@ namespace GameService.Dtos.SignalR_Responses
         public string AvatarName { get; set; }
         public int PlayerId { get; set; }
         public int GameId { get; set; }
-        public bool IsBot { get; set; }
+        public bool IsAfk { get; set; }
         public int Score { get; set; }
         public int FinalQuestionScore { get; set; }
 
@@ -142,6 +142,8 @@ namespace GameService.Dtos.SignalR_Responses
         public int Id { get; set; }
         public string Username { get; set; }
         public string UserGlobalIdentifier { get; set; }
+        public bool IsBot { get; set; }
+
     }
 
 
