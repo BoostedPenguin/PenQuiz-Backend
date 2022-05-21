@@ -16,6 +16,7 @@ namespace GameService.Services
 {
     public interface IGameLobbyService
     {
+        Task<GameInstance> AddGameBot();
         Task CreateDebugLobby();
         Task<GameInstance> CreateGameLobby();
         Task<GameInstance> FindPublicMatch();
@@ -26,7 +27,7 @@ namespace GameService.Services
     /// <summary>
     /// Handles the lobby state of the game and starting a gameinstance
     /// </summary>
-    public class GameLobbyService : DataService<DefaultModel>, IGameLobbyService
+    public class GameLobbyService : IGameLobbyService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
@@ -41,7 +42,7 @@ namespace GameService.Services
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
 
-        public GameLobbyService(IGameTimerService timer, IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService) : base(_contextFactory)
+        public GameLobbyService(IGameTimerService timer, IDbContextFactory<DefaultContext> _contextFactory, IHttpContextAccessor httpContextAccessor, IMapGeneratorService mapGeneratorService)
         {
             this.timer = timer;
             contextFactory = _contextFactory;
@@ -261,6 +262,74 @@ namespace GameService.Services
                 .ThenInclude(x => x.Player)
                 .Where(x => x.Id == gameInstance.Id)
                 .FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Creates a new User with a "Bot" status
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Users> CreateGameBot(DefaultContext db)
+        {
+            var botUsername = $"[BOT]Penguin-{r.Next(0, 10000)}";
+            var botUser = new Users()
+            {
+                IsBot = true,
+                Username = botUsername,
+            };
+
+            await db.AddAsync(botUser);
+
+            return botUser;
+        }
+
+
+        public async Task<Users> GetRandomGameBot(DefaultContext db)
+        {
+            var availableBot = await db.Users.FirstOrDefaultAsync(e => e.IsBot &&
+                (e.Participants == null || e.Participants.All(y => y.Game.GameState == GameState.CANCELED || y.Game.GameState == GameState.FINISHED)));
+
+            if (availableBot is null)
+                return await CreateGameBot(db);
+
+            return availableBot;
+        }
+
+        public async Task<GameInstance> AddGameBot()
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+
+            // Get the game where this user is the owner and is currently in lobby
+            var gm = await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.GameState == GameState.IN_LOBBY && x.GameType == GameType.PRIVATE && x.GameCreatorId == user.Id)
+                .FirstOrDefaultAsync();
+
+            if (gm is null)
+                throw new ArgumentException("You are not the host of this lobby and can't add bots.");
+
+
+            var gameBot = await GetRandomGameBot(db);
+
+            var botParticipant = new Participants()
+            {
+                Player = gameBot,
+                Score = 0,
+                AvatarName = GetRandomAvatar(gm)
+            };
+
+            gm.Participants.Add(botParticipant);
+
+            db.Update(gm);
+
+            await db.SaveChangesAsync();
+
+            return gm;
         }
 
         private string GenerateInvCode()

@@ -30,12 +30,12 @@ namespace GameService.Services
         int GetAmountOfTerritories(GameInstance gm);
     }
 
-    public class MapGeneratorService : DataService<DefaultModel>, IMapGeneratorService
+    public class MapGeneratorService : IMapGeneratorService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly ILogger<MapGeneratorService> logger;
         private const string defaultMapFile = "Antarctica";
-        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory, ILogger<MapGeneratorService> logger) : base(_contextFactory)
+        public MapGeneratorService(IDbContextFactory<DefaultContext> _contextFactory, ILogger<MapGeneratorService> logger)
         {
             contextFactory = _contextFactory;
             this.logger = logger;

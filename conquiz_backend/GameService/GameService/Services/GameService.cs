@@ -88,7 +88,7 @@ namespace GameService.Services
     /// <summary>
     /// Handles people's connection to the games and canceling existing games
     /// </summary>
-    public class GameService : DataService<DefaultModel>, IGameService
+    public class GameService : IGameService
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
@@ -108,7 +108,7 @@ namespace GameService.Services
             IGameTerritoryService gameTerritoryService,
             ICurrentStageQuestionService dataExtractionService,
             IMapper mapper,
-            IGameTimerService gameTimerService) : base(_contextFactory)
+            IGameTimerService gameTimerService)
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
@@ -197,7 +197,7 @@ namespace GameService.Services
             {
                 var currentGameInstance = ongoingGames.First();
                 var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == user.Id);
-                thisUser.IsBot = false;
+                thisUser.IsAfk = false;
 
                 var timerNextEvent = gameTimerService.GameTimers
                     .Where(e => e.Data.GameInstance == currentGameInstance)
@@ -345,10 +345,10 @@ namespace GameService.Services
                     // MAKE USER AS A BOT
                     // UNTIL HE COMES BACK
 
-                    thisUser.IsBot = true;
+                    thisUser.IsAfk = true;
 
                     // If more than 1 person left automatically close the lobby because you'd be playing vs 2 bots
-                    if (gameInstance.Participants.Where(x => x.IsBot).ToList().Count() > 1)
+                    if (gameInstance.Participants.Where(x => x.IsAfk).ToList().Count() > 1)
                     {
                         gameInstance.GameState = GameState.CANCELED;
                         //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
@@ -374,7 +374,7 @@ namespace GameService.Services
                 gameInstance.InvitationLink,
                 user.Id,
                 gameInstance.GameState,
-                gameInstance.Participants.Count(x => x.IsBot));
+                gameInstance.Participants.Count(x => x.IsAfk));
         }
     }
 }

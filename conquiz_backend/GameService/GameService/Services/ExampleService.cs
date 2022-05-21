@@ -15,10 +15,10 @@ using GameService.Data;
 
 namespace GameService.Services
 {
-    public class ExampleService : DataService<DefaultModel>, IExampleService
+    public class ExampleService : IExampleService
     {
 
-        public ExampleService(IDbContextFactory<DefaultContext> _contextFactory) : base(_contextFactory)
+        public ExampleService(IDbContextFactory<DefaultContext> _contextFactory)
         {
         }
 

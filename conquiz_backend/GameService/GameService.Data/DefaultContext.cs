@@ -170,7 +170,7 @@ namespace GameService.Data
 
                 entity.Property(e => e.PlayerId).HasColumnName("playerId");
 
-                entity.Property(e => e.IsBot).HasColumnName("isBot").HasDefaultValue(false);
+                entity.Property(e => e.IsAfk).HasColumnName("isAfk").HasDefaultValue(false);
 
                 entity.Property(e => e.Score).HasColumnName("score");
 
@@ -359,6 +359,8 @@ namespace GameService.Data
                 entity.Property(e => e.Id).HasColumnName("id");
 
                 entity.Property(e => e.UserGlobalIdentifier).HasColumnName("userGlobalIdentifier");
+
+                entity.Property(e => e.IsBot).HasColumnName("isBot").HasDefaultValue(false);
 
                 entity.Property(e => e.IsInGame).HasColumnName("isInGame").HasDefaultValue(false);
 

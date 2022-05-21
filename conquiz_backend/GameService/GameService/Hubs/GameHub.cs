@@ -228,6 +228,22 @@ namespace GameService.Hubs
             }
         }
 
+        public async Task AddGameBot()
+        {
+            try
+            {
+                var game = await gameLobbyService.AddGameBot();
+
+                var res1 = mapper.Map<GameInstanceResponse>(game);
+
+                await Clients.Group(game.InvitationLink).GetGameInstance(res1);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
         public async Task FindPublicMatch()
         {
             try
