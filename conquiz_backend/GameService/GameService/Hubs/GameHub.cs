@@ -186,20 +186,14 @@ namespace GameService.Hubs
                 await Clients.Caller.GameException(ex.Message);
             }
         }
-        Stopwatch stopwatch = new Stopwatch();
 
         public async Task SelectTerritory(string mapTerritoryName)
         {
             try
             {
-
-                stopwatch.Restart();
                 var response = gameControlService.SelectTerritory(mapTerritoryName);
 
                 await Clients.Group(response.GameLink).OnSelectedTerritory(response);
-                stopwatch.Stop();
-
-                logger.LogInformation($"Time elapsed for selecting territory: {stopwatch.ElapsedMilliseconds}");
             }
             catch (BorderSelectedGameException ex)
             {
