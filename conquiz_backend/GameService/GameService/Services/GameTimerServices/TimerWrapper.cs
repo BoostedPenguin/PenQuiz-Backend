@@ -19,7 +19,6 @@ namespace GameService.Services.GameTimerServices
             var intervalTime = GameActionsTime.GetTime(Data.NextAction);
 
 
-
             Interval = overrideIntervalTime ?? intervalTime;
             
             //Temp
