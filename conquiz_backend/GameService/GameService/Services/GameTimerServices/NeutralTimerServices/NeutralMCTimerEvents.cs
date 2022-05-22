@@ -31,7 +31,6 @@ namespace GameService.Services.GameTimerServices.NeutralTimerServices
         private readonly IMapper mapper;
         private readonly ICurrentStageQuestionService gM_DataExtractionService;
         private readonly IMessageBusClient messageBus;
-        private readonly Random random = new();
         public NeutralMCTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
@@ -154,10 +153,11 @@ namespace GameService.Services.GameTimerServices.NeutralTimerServices
             foreach (var p in currentRound.NeutralRound.TerritoryAttackers)
             {
                 // Check if the current attacker is a bot
+                // Handle bot answer
                 var isThisPlayerBot = gm.Participants.First(e => e.PlayerId == p.AttackerId).Player.IsBot;
                 if(isThisPlayerBot)
                 {
-                    //var g = CommonTimerFunc.BOT_MC_WIN_PERCENT;
+                    p.AttackerMChoiceQAnswerId = BotService.GenerateBotMCAnswerId(currentRound.Question.Answers.ToArray());
                 }
 
 
