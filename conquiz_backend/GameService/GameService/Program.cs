@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using GameService.Services.GameTimerServices.NeutralTimerServices;
+using GameService.Services.GameTimerServices.PvpTimerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 

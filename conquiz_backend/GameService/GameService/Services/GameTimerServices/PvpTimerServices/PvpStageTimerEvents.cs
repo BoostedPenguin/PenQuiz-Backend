@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GameService.Services.GameTimerServices
+namespace GameService.Services.GameTimerServices.PvpTimerServices
 {
     public interface IPvpStageTimerEvents
     {
@@ -82,7 +82,6 @@ namespace GameService.Services.GameTimerServices
             timerWrapper.StartTimer(ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION);
         }
 
-        ///TODO
         public async Task Close_Pvp_MultipleChoice_Question_Voting(TimerWrapper timerWrapper)
         {
             // Can disable voting on start, however even 0-1s delay wouldn't be game breaking and would ease performance
@@ -96,6 +95,28 @@ namespace GameService.Services.GameTimerServices
 
             currentRound.IsQuestionVotingOpen = false;
 
+
+            // Check if either participant is a bot
+            // If the attacker is a bot
+            if(gm.Participants.First(e => e.PlayerId == currentRound.PvpRound.AttackerId).Player.IsBot)
+            {
+                currentRound.PvpRound.PvpRoundAnswers.Add(new PvpRoundAnswers()
+                {
+                    MChoiceQAnswerId = BotService.GenerateBotMCAnswerId(currentRound.Question.Answers.ToArray()),
+                    UserId = currentRound.PvpRound.AttackerId
+                });
+            }
+
+            // If the defender is a bot
+            if (gm.Participants.First(e => e.PlayerId == currentRound.PvpRound.DefenderId).Player.IsBot)
+            {
+                currentRound.PvpRound.PvpRoundAnswers.Add(new PvpRoundAnswers()
+                {
+                    MChoiceQAnswerId = BotService.GenerateBotMCAnswerId(currentRound.Question.Answers.ToArray()),
+                    UserId = (int)currentRound.PvpRound.DefenderId
+                });
+            }
+
             // If attacker didn't win, we don't care what the outcome is
             var attackerAnswer = currentRound
                 .PvpRound
@@ -106,6 +127,7 @@ namespace GameService.Services.GameTimerServices
                 .PvpRound
                 .PvpRoundAnswers
                 .FirstOrDefault(x => x.UserId == currentRound.PvpRound.DefenderId);
+
 
             bool bothPlayersAnsweredCorrectly = false;
             var nextAction = ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING;
@@ -188,7 +210,13 @@ namespace GameService.Services.GameTimerServices
                 }
             }
 
-            if(!bothPlayersAnsweredCorrectly && nextAction != ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION)
+            // Go to next round
+            // If attacker did not answer correctly (he lost)
+            // If attacker AND defender answered CORRECTLY - do NOT go to next round
+            // If attacker DID answer correctly AND the attacked territory isn't capital
+            // (because there will be a followup question)
+            if(currentRound.PvpRound.WinnerId is not null && 
+                !bothPlayersAnsweredCorrectly && nextAction != ActionState.SHOW_CAPITAL_PVP_MULTIPLE_CHOICE_QUESTION)
             {
                 currentRound.GameInstance.GameRoundNumber++;
             }
@@ -283,12 +311,7 @@ namespace GameService.Services.GameTimerServices
 
             var correctNumberQuestionAnswer = long.Parse(currentRound.PvpRound.NumberQuestion.Answers.First().Answer);
 
-            var playerAnswers = currentRound.PvpRound.PvpRoundAnswers.Select(x => new
-            {
-                x.NumberQAnswer,
-                x.UserId,
-                x.NumberQAnsweredAt,
-            });
+            var playerAnswers = currentRound.PvpRound.PvpRoundAnswers;
 
             var clientResponse = new NumberPlayerQuestionAnswers()
             {
@@ -298,6 +321,17 @@ namespace GameService.Services.GameTimerServices
 
             foreach(var player in playerAnswers)
             {
+
+                // Check if the current attacker is a bot
+                // Handle bot answer
+                var isThisPlayerBot = gm.Participants.First(e => e.PlayerId == player.UserId).Player.IsBot;
+                if (isThisPlayerBot)
+                {
+                    player.NumberQAnsweredAt = DateTime.Now;
+                    player.NumberQAnswer = BotService.GenerateBotNumberAnswer(correctNumberQuestionAnswer);
+                }
+
+
                 if (player.NumberQAnswer == null)
                 {
                     clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
@@ -455,6 +489,16 @@ namespace GameService.Services.GameTimerServices
             var res1 = mapper.Map<GameInstanceResponse>(data.GameInstance);
             await hubContext.Clients.Group(data.GameLink)
                 .GetGameInstance(res1);
+
+
+            // Bots
+            var isAttackerBot = gm.Participants.First(e => e.PlayerId == currentAttacker).Player.IsBot;
+
+            if (isAttackerBot)
+            {
+                timerWrapper.StartTimer(ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING, GameActionsTime.BotTerritorySelectTime);
+                return;
+            }
 
 
             timerWrapper.StartTimer(ActionState.CLOSE_PVP_PLAYER_ATTACK_VOTING);

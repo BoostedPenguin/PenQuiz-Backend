@@ -7,6 +7,7 @@ using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
 using GameService.Services.GameTimerServices.NeutralTimerServices;
+using GameService.Services.GameTimerServices.PvpTimerServices;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -135,8 +136,8 @@ namespace GameService.Services.GameTimerServices
                         //await Game_Preview_Time(timer);
 
                         // Debug
-                        //await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
-                        await neutralMCTimerEvents.Debug_Start_Number_Neutral(timer);
+                        await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        //await neutralMCTimerEvents.Debug_Start_Number_Neutral(timer);
                         return;
 
                     #region Neutral Multiple Choice events

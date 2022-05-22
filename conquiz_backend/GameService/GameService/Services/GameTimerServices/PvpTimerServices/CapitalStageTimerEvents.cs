@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GameService.Services.GameTimerServices
+namespace GameService.Services.GameTimerServices.PvpTimerServices
 {
     public interface ICapitalStageTimerEvents
     {
@@ -27,19 +27,16 @@ namespace GameService.Services.GameTimerServices
     {
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHubContext<GameHub, IGameHub> hubContext;
-        private readonly IGameTerritoryService gameTerritoryService;
         private readonly ICurrentStageQuestionService gM_DataExtractionService;
         private readonly IMapper mapper;
         private readonly IMessageBusClient messageBus;
         public CapitalStageTimerEvents(IDbContextFactory<DefaultContext> _contextFactory,
             IHubContext<GameHub, IGameHub> hubContext,
-            IGameTerritoryService gameTerritoryService,
             ICurrentStageQuestionService gM_DataExtractionService,
             IMapper mapper,
             IMessageBusClient messageBus)
         {
             this.hubContext = hubContext;
-            this.gameTerritoryService = gameTerritoryService;
             this.gM_DataExtractionService = gM_DataExtractionService;
             this.mapper = mapper;
             this.messageBus = messageBus;
@@ -94,10 +91,40 @@ namespace GameService.Services.GameTimerServices
 
             capitalRound.IsQuestionVotingOpen = false;
 
+
+            // Check if either participant is a bot
+            // If the attacker is a bot
+            if (gm.Participants.First(e => e.PlayerId == baseRound.PvpRound.AttackerId).Player.IsBot)
+            {
+                capitalRound.CapitalRoundUserAnswers.Add(new CapitalRoundAnswers()
+                {
+                    MChoiceQAnswerId = BotService.GenerateBotMCAnswerId(capitalRound
+                        .CapitalRoundMultipleQuestion
+                        .Answers.ToArray()),
+
+                    UserId = baseRound.PvpRound.AttackerId
+                });
+            }
+
+            // If the defender is a bot
+            if (gm.Participants.First(e => e.PlayerId == baseRound.PvpRound.DefenderId).Player.IsBot)
+            {
+                capitalRound.CapitalRoundUserAnswers.Add(new CapitalRoundAnswers()
+                {
+                    MChoiceQAnswerId = BotService.GenerateBotMCAnswerId(capitalRound
+                        .CapitalRoundMultipleQuestion
+                        .Answers.ToArray()),
+
+                    UserId = (int)baseRound.PvpRound.DefenderId
+                });
+            }
+
+
             var attackerAnswer = capitalRound
                 .CapitalRoundUserAnswers.FirstOrDefault(x => x.UserId == baseRound.PvpRound.AttackerId);
             var defenderAnswer = capitalRound
                 .CapitalRoundUserAnswers.FirstOrDefault(x => x.UserId == baseRound.PvpRound.DefenderId);
+
 
             bool bothPlayersAnsweredCorrectly = false;
             bool pvpRoundFinished = false;
@@ -322,12 +349,7 @@ namespace GameService.Services.GameTimerServices
 
             var correctNumberQuestionAnswer = long.Parse(capitalRound.CapitalRoundNumberQuestion.Answers.First().Answer);
 
-            var playerAnswers = capitalRound.CapitalRoundUserAnswers.Select(x => new
-            {
-                x.NumberQAnswer,
-                x.UserId,
-                x.NumberQAnsweredAt,
-            });
+            var playerAnswers = capitalRound.CapitalRoundUserAnswers;
 
             var clientResponse = new NumberPlayerQuestionAnswers()
             {
@@ -337,6 +359,16 @@ namespace GameService.Services.GameTimerServices
 
             foreach (var player in playerAnswers)
             {
+                // Check if the current attacker is a bot
+                // Handle bot answer
+                var isThisPlayerBot = gm.Participants.First(e => e.PlayerId == player.UserId).Player.IsBot;
+                if (isThisPlayerBot)
+                {
+                    player.NumberQAnsweredAt = DateTime.Now;
+                    player.NumberQAnswer = BotService.GenerateBotNumberAnswer(correctNumberQuestionAnswer);
+                }
+
+
                 if (player.NumberQAnswer == null)
                 {
                     clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()
