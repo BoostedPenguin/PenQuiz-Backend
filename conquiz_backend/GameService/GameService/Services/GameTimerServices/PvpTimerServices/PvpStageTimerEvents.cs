@@ -255,7 +255,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
             var isGameOver = await CommonTimerFunc
-                .PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db, messageBus);
+                .PvpStage_IsGameOver(timerWrapper, db, messageBus);
 
             switch (isGameOver)
             {
@@ -430,7 +430,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             await hubContext.Clients.Groups(data.GameLink).NumberQuestionPreviewResult(clientResponse);
 
             var isGameOver = await CommonTimerFunc
-                .PvpStage_IsGameOver(timerWrapper, currentRound.PvpRound, db, messageBus);
+                .PvpStage_IsGameOver(timerWrapper, db, messageBus);
 
             switch (isGameOver)
             {
@@ -456,7 +456,20 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
 
             var gm = data.GameInstance;
             var currentRound = gm.Rounds.Where(x => x.GameRoundNumber == x.GameInstance.GameRoundNumber).FirstOrDefault();
-
+            
+          
+            switch (await CommonTimerFunc.PvpStage_IsGameOver(timerWrapper, db, messageBus))
+            {
+                case CommonTimerFunc.PvpStageIsGameOver.GAME_OVER:
+                    timerWrapper.StartTimer(ActionState.END_GAME);
+                    return;
+                case CommonTimerFunc.PvpStageIsGameOver.GAME_CONTINUING:
+                    // Do nothing, game continues
+                    break;
+                case CommonTimerFunc.PvpStageIsGameOver.REQUEST_FINAL_QUESTION:
+                    timerWrapper.StartTimer(ActionState.SHOW_FINAL_PVP_NUMBER_QUESTION);
+                    return;
+            }
 
             currentRound.IsTerritoryVotingOpen = true;
 

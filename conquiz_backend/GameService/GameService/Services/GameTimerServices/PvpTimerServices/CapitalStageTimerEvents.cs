@@ -282,7 +282,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             await hubContext.Clients.Groups(data.GameLink).MCQuestionPreviewResult(response);
 
             var isGameOver = await CommonTimerFunc
-                .PvpStage_IsGameOver(timerWrapper, baseRound.PvpRound, db, messageBus);
+                .PvpStage_IsGameOver(timerWrapper, db, messageBus);
 
             switch (isGameOver)
             {
@@ -481,7 +481,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
 
             // Check if there are any non-attacker territories left
             var isGameOver = await CommonTimerFunc
-                .PvpStage_IsGameOver(timerWrapper, baseRound.PvpRound, db, messageBus);
+                .PvpStage_IsGameOver(timerWrapper, db, messageBus);
 
             switch (isGameOver)
             {

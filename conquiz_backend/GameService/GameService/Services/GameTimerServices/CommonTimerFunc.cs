@@ -119,20 +119,25 @@ namespace GameService.Services.GameTimerServices
 
             return game;
         }
-        public static async Task<PvpStageIsGameOver> PvpStage_IsGameOver(TimerWrapper timerWrapper, PvpRound round, DefaultContext db, IMessageBusClient messageBus)
+        public static async Task<PvpStageIsGameOver> PvpStage_IsGameOver(TimerWrapper timerWrapper, DefaultContext db, IMessageBusClient messageBus)
         {
             var gm = timerWrapper.Data.GameInstance;
             var data = timerWrapper.Data;
 
-            // Check if there are any non-attacker territories left
+            // Check if all territories are controlled by a single user
+            var result = gm.ObjectTerritory.GroupBy(e => e.TakenBy, e => e, (key, g) => new
+            {
+                TakenBy = key,
+                ObjectTerritory = g
+            });
 
-            var nonAttackerTerritoriesCount = gm.ObjectTerritory
-                .Where(x => x.GameInstanceId == data.GameInstanceId && x.TakenBy != round.AttackerId)
-                .Count();
 
-
+            var allTerritoriesTakenByOnePerson = result
+                .Where(e => e.ObjectTerritory.Count() == gm.ObjectTerritory.Count)
+                .FirstOrDefault();
+            
             // This attacker controls all territories. Skip any other rounds and declare him winner.
-            if (nonAttackerTerritoriesCount == 0)
+            if (allTerritoriesTakenByOnePerson is not null)
             {
                 return PvpStageIsGameOver.GAME_OVER;
             }
