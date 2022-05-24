@@ -69,19 +69,16 @@ namespace GameServiceUnitTests
                 gm.Participants.Add(new Participants()
                 {
                     PlayerId = playerOne.Id,
-                    AvatarName = "smth",
                     Score = 1500,
                 });
                 gm.Participants.Add(new Participants()
                 {
                     PlayerId = playerTwo.Id,
-                    AvatarName = "smth",
                     Score = 1000,
                 });
                 gm.Participants.Add(new Participants()
                 {
                     PlayerId = playerThree.Id,
-                    AvatarName = "smth",
                     Score = 500,
                 });
 

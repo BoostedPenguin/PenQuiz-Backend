@@ -21,6 +21,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using GameService.Services.GameTimerServices.NeutralTimerServices;
 using GameService.Services.GameTimerServices.PvpTimerServices;
+using GameService.Services.GameLobbyServices;
 
 var builder = WebApplication.CreateBuilder(args);
 

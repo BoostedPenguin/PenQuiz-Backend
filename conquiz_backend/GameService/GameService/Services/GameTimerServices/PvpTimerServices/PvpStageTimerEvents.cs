@@ -101,25 +101,6 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            var response = mapper.Map<QuestionClientResponse>(question);
-
-            response.IsNeutral = false;
-
-            var participants = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).PvpRound;
-
-            var participantsMapping = mapper.Map<ParticipantsResponse[]>(participants.Round.GameInstance.Participants
-                        .Where(y => y.PlayerId == participants.AttackerId || y.PlayerId == participants.DefenderId)
-                        .ToArray());
-
-            response.Participants = participantsMapping;
-
-            response.AttackerId = participants.AttackerId;
-            response.DefenderId = participants.DefenderId ?? 0;
-
-
-            // If the current attacked territory is capital, then we can presume this and next question are capital questions
-            if(participants.AttackedTerritory.IsCapital)
-                response.CapitalRoundsRemaining = 2;
 
             await Before_Response_Show_Pvp_MultipleChoice_Screen(gm);
             
