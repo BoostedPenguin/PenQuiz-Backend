@@ -16,10 +16,12 @@ namespace GameService.Services.GameLobbyServices
 {
     public interface IGameLobbyService
     {
+        Task<GameInstance> AddGameBot();
         Task CreateDebugLobby();
         Task<GameInstance> CreateGameLobby();
         Task<GameInstance> FindPublicMatch();
         Task<GameInstance> JoinGameLobby(string lobbyUrl);
+        Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
         Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
 
@@ -59,7 +61,7 @@ namespace GameService.Services.GameLobbyServices
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             try
             {
@@ -162,7 +164,7 @@ namespace GameService.Services.GameLobbyServices
 
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             try
             {
@@ -179,6 +181,98 @@ namespace GameService.Services.GameLobbyServices
             await db.SaveChangesAsync();
 
             return gameInstance;
+        }
+
+
+
+        public async Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId)
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+
+            // Get the game where this user is the owner and is currently in lobby
+            var gm = await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.GameState == GameState.IN_LOBBY && x.GameType == GameType.PRIVATE && x.GameCreatorId == user.Id)
+                .FirstOrDefaultAsync();
+
+            if (gm is null)
+                throw new ArgumentException("You are not the host of this lobby and can't remove players.");
+
+            var selectedUser = gm.Participants.Where(e => e.PlayerId == playerId).FirstOrDefault();
+
+            if (selectedUser.PlayerId == gm.GameCreatorId)
+                throw new ArgumentException("You are trying to remove yourself!");
+
+            if (selectedUser is null)
+            {
+                if (!selectedUser.Player.IsBot)
+                    throw new ArgumentException("You are trying to remove a person who isn't in the lobby!");
+
+
+                // The given id was invalid, remove the first bot you find in lobby
+                var anyBot = gm.Participants.Where(e => e.Player.IsBot).FirstOrDefault();
+
+                // No bot present to remove
+                if (anyBot is null) return new RemovePlayerFromLobbyResponse()
+                {
+                    GameInstance = gm,
+                };
+
+                db.Remove(anyBot);
+            }
+            else
+            {
+                db.Remove(selectedUser);
+            }
+
+
+            await db.SaveChangesAsync();
+
+            return new RemovePlayerFromLobbyResponse()
+            {
+                GameInstance = gm,
+                RemovedPlayerId = selectedUser.Player.UserGlobalIdentifier,
+            };
+        }
+
+
+        public async Task<GameInstance> AddGameBot()
+        {
+            using var db = contextFactory.CreateDbContext();
+
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+
+            // Get the game where this user is the owner and is currently in lobby
+            var gm = await db.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .Where(x => x.GameState == GameState.IN_LOBBY && x.GameType == GameType.PRIVATE && x.GameCreatorId == user.Id)
+                .FirstOrDefaultAsync();
+
+            if (gm is null)
+                throw new ArgumentException("You are not the host of this lobby and can't add bots.");
+
+
+            var gameBot = await GetRandomGameBot(db);
+
+            var botParticipant = await GenerateParticipant(db, gm.Participants.ToArray(), gameBot.Id);
+
+            gm.Participants.Add(botParticipant);
+
+            db.Update(gm);
+
+            await db.SaveChangesAsync();
+
+            return gm;
         }
 
         public async Task<GameInstance> JoinGameLobby(string lobbyUrl)
@@ -227,7 +321,7 @@ namespace GameService.Services.GameLobbyServices
         {
             using var a = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await a.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
             if (gameInstance == null)

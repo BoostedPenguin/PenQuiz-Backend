@@ -268,5 +268,35 @@ namespace GameService.Services.GameLobbyServices
             return selectedCharacter;
 
         }
+
+
+        /// <summary>
+        /// Creates a new User with a "Bot" status
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Users> CreateGameBot(DefaultContext db)
+        {
+            var botUsername = $"[BOT]Penguin-{r.Next(0, 10000)}";
+            var botUser = new Users()
+            {
+                IsBot = true,
+                Username = botUsername,
+            };
+
+            await db.AddAsync(botUser);
+
+            return botUser;
+        }
+
+        public async Task<Users> GetRandomGameBot(DefaultContext db)
+        {
+            var availableBot = await db.Users.FirstOrDefaultAsync(e => e.IsBot &&
+                (e.Participants == null || e.Participants.All(y => y.Game.GameState == GameState.CANCELED || y.Game.GameState == GameState.FINISHED)));
+
+            if (availableBot is null)
+                return await CreateGameBot(db);
+
+            return availableBot;
+        }
     }
 }
