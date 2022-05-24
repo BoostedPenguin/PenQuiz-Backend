@@ -216,6 +216,7 @@ namespace GameServiceUnitTests
 
             var gm = new GameInstance()
             {
+                GameGlobalIdentifier = Guid.NewGuid().ToString(),
                 GameRoundNumber = 1,
                 GameCreatorId = playerOne.Id,
                 GameState = GameState.IN_LOBBY,

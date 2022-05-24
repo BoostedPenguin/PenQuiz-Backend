@@ -30,7 +30,7 @@ namespace GameServiceUnitTests
             .Options;
             var dbContext = new DefaultContext(options);
 
-            dbContext.Add(new Questions() { Question = "Wtf" });
+            dbContext.Add(new Questions() { Question = "Wtf", Type = "multiple" });
             dbContext.SaveChanges();
             return dbContext;
         }
