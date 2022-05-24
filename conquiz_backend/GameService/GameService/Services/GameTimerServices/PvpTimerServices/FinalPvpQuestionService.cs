@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GameService.Services.GameTimerServices
+namespace GameService.Services.GameTimerServices.PvpTimerServices
 {
     public interface IFinalPvpQuestionService
     {
@@ -88,13 +88,7 @@ namespace GameService.Services.GameTimerServices
 
             var attackerAnswers = currentRound
                 .NeutralRound
-                .TerritoryAttackers
-                .Select(x => new
-                {
-                    x.AnsweredAt,
-                    x.AttackerId,
-                    x.AttackerNumberQAnswer,
-                });
+                .TerritoryAttackers;
 
             // 2 things need to happen:
             // First check for closest answer to the correct answer
@@ -114,6 +108,15 @@ namespace GameService.Services.GameTimerServices
 
             foreach (var at in attackerAnswers)
             {
+                // Check if the current attacker is a bot
+                // Handle bot answer
+                var isThisPlayerBot = gm.Participants.First(e => e.PlayerId == at.AttackerId).Player.IsBot;
+                if (isThisPlayerBot)
+                {
+                    at.AnsweredAt = DateTime.Now;
+                    at.AttackerNumberQAnswer = BotService.GenerateBotNumberAnswer(correctNumberQuestionAnswer);
+                }
+
                 if (at.AttackerNumberQAnswer == null)
                 {
                     clientResponse.PlayerAnswers.Add(new NumberPlayerIdAnswer()

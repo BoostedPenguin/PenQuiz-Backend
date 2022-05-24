@@ -99,7 +99,6 @@ namespace GameService.Hubs
                     .FirstOrDefault();
 
                 var response = await gameService.OnPlayerLoginConnection();
-
                 await Clients.Caller.GetGameUserId(response.UserId);
 
                 //timer.TimerStart();
@@ -192,7 +191,6 @@ namespace GameService.Hubs
                 await Clients.Caller.GameException(ex.Message);
             }
         }
-        Stopwatch stopwatch = new Stopwatch();
 
 
         public async Task WizardUseAbility()
@@ -211,14 +209,9 @@ namespace GameService.Hubs
         {
             try
             {
-
-                stopwatch.Restart();
                 var response = gameControlService.SelectTerritory(mapTerritoryName);
 
                 await Clients.Group(response.GameLink).OnSelectedTerritory(response);
-                stopwatch.Stop();
-
-                logger.LogInformation($"Time elapsed for selecting territory: {stopwatch.ElapsedMilliseconds}");
             }
             catch (BorderSelectedGameException ex)
             {
@@ -241,6 +234,52 @@ namespace GameService.Hubs
                 await Clients.Caller.AnswerSubmittedGameException(ex.Message);
             }
             catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+        public async Task AddGameBot()
+        {
+            try
+            {
+                var game = await gameLobbyService.AddGameBot();
+
+                var res1 = mapper.Map<GameInstanceResponse>(game);
+
+                await Clients.Group(game.InvitationLink).GetGameInstance(res1);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// As of 21/05/2022 SignalR does NOT provide a way to remove a user from a group
+        /// This method currently only works for BOT users
+        /// </summary>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
+        public async Task RemovePlayerFromLobby(int playerId)
+        {
+            try
+            {
+                var game = await gameLobbyService.RemovePlayerFromLobby(playerId);
+
+                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
+
+                if(!string.IsNullOrEmpty(game.RemovedPlayerId))
+                {
+                    await Clients.User(game.RemovedPlayerId).LobbyCanceled("You were kicked from the game lobby!");
+
+                    await Groups.RemoveFromGroupAsync(game.RemovedPlayerId, game.GameInstance.InvitationLink);
+                }
+
+                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
+            }
+            catch(Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }

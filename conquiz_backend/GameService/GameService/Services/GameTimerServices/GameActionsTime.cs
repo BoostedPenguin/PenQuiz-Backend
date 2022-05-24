@@ -7,8 +7,9 @@ namespace GameService.Services.GameTimerServices
 {
     public class GameActionsTime
     {
-        public static int DefaultPreviewTime = 3000;
-        public static int NumberQuestionPreviewTime = 6000;
+        public const int BotTerritorySelectTime = 1500;
+        public const int DefaultPreviewTime = 3000;
+        public const int NumberQuestionPreviewTime = 6000;
 
         public static int GetTime(ActionState action)
         {

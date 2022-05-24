@@ -197,7 +197,7 @@ namespace GameService.Services
             {
                 var currentGameInstance = ongoingGames.First();
                 var thisUser = currentGameInstance.Participants.First(x => x.PlayerId == user.Id);
-                thisUser.IsBot = false;
+                thisUser.IsAfk = false;
 
                 var timerNextEvent = gameTimerService.GameTimers
                     .Where(e => e.Data.GameInstance == currentGameInstance)
@@ -341,19 +341,19 @@ namespace GameService.Services
                     break;
 
                 case GameState.IN_PROGRESS:
-                    // TODO
-                    // MAKE USER AS A BOT
-                    // UNTIL HE COMES BACK
 
-                    thisUser.IsBot = true;
+                    thisUser.IsAfk = true;
 
+                    var botUsersCount = gameInstance.Participants.Where(e => e.Player.IsBot).ToList().Count;
+
+                    var afkUsersCount = gameInstance.Participants.Where(e => e.IsAfk).ToList().Count;
+
+                    // If someone started a game with 2 bots and he goes afk, kill the lobby
                     // If more than 1 person left automatically close the lobby because you'd be playing vs 2 bots
-                    if (gameInstance.Participants.Where(x => x.IsBot).ToList().Count() > 1)
+                    if(botUsersCount > 1 || afkUsersCount > 1)
                     {
                         gameInstance.GameState = GameState.CANCELED;
-                        //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
 
-                        // Stop the timer for this gameinstance
                         gameTimerService.CancelGameTimer(gameInstance);
 
                         db.Update(gameInstance);
@@ -374,7 +374,7 @@ namespace GameService.Services
                 gameInstance.InvitationLink,
                 user.Id,
                 gameInstance.GameState,
-                gameInstance.Participants.Count(x => x.IsBot));
+                gameInstance.Participants.Count(x => x.IsAfk));
         }
     }
 }

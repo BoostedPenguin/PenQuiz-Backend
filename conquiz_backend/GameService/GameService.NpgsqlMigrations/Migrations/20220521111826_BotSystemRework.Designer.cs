@@ -3,15 +3,17 @@ using System;
 using GameService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace GameService.NpgsqlMigrations.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20220521111826_BotSystemRework")]
+    partial class BotSystemRework
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -173,115 +175,6 @@ namespace GameService.NpgsqlMigrations.Migrations
                     b.HasIndex("CapitalRoundId");
 
                     b.ToTable("CapitalRoundAnswers");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.Character", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<string>("AbilityDescription")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("abilityDescription");
-
-                    b.Property<string>("AvatarName")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("penguinAvatar.svg")
-                        .HasColumnName("avatarName");
-
-                    b.Property<string>("CharacterGlobalIdentifier")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("characterGlobalIdentifier");
-
-                    b.Property<string>("CharacterType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("characterType");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("description");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("name");
-
-                    b.Property<double?>("Price")
-                        .HasColumnType("double precision")
-                        .HasColumnName("price");
-
-                    b.Property<string>("PricingType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("pricingType");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Characters");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.GameCharacter", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ParticipantId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CharacterId");
-
-                    b.HasIndex("ParticipantId")
-                        .IsUnique();
-
-                    b.ToTable("GameCharacters");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.GameCharacterAbilities", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<int>("CharacterType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("GameCharacterId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GameCharacterId")
-                        .IsUnique();
-
-                    b.ToTable("GameCharacterAbilities");
-
-                    b.HasDiscriminator<string>("Discriminator").HasValue("GameCharacterAbilities");
                 });
 
             modelBuilder.Entity("GameService.Data.Models.GameInstance", b =>
@@ -476,6 +369,14 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .HasColumnName("id")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<string>("AvatarName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("penguinAvatar.svg")
+                        .HasColumnName("avatarName");
+
                     b.Property<int>("FinalQuestionScore")
                         .HasColumnType("integer");
 
@@ -483,21 +384,11 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("gameId");
 
-                    b.Property<int>("InGameParticipantNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("inGameParticipantNumber");
-
                     b.Property<bool>("IsAfk")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("isAfk");
-
-                    b.Property<bool>("IsBot")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("IsBot");
 
                     b.Property<int>("PlayerId")
                         .HasColumnType("integer")
@@ -721,36 +612,6 @@ namespace GameService.NpgsqlMigrations.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("GameService.Data.Models.KingCharacterAbilities", b =>
-                {
-                    b.HasBaseType("GameService.Data.Models.GameCharacterAbilities");
-
-                    b.Property<double>("CurrentBonusPoints")
-                        .HasColumnType("double precision");
-
-                    b.HasDiscriminator().HasValue("KingCharacterAbilities");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.VikingCharacterAbilities", b =>
-                {
-                    b.HasBaseType("GameService.Data.Models.GameCharacterAbilities");
-
-                    b.Property<int>("FortifyCapitalUseCount")
-                        .HasColumnType("integer");
-
-                    b.HasDiscriminator().HasValue("VikingCharacterAbilities");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.WizardCharacterAbilities", b =>
-                {
-                    b.HasBaseType("GameService.Data.Models.GameCharacterAbilities");
-
-                    b.Property<int>("MCQuestionHintUseCount")
-                        .HasColumnType("integer");
-
-                    b.HasDiscriminator().HasValue("WizardCharacterAbilities");
-                });
-
             modelBuilder.Entity("GameService.Data.Models.Answers", b =>
                 {
                     b.HasOne("GameService.Data.Models.Questions", "Question")
@@ -820,36 +681,6 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .IsRequired();
 
                     b.Navigation("CapitalRound");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.GameCharacter", b =>
-                {
-                    b.HasOne("GameService.Data.Models.Character", "Character")
-                        .WithMany("GameCharacters")
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GameService.Data.Models.Participants", "Participant")
-                        .WithOne("GameCharacter")
-                        .HasForeignKey("GameService.Data.Models.GameCharacter", "ParticipantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Character");
-
-                    b.Navigation("Participant");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.GameCharacterAbilities", b =>
-                {
-                    b.HasOne("GameService.Data.Models.GameCharacter", "GameCharacter")
-                        .WithOne("CharacterAbilities")
-                        .HasForeignKey("GameService.Data.Models.GameCharacterAbilities", "GameCharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("GameCharacter");
                 });
 
             modelBuilder.Entity("GameService.Data.Models.GameInstance", b =>
@@ -1002,16 +833,6 @@ namespace GameService.NpgsqlMigrations.Migrations
                     b.Navigation("CapitalRoundUserAnswers");
                 });
 
-            modelBuilder.Entity("GameService.Data.Models.Character", b =>
-                {
-                    b.Navigation("GameCharacters");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.GameCharacter", b =>
-                {
-                    b.Navigation("CharacterAbilities");
-                });
-
             modelBuilder.Entity("GameService.Data.Models.GameInstance", b =>
                 {
                     b.Navigation("ObjectTerritory");
@@ -1047,11 +868,6 @@ namespace GameService.NpgsqlMigrations.Migrations
                     b.Navigation("NeutralRoundsAttacks");
 
                     b.Navigation("PvpRounds");
-                });
-
-            modelBuilder.Entity("GameService.Data.Models.Participants", b =>
-                {
-                    b.Navigation("GameCharacter");
                 });
 
             modelBuilder.Entity("GameService.Data.Models.PvpRound", b =>
