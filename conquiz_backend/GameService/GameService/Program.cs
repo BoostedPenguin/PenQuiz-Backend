@@ -22,6 +22,7 @@ using System.Text;
 using GameService.Services.GameTimerServices.NeutralTimerServices;
 using GameService.Services.GameTimerServices.PvpTimerServices;
 using GameService.Services.GameLobbyServices;
+using GameService.Services.CharacterActions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +104,10 @@ builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
 builder.Services.AddSingleton<IGameControlService, GameControlService>();
 
 builder.Services.AddScoped<IAccountDataClient, AccountDataClient>();
+
+
+// Character services
+builder.Services.AddSingleton<IWizardActions, WizardActions>();
 
 
 // Helper stage services

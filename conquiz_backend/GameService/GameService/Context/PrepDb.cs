@@ -37,7 +37,6 @@ namespace GameService.Context
 
 
             logger.LogInformation("Database prepared!");
-
             try
             {
                 var grpcClient = serviceScope.ServiceProvider.GetService<IAccountDataClient>();
