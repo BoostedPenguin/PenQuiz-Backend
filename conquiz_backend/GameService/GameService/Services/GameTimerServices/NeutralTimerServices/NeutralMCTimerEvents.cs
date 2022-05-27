@@ -325,7 +325,7 @@ namespace GameService.Services.GameTimerServices.NeutralTimerServices
             var gm = timerWrapper.Data.GameInstance;
             var currentRound = data.GetBaseRound;
 
-            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
+            var response = gM_DataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             // Open this question for voting
             currentRound.Question.Round.IsQuestionVotingOpen = true;

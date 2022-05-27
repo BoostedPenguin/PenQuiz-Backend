@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace GameService.Data.Models
@@ -66,6 +67,10 @@ namespace GameService.Data.Models
 
         [ForeignKey("GameCharacter")]
         public int GameCharacterId { get; set; }
+
+
+        // Will cause a problem with serialization
+        [JsonIgnore]
         public virtual GameCharacter GameCharacter { get; set; }
     }
 

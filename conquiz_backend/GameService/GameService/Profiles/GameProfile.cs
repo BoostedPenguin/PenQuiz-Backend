@@ -46,6 +46,12 @@ namespace GameService.Profiles
             CreateMap<Users, UsersResponse>();
             CreateMap<ObjectTerritory, ObjectTerritoryResponse>();
             CreateMap<MapTerritory, MapTerritoryResponse>();
+
+            CreateMap<Character, CharacterResponse>();
+
+            CreateMap<GameCharacter, GameCharacterResponse>()
+                .ForMember(dest => dest.GameInstanceId, opt => opt.MapFrom(e => e.Participant.GameId))
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(e => e.Participant.PlayerId));
         }
     }
 }

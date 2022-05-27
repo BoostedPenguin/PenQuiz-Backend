@@ -57,7 +57,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
                 .PvpRound.CapitalRounds.First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION).CapitalRoundMultipleQuestion;
             
             // Get mapped response for clients
-            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
+            var response = gM_DataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             // Open for voting the capital question
             question.CapitalRoundMultiple.IsQuestionVotingOpen = true;
@@ -313,7 +313,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
                 .PvpRound.CapitalRounds.First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION).CapitalRoundNumberQuestion;
 
 
-            var response = gM_DataExtractionService.GetCurrentStageQuestion(gm);
+            var response = gM_DataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             question.CapitalRoundNumber.IsQuestionVotingOpen = true;
             question.CapitalRoundNumber.QuestionOpenedAt = DateTime.Now;

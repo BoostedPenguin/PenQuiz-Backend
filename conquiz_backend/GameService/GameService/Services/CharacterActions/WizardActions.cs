@@ -7,6 +7,7 @@ using GameService.MessageBus;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,6 +23,7 @@ namespace GameService.Services.CharacterActions
     {
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IMapper mapper;
+        private readonly static Random r = new();
 
         public WizardActions(
             IHubContext<GameHub, IGameHub> hubContext,
@@ -31,7 +33,6 @@ namespace GameService.Services.CharacterActions
             this.hubContext = hubContext;
             this.mapper = mapper;
         }
-        static Random r = new Random();
 
         public async Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink)
         {
@@ -59,7 +60,7 @@ namespace GameService.Services.CharacterActions
 
             var response = new WizardUseMultipleChoiceHint()
             {
-                Answers = new System.Collections.Generic.List<AnswerClientResponse>()
+                Answers = new List<AnswerClientResponse>()
                 {
                      mapper.Map<AnswerClientResponse>(correct),
                      mapper.Map<AnswerClientResponse>(wrong),

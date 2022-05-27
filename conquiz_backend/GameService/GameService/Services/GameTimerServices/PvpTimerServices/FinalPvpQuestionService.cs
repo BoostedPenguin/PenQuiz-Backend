@@ -57,7 +57,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             var currentRound = gm.Rounds
                 .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP);
 
-            var response = dataExtractionService.GetCurrentStageQuestion(gm);
+            var response = dataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             // Open this question for voting
             currentRound.IsQuestionVotingOpen = true;

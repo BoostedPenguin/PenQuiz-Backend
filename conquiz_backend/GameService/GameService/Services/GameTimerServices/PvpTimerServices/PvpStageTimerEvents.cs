@@ -94,7 +94,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
 
             var question = gm.Rounds.First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber).Question;
 
-            var response = dataExtractionService.GetCurrentStageQuestion(gm);
+            var response = dataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             // Open this question for voting
             question.Round.IsQuestionVotingOpen = true;
@@ -318,7 +318,7 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             db.Update(gm);
             await db.SaveChangesAsync();
 
-            var response = dataExtractionService.GetCurrentStageQuestion(gm);
+            var response = dataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 

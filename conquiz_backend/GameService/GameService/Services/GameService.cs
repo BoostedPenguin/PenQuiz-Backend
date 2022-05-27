@@ -229,7 +229,7 @@ namespace GameService.Services
 
 
                     if (closingQuestionEvents.Contains(timerNextEvent))
-                        currentStageQuestion = dataExtractionService.GetCurrentStageQuestion(currentGameInstance);
+                        currentStageQuestion = dataExtractionService.GetCurrentStageQuestionResponse(currentGameInstance);
 
                 }
                 catch (Exception ex)

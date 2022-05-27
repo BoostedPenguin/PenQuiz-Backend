@@ -268,7 +268,7 @@ namespace GameService.Services.GameTimerServices.NeutralTimerServices
                 .First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber);
 
 
-            var response = dataExtractionService.GetCurrentStageQuestion(gm);
+            var response = dataExtractionService.GetCurrentStageQuestionResponse(gm);
 
 
             // Open this question for voting

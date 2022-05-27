@@ -8,7 +8,8 @@ namespace GameService.Services.GameTimerServices
 {
     public interface ICurrentStageQuestionService
     {
-        QuestionClientResponse GetCurrentStageQuestion(GameInstance gm);
+        Questions GetCurrentStageQuestion(GameInstance gm);
+        QuestionClientResponse GetCurrentStageQuestionResponse(GameInstance gm);
     }
 
     public class CurrentStageQuestionService : ICurrentStageQuestionService
@@ -19,8 +20,78 @@ namespace GameService.Services.GameTimerServices
         {
             this.mapper = mapper;
         }
+        public Questions GetCurrentStageQuestion(GameInstance gm)
+        {
+            var currentRound = gm.Rounds
+                .Where(e => e.GameRoundNumber == gm.GameRoundNumber)
+                .FirstOrDefault();
 
-        public QuestionClientResponse GetCurrentStageQuestion(GameInstance gm)
+            // Handles neutral and final rounds
+            switch (currentRound.AttackStage)
+            {
+                case AttackStage.NUMBER_NEUTRAL:
+                    return gm.Rounds
+                           .First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber)
+                           .Question;
+
+                case AttackStage.MULTIPLE_NEUTRAL:
+                    return gm.Rounds
+                                .Where(x => x.GameRoundNumber == gm.GameRoundNumber)
+                                .FirstOrDefault()
+                                .Question;
+
+                case AttackStage.FINAL_NUMBER_PVP:
+                    return gm.Rounds
+                        .First(e => e.GameRoundNumber == gm.GameRoundNumber && e.AttackStage == AttackStage.FINAL_NUMBER_PVP)
+                        .Question;
+            }
+
+            // Capital stage questions
+            if (currentRound.PvpRound.IsCurrentlyCapitalStage)
+            {
+                switch (currentRound.PvpRound.CapitalRounds.First(e => !e.IsCompleted).CapitalRoundAttackStage)
+                {
+                    case CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION:
+                        return gm.Rounds
+                            .Where(e => e.GameRoundNumber == gm.GameRoundNumber)
+                            .First()
+                            .PvpRound.CapitalRounds
+                            .First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.MULTIPLE_CHOICE_QUESTION)
+                            .CapitalRoundMultipleQuestion;
+
+                    case CapitalRoundAttackStage.NUMBER_QUESTION:
+                        return gm.Rounds
+                            .Where(e => e.GameRoundNumber == gm.GameRoundNumber)
+                            .First()
+                            .PvpRound
+                            .CapitalRounds
+                            .First(e => !e.IsCompleted && e.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION)
+                            .CapitalRoundNumberQuestion;
+                }
+            }
+
+
+            switch (currentRound.AttackStage)
+            {
+
+                case AttackStage.MULTIPLE_PVP:
+                    return gm.Rounds
+                        .First(e => e.GameRoundNumber == e.GameInstance.GameRoundNumber)
+                        .Question;
+
+                case AttackStage.NUMBER_PVP:
+                    return gm.Rounds
+                        .Where(e => e.GameRoundNumber == gm.GameRoundNumber)
+                        .FirstOrDefault()
+                        .PvpRound
+                        .NumberQuestion;
+            }
+
+            throw new ArgumentException("The current GetCurrentStageRequest was not handled correctly. Contact an administrator!");
+
+        }
+
+        public QuestionClientResponse GetCurrentStageQuestionResponse(GameInstance gm)
         {
             var currentRound = gm.Rounds
                 .Where(e => e.GameRoundNumber == gm.GameRoundNumber)

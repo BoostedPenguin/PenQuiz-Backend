@@ -29,13 +29,19 @@ namespace GameService.Services
         private readonly IWizardActions wizardActions;
         private readonly IGameTimerService gameTimerService;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly ICurrentStageQuestionService currentStageQuestionService;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly string DefaultMap = "Antarctica";
-        public GameControlService(IWizardActions wizardActions, IGameTimerService gameTimerService, IHttpContextAccessor httpContextAccessor, IGameTerritoryService gameTerritoryService)
+        public GameControlService(IWizardActions wizardActions, 
+            IGameTimerService gameTimerService, 
+            IHttpContextAccessor httpContextAccessor, 
+            ICurrentStageQuestionService currentStageQuestionService,
+            IGameTerritoryService gameTerritoryService)
         {
             this.wizardActions = wizardActions;
             this.gameTimerService = gameTimerService;
             this.httpContextAccessor = httpContextAccessor;
+            this.currentStageQuestionService = currentStageQuestionService;
             this.gameTerritoryService = gameTerritoryService;
         }
 
@@ -43,39 +49,30 @@ namespace GameService.Services
         {
             var gm = GetCurrentUserGameInstance();
 
+
             var currentRound = gm.Rounds
                 .Where(x =>
                     x.GameRoundNumber == x.GameInstance.GameRoundNumber)
                 .FirstOrDefault();
 
-            var participant = gm.Participants.First(e => e.Player.UserGlobalIdentifier == httpContextAccessor.GetCurrentUserGlobalId());
-
-
-            if (currentRound.PvpRound?.IsCurrentlyCapitalStage == true)
-            {
-
-                var capitalRound =
-                    currentRound
-                    .PvpRound
-                    .CapitalRounds
-                    .FirstOrDefault(x => !x.IsCompleted && x.IsQuestionVotingOpen);
-
-
-                // If number question, skip execution
-                if (capitalRound.CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION)
-                    return;
-                
-
-                await wizardActions.UseMultipleChoiceHint(capitalRound.CapitalRoundMultipleQuestion, participant, gm.InvitationLink);
-                return;
-            }
 
             // If not multiple choice round return
             if (currentRound.AttackStage != AttackStage.MULTIPLE_NEUTRAL && currentRound.AttackStage != AttackStage.MULTIPLE_PVP)
                 return;
 
+            // If capital round, but it's number, return
+            if (currentRound.PvpRound?.IsCurrentlyCapitalStage == true && currentRound
+                    .PvpRound
+                    .CapitalRounds
+                    .FirstOrDefault(x => !x.IsCompleted && x.IsQuestionVotingOpen).CapitalRoundAttackStage == CapitalRoundAttackStage.NUMBER_QUESTION)
+                return;
 
-            await wizardActions.UseMultipleChoiceHint(currentRound.Question, participant, gm.InvitationLink);
+            var currentRoundQuestion = currentStageQuestionService.GetCurrentStageQuestion(gm);
+
+            var participant = gm.Participants.First(e => e.Player.UserGlobalIdentifier == httpContextAccessor.GetCurrentUserGlobalId());
+            
+            await wizardActions.UseMultipleChoiceHint(currentRoundQuestion, participant, gm.InvitationLink);
+
         }
 
         private GameInstance GetCurrentUserGameInstance()
