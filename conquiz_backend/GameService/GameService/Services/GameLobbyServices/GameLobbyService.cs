@@ -19,8 +19,8 @@ namespace GameService.Services.GameLobbyServices
         Task<GameInstance> AddGameBot();
         Task CreateDebugLobby();
         Task<GameInstance> CreateGameLobby();
-        Task<GameInstance> FindPublicMatch();
-        Task<GameInstance> JoinGameLobby(string lobbyUrl);
+        Task<OnJoinLobbyResponse> FindPublicMatch();
+        Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl);
         Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
         Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
@@ -57,7 +57,7 @@ namespace GameService.Services.GameLobbyServices
         }
 
 
-        public async Task<GameInstance> FindPublicMatch()
+        public async Task<OnJoinLobbyResponse> FindPublicMatch()
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
@@ -69,7 +69,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return game.ExistingGame;
+                return new OnJoinLobbyResponse(game.ExistingGame, game.ExistingCharacter);
             }
 
             var openPublicGames = await db.GameInstance
@@ -90,7 +90,7 @@ namespace GameService.Services.GameLobbyServices
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
-                return gameInstance;
+                return new OnJoinLobbyResponse(gameInstance);
             }
 
             // Add player to a random lobby
@@ -105,7 +105,7 @@ namespace GameService.Services.GameLobbyServices
             db.Update(chosenLobby);
             await db.SaveChangesAsync();
 
-            return chosenLobby;
+            return new OnJoinLobbyResponse(chosenLobby, chosenLobby.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
         public async Task CreateDebugLobby()
@@ -275,7 +275,7 @@ namespace GameService.Services.GameLobbyServices
             return gm;
         }
 
-        public async Task<GameInstance> JoinGameLobby(string lobbyUrl)
+        public async Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl)
         {
             using var db = contextFactory.CreateDbContext();
 
@@ -304,7 +304,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return game.ExistingGame;
+                return new OnJoinLobbyResponse(game.ExistingGame, game.ExistingCharacter);
             }
 
             var newParticipant = await GenerateParticipant(db, gameInstance.Participants.ToArray(), user.Id);
@@ -314,7 +314,7 @@ namespace GameService.Services.GameLobbyServices
             db.Update(gameInstance);
             await db.SaveChangesAsync();
 
-            return gameInstance;
+            return new OnJoinLobbyResponse(gameInstance, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
         public async Task<GameInstance> StartGame(GameInstance gameInstance = null)

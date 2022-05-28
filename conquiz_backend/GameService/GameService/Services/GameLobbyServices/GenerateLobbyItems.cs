@@ -67,6 +67,9 @@ namespace GameService.Services.GameLobbyServices
             var userGames = await db.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .ThenInclude(e => e.Character)
                 .Where(x => (x.GameState == GameState.IN_LOBBY || x.GameState == GameState.IN_PROGRESS) && x.Participants
                     .Any(y => y.PlayerId == userId))
                 .ToListAsync();
@@ -96,7 +99,9 @@ namespace GameService.Services.GameLobbyServices
             // Redirect him to this instead of creating a new instance.
             if (lobbyGames.Count == 1)
             {
-                throw new ExistingLobbyGameException(lobbyGames[0], "User participates already in an open lobby");
+                throw new ExistingLobbyGameException(lobbyGames[0], 
+                    lobbyGames[0].Participants.Where(e => e.PlayerId == userId).Select(e => e.GameCharacter).FirstOrDefault(), 
+                    "User participates already in an open lobby");
             }
 
             return true;

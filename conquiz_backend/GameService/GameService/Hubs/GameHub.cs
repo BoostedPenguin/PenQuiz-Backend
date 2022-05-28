@@ -61,6 +61,8 @@ namespace GameService.Hubs
         Task GameSendCountDownSeconds(int secondsForAction);
         Task TESTING(string message);
 
+        Task GetGameCharacter(GameCharacterResponse characterResponse);
+
         Task WizardGetAbilityUsesLeft(int usesLeft);
         Task WizardUseMultipleChoiceHint(WizardUseMultipleChoiceHint useMultipleChoiceHint);
     }

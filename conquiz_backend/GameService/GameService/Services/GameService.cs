@@ -43,9 +43,11 @@ namespace GameService.Services
     public class ExistingLobbyGameException : Exception
     {
         public GameInstance ExistingGame { get; }
-        public ExistingLobbyGameException(GameInstance existingGame, string message) : base(message)
+        public GameCharacter ExistingCharacter { get; }
+        public ExistingLobbyGameException(GameInstance existingGame, GameCharacter gameCharacter, string message) : base(message)
         {
             this.ExistingGame = existingGame;
+            ExistingCharacter = gameCharacter;
         }
     }
 
