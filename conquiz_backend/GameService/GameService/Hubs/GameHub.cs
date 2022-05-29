@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using GameService.Data;
 using AutoMapper;
+using GameService.Services.GameUserActions;
 
 namespace GameService.Hubs
 {
