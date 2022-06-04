@@ -8,6 +8,8 @@ namespace GameService.Services.GameTimerServices
     public class GameActionsTime
     {
         public const int BotTerritorySelectTime = 1500;
+        public const int BotVsBotQuestionTime = 4000;
+
         public const int DefaultPreviewTime = 3000;
         public const int NumberQuestionPreviewTime = 6000;
 
