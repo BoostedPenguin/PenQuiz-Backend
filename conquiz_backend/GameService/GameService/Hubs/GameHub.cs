@@ -196,11 +196,11 @@ namespace GameService.Hubs
         }
 
 
-        public async Task WizardUseAbility()
+        public void WizardUseAbility()
         {
             try
             {
-                await gameControlService.WizardUseAbility();
+                gameControlService.WizardUseAbility();
             }
             catch(Exception ex)
             {
@@ -294,19 +294,19 @@ namespace GameService.Hubs
             {
                 var result = await gameLobbyService.FindPublicMatch();
 
-                await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
+                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
                 var res1 = mapper.Map<GameInstanceResponse>(result);
 
-                await Clients.Group(result.InvitationLink).GetGameInstance(res1);
+                await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
 
 
                 // If lobby is full automatically start
                 // Public lobbies don't have a "host"
                 // To prevent stale lobbies
-                if(result.Participants.Count() == 3)
+                if(result.GameInstance.Participants.Count() == 3)
                 {
-                    var gameInstance = await gameLobbyService.StartGame(result);
+                    var gameInstance = await gameLobbyService.StartGame(result.GameInstance);
                     var res2 = mapper.Map<GameInstanceResponse>(result);
 
                     await Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
@@ -366,7 +366,7 @@ namespace GameService.Hubs
             {
                 var game = await gameLobbyService.JoinGameLobby(code);
 
-                await Groups.AddToGroupAsync(Context.ConnectionId, game.InvitationLink);
+                await Groups.AddToGroupAsync(Context.ConnectionId, game.GameInstance.InvitationLink);
                 //await Clients.Caller.GetGameInstance(game);
 
                 //var users = game.Participants.Select(x => x.Player).ToArray();
@@ -374,7 +374,7 @@ namespace GameService.Hubs
                 //await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
                 var res1 = mapper.Map<GameInstanceResponse>(game);
 
-                await Clients.Group(game.InvitationLink).GetGameInstance(res1);
+                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
             }
             catch (Exception ex)

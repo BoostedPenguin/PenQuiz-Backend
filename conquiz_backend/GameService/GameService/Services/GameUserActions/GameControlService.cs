@@ -17,6 +17,7 @@ namespace GameService.Services.GameUserActions
     {
         void AnswerQuestion(string answerIdString);
         SelectedTerritoryResponse SelectTerritory(string mapTerritoryName);
+        void WizardUseAbility();
     }
 
     /// <summary>
@@ -25,12 +26,15 @@ namespace GameService.Services.GameUserActions
     /// </summary>
     public class GameControlService : IGameControlService
     {
+        private readonly ICharacterAbilityService characterAbilityService;
         private readonly IAnswerQuestionService answerQuestionService;
         private readonly ITerritorySelectionService territorySelectionService;
         public GameControlService(
+            ICharacterAbilityService characterAbilityService,
             IAnswerQuestionService answerQuestionService,
             ITerritorySelectionService territorySelectionService)
         {
+            this.characterAbilityService = characterAbilityService;
             this.answerQuestionService = answerQuestionService;
             this.territorySelectionService = territorySelectionService;
         }
@@ -38,6 +42,11 @@ namespace GameService.Services.GameUserActions
         public void AnswerQuestion(string answerIdString)
         {
             answerQuestionService.AnswerQuestion(answerIdString);
+        }
+
+        public void WizardUseAbility()
+        {
+            characterAbilityService.WizardUseAbility();
         }
 
         public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)

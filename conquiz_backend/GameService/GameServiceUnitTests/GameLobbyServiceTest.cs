@@ -107,7 +107,7 @@ namespace GameServiceUnitTests
             var initialGame = await gameLobbyService.CreateGameLobby();
             var result = await secondaryUserService.JoinGameLobby(initialGame.InvitationLink);
 
-            Assert.Same(initialGame.InvitationLink, result.InvitationLink);
+            Assert.Same(initialGame.InvitationLink, result.GameInstance.InvitationLink);
         }
 
         [Fact]
@@ -137,9 +137,9 @@ namespace GameServiceUnitTests
 
 
             var initialGame = await gameLobbyService.FindPublicMatch();
-            var result = await secondaryUserService.JoinGameLobby(initialGame.InvitationLink);
+            var result = await secondaryUserService.JoinGameLobby(initialGame.GameInstance.InvitationLink);
 
-            Assert.Same(initialGame.InvitationLink, result.InvitationLink);
+            Assert.Same(initialGame.GameInstance.InvitationLink, result.GameInstance.InvitationLink);
         }
 
         [Fact]
