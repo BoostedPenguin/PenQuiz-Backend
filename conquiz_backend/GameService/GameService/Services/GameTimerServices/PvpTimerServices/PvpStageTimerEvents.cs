@@ -107,6 +107,16 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
+            // If both bots, change the timer
+            var isDefenderBot = gm.Participants.FirstOrDefault(e => e.PlayerId == response.DefenderId).Player.IsBot;
+            var isAttackerBot = gm.Participants.FirstOrDefault(e => e.PlayerId == response.AttackerId).Player.IsBot;
+
+            if(isDefenderBot && isAttackerBot)
+            {
+                timerWrapper.StartTimer(ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION, GameActionsTime.BotVsBotQuestionTime);
+                return;
+            }
+
             timerWrapper.StartTimer(ActionState.END_PVP_MULTIPLE_CHOICE_QUESTION);
         }
 
@@ -321,6 +331,17 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             var response = dataExtractionService.GetCurrentStageQuestionResponse(gm);
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
+
+
+            // If both bots, change the timer
+            var isDefenderBot = gm.Participants.FirstOrDefault(e => e.PlayerId == response.DefenderId).Player.IsBot;
+            var isAttackerBot = gm.Participants.FirstOrDefault(e => e.PlayerId == response.AttackerId).Player.IsBot;
+
+            if (isDefenderBot && isAttackerBot)
+            {
+                timerWrapper.StartTimer(ActionState.END_PVP_NUMBER_QUESTION, GameActionsTime.BotVsBotQuestionTime);
+                return;
+            }
 
             timerWrapper.StartTimer(ActionState.END_PVP_NUMBER_QUESTION);
         }

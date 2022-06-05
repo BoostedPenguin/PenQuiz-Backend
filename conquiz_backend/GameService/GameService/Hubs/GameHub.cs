@@ -19,6 +19,7 @@ using GameService.Data;
 using GameService.Services.CharacterActions;
 using AutoMapper;
 using GameService.Services.GameLobbyServices;
+using GameService.Services.GameUserActions;
 
 namespace GameService.Hubs
 {

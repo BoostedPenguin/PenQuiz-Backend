@@ -23,6 +23,7 @@ using GameService.Services.GameTimerServices.NeutralTimerServices;
 using GameService.Services.GameTimerServices.PvpTimerServices;
 using GameService.Services.GameLobbyServices;
 using GameService.Services.CharacterActions;
+using GameService.Services.GameUserActions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -101,7 +102,13 @@ builder.Services.AddSingleton<ICapitalStageTimerEvents, CapitalStageTimerEvents>
 
 builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
+// Normal game user action
+
 builder.Services.AddSingleton<IGameControlService, GameControlService>();
+
+builder.Services.AddSingleton<IAnswerQuestionService, AnswerQuestionService>();
+
+builder.Services.AddSingleton<ITerritorySelectionService, TerritorySelectionService>();
 
 builder.Services.AddScoped<IAccountDataClient, AccountDataClient>();
 

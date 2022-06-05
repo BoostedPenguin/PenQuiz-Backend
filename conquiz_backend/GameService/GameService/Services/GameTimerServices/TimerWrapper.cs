@@ -13,11 +13,33 @@ namespace GameService.Services.GameTimerServices
     {
         public TimerData Data { get; set; }
 
+        private DateTime EventStartAt;
+        public double TimeUntilNextEvent => (EventStartAt - DateTime.Now).TotalMilliseconds;
+
+        /// <summary>
+        /// Override the existing interval with a new time
+        /// </summary>
+        /// <param name="overrideIntervalTime"></param>
+        public void ChangeReminingInterval(int overrideIntervalTime)
+        {
+            // Need to stop the existing elapsing timer before you can restart it
+            // Need to restart the countdowntimer as well
+            this.Stop();
+            Data.CountDownTimer.Stop();
+
+
+            this.Interval = overrideIntervalTime;
+
+
+            this.EventStartAt = DateTime.Now.AddMilliseconds(Interval);
+            Data.CountDownTimer.StartCountDownTimer(overrideIntervalTime);
+            this.Start();
+        }
+
         public void StartTimer(ActionState nextAction, int? overrideIntervalTime = null)
         {
             Data.NextAction = nextAction;
             var intervalTime = GameActionsTime.GetTime(Data.NextAction);
-
 
             Interval = overrideIntervalTime ?? intervalTime;
             
@@ -26,7 +48,9 @@ namespace GameService.Services.GameTimerServices
             {
                 Data.CountDownTimer.StartCountDownTimer(overrideIntervalTime ?? intervalTime);
             }
-            
+
+            this.EventStartAt = DateTime.Now.AddMilliseconds(Interval);
+
             this.Start();
         }
 
