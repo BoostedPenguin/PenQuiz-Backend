@@ -76,6 +76,9 @@ namespace GameService.Data.Models
 
     public class VikingCharacterAbilities : GameCharacterAbilities
     {
+        [NotMapped]
+        public bool IsFortifyCapitalAvailable => FortifyCapitalUseCount < FortifyCapitalMaxUseCount;
+
         public int FortifyCapitalUseCount { get; set; }
 
         [NotMapped]
@@ -91,6 +94,7 @@ namespace GameService.Data.Models
 
     public class WizardCharacterAbilities : GameCharacterAbilities
     {
+        [NotMapped]
         public bool IsMCHintsAvailable => MCQuestionHintUseCount < MCQuestionHintMaxUseCount;
 
         public int MCQuestionHintUseCount { get; set; }

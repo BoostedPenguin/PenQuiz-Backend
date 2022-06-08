@@ -64,6 +64,9 @@ namespace GameService.Hubs
 
         Task GetGameCharacter(GameCharacterResponse characterResponse);
 
+
+        Task VikingGetAbilityUsesLeft(int usesLeft);
+
         Task WizardGetAbilityUsesLeft(int usesLeft);
         Task WizardUseMultipleChoiceHint(WizardUseMultipleChoiceHint useMultipleChoiceHint);
     }

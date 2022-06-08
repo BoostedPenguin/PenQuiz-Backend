@@ -175,8 +175,10 @@ namespace GameService.Services.GameTimerServices
             response.DefenderId = pvpRound.DefenderId ?? 0;
 
 
+            var currentPvpRound = gm.Rounds.FirstOrDefault(e => e.GameRoundNumber == gm.GameRoundNumber).PvpRound;
+
             // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
-            response.CapitalRoundsRemaining = 1;
+            response.CapitalRoundsRemaining = currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted);
 
 
             return response;
@@ -220,7 +222,11 @@ namespace GameService.Services.GameTimerServices
             response.DefenderId = question.CapitalRoundNumber.PvpRound.DefenderId ?? 0;
 
             // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
-            response.CapitalRoundsRemaining = 1;
+            var currentPvpRound = gm.Rounds.FirstOrDefault(e => e.GameRoundNumber == gm.GameRoundNumber).PvpRound;
+
+            // If a user got to this stage, we can gurantee that there is exactly 1 capital round including this, left
+            response.CapitalRoundsRemaining = currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted);
+
 
             return response;
         }
@@ -347,9 +353,12 @@ namespace GameService.Services.GameTimerServices
             response.DefenderId = participants.DefenderId ?? 0;
 
 
+            var currentPvpRound = gm.Rounds.FirstOrDefault(e => e.GameRoundNumber == gm.GameRoundNumber).PvpRound;
+
             // If the current attacked territory is capital, then we can presume this and next question are capital questions
             if (participants.AttackedTerritory.IsCapital)
-                response.CapitalRoundsRemaining = 2;
+                response.CapitalRoundsRemaining = 
+                    currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted);
 
             return response;
         }
@@ -387,8 +396,12 @@ namespace GameService.Services.GameTimerServices
             // If the current attacked territory is capital,
             // And we got to number question (attacker and defender had same answer)
             // Then we can presume this and next question are capital questions
+            var currentPvpRound = gm.Rounds.FirstOrDefault(e => e.GameRoundNumber == gm.GameRoundNumber).PvpRound;
+
+            // If the current attacked territory is capital, then we can presume this and next question are capital questions
             if (question.PvpRoundNum.AttackedTerritory.IsCapital)
-                response.CapitalRoundsRemaining = 2;
+                response.CapitalRoundsRemaining =
+                    currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted);
 
             return response;
         }

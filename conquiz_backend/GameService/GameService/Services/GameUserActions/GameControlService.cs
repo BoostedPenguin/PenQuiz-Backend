@@ -43,11 +43,6 @@ namespace GameService.Services.GameUserActions
             answerQuestionService.AnswerQuestion(answerIdString);
         }
 
-        public void WizardUseAbility()
-        {
-            characterAbilityService.WizardUseAbility();
-        }
-
         public SelectedTerritoryResponse SelectTerritory(string mapTerritoryName)
         {
             return territorySelectionService.SelectTerritory(mapTerritoryName);
