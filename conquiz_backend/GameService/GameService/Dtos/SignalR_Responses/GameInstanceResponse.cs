@@ -134,6 +134,7 @@ namespace GameService.Dtos.SignalR_Responses
         public int Score { get; set; }
         public int FinalQuestionScore { get; set; }
 
+        public virtual GameCharacterResponse GameCharacter { get; set; }
         public virtual UsersResponse Player { get; set; }
     }
 

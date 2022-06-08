@@ -61,7 +61,7 @@ namespace GameService.Services.GameLobbyServices
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             try
             {
@@ -164,7 +164,7 @@ namespace GameService.Services.GameLobbyServices
 
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             try
             {
@@ -190,7 +190,7 @@ namespace GameService.Services.GameLobbyServices
             using var db = contextFactory.CreateDbContext();
 
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
             // Get the game where this user is the owner and is currently in lobby
@@ -246,7 +246,7 @@ namespace GameService.Services.GameLobbyServices
             using var db = contextFactory.CreateDbContext();
 
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
             // Get the game where this user is the owner and is currently in lobby
@@ -321,7 +321,7 @@ namespace GameService.Services.GameLobbyServices
         {
             using var a = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await a.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
 
             if (gameInstance == null)

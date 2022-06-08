@@ -303,7 +303,7 @@ namespace GameService.Hubs
                 var result = await gameLobbyService.FindPublicMatch();
 
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
-                var res1 = mapper.Map<GameInstanceResponse>(result);
+                var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
 
                 await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
@@ -315,7 +315,7 @@ namespace GameService.Hubs
                 if(result.GameInstance.Participants.Count() == 3)
                 {
                     var gameInstance = await gameLobbyService.StartGame(result.GameInstance);
-                    var res2 = mapper.Map<GameInstanceResponse>(result);
+                    var res2 = mapper.Map<GameInstanceResponse>(result.GameInstance);
 
                     await Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
 
@@ -380,7 +380,7 @@ namespace GameService.Hubs
                 //var users = game.Participants.Select(x => x.Player).ToArray();
                 //var current = result.Participants.Where(x => x.PlayerId == httpContext.GetCurrentUserId()).FirstOrDefault();
                 //await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
-                var res1 = mapper.Map<GameInstanceResponse>(game);
+                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
 
                 await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
                 await Clients.Caller.NavigateToLobby();
