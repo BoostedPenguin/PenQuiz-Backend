@@ -16,7 +16,7 @@ namespace GameService.Services.CharacterActions
     public interface IWizardActions
     {
         Task GetAvailableMultipleChoiceHints(Participants participant, string invitationLink);
-        Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink);
+        WizardUseMultipleChoiceHint UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink);
     }
 
     public class WizardActions : IWizardActions
@@ -34,19 +34,19 @@ namespace GameService.Services.CharacterActions
             this.mapper = mapper;
         }
 
-        public async Task UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink)
+        public WizardUseMultipleChoiceHint UseMultipleChoiceHint(Questions question, Participants participant, string invitationLink)
         {
             // Get the character
             // Check if he can use choice hints
             // Get the original question asked (only if multiple choice)
             // Send a message to the client with 1 correct value and 1 wrong one
 
-            if (participant.GameCharacter.CharacterAbilities is not WizardCharacterAbilities wizardAbilities) 
-                return;
-            
+            if (participant.GameCharacter.CharacterAbilities is not WizardCharacterAbilities wizardAbilities)
+                throw new ArgumentException($"Character is {participant.GameCharacter.CharacterAbilities.CharacterType}, but WizardCharacter is expected");
 
-            if (!wizardAbilities.IsMCHintsAvailable) 
-                return;
+
+            if (!wizardAbilities.IsMCHintsAvailable)
+                throw new ArgumentException("Multiple choice hints use are maxed.");
 
             wizardAbilities.MCQuestionHintUseCount++;
 
@@ -64,12 +64,12 @@ namespace GameService.Services.CharacterActions
                 {
                      mapper.Map<AnswerClientResponse>(correct),
                      mapper.Map<AnswerClientResponse>(wrong),
-                }
+                },
+                GameLink = invitationLink
             };
 
 
-
-            await hubContext.Clients.Group(invitationLink).WizardUseMultipleChoiceHint(response);
+            return response;
         }
 
         public async Task GetAvailableMultipleChoiceHints(Participants participant, string invitationLink)

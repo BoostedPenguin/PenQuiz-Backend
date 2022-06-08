@@ -75,11 +75,13 @@ namespace GameService.Hubs
         private readonly IGameLobbyService gameLobbyService;
         private readonly IGameControlService gameControlService;
         private readonly ILogger<GameHub> logger;
+        private readonly ICharacterAbilityService characterAbilityService;
         private readonly IMapper mapper;
 
         public GameHub(IGameTimerService timer, 
             IGameService gameService, 
             ILogger<GameHub> logger,
+            ICharacterAbilityService characterAbilityService,
             IMapper mapper,
             IGameLobbyService gameLobbyService,
             IGameControlService gameControlService)
@@ -87,6 +89,7 @@ namespace GameService.Hubs
             this.timer = timer;
             this.gameService = gameService;
             this.logger = logger;
+            this.characterAbilityService = characterAbilityService;
             this.mapper = mapper;
             this.gameLobbyService = gameLobbyService;
             this.gameControlService = gameControlService;
@@ -196,11 +199,13 @@ namespace GameService.Hubs
         }
 
 
-        public void WizardUseAbility()
+        public async Task WizardUseAbility()
         {
             try
             {
-                gameControlService.WizardUseAbility();
+                var res = characterAbilityService.WizardUseAbility();
+
+                await Clients.Group(res.GameLink).WizardUseMultipleChoiceHint(res);
             }
             catch(Exception ex)
             {

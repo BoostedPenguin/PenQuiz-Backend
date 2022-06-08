@@ -17,7 +17,6 @@ namespace GameService.Services.GameUserActions
     {
         void AnswerQuestion(string answerIdString);
         SelectedTerritoryResponse SelectTerritory(string mapTerritoryName);
-        void WizardUseAbility();
     }
 
     /// <summary>
