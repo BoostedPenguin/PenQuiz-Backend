@@ -65,7 +65,7 @@ namespace GameServiceUnitTests
             var gameInstance = await gameLobbyService.CreateGameLobby();
 
             Assert.NotNull(gameInstance);
-            Assert.True(gameInstance.GameState == GameState.IN_LOBBY);
+            Assert.True(gameInstance.GameInstance.GameState == GameState.IN_LOBBY);
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace GameServiceUnitTests
             var firstGame = await gameLobbyService.CreateGameLobby();
             var secondGame = await gameLobbyService.CreateGameLobby();
 
-            Assert.Same(firstGame.InvitationLink, secondGame.InvitationLink);
+            Assert.Same(firstGame.GameInstance.InvitationLink, secondGame.GameInstance.InvitationLink);
         }
 
         [Fact]
@@ -105,9 +105,9 @@ namespace GameServiceUnitTests
 
 
             var initialGame = await gameLobbyService.CreateGameLobby();
-            var result = await secondaryUserService.JoinGameLobby(initialGame.InvitationLink);
+            var result = await secondaryUserService.JoinGameLobby(initialGame.GameInstance.InvitationLink);
 
-            Assert.Same(initialGame.InvitationLink, result.GameInstance.InvitationLink);
+            Assert.Same(initialGame.GameInstance.InvitationLink, result.GameInstance.InvitationLink);
         }
 
         [Fact]
