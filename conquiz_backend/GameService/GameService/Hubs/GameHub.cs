@@ -62,6 +62,8 @@ namespace GameService.Hubs
         Task GameSendCountDownSeconds(int secondsForAction);
         Task TESTING(string message);
 
+        // Characters
+
         Task GetGameCharacter(GameCharacterResponse characterResponse);
 
 
@@ -128,7 +130,9 @@ namespace GameService.Hubs
                 //if(response.MCPlayerQuestionAnswers is not null)
                 //    await Clients.Caller.MCQuestionPreviewResult(response.MCPlayerQuestionAnswers);
 
+                await Clients.Caller.GetGameCharacter(response.GameCharacter);
                 await Clients.Caller.GetGameInstance(response.GameInstanceResponse);
+
                 await Clients.Group(response.GameInstanceResponse.InvitationLink).PlayerRejoined(response.UserId);
                 await Clients.Caller.NavigateToGame();
                 
@@ -304,8 +308,11 @@ namespace GameService.Hubs
 
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
                 var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
+                var gameCharacterRes = mapper.Map<GameCharacterResponse>(result.GameCharacter);
 
                 await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
+
+                await Clients.Caller.GetGameCharacter(gameCharacterRes);
                 await Clients.Caller.NavigateToLobby();
 
 
@@ -335,11 +342,13 @@ namespace GameService.Hubs
             try
             {
                 var result = await gameLobbyService.CreateGameLobby();
-                await Groups.AddToGroupAsync(Context.ConnectionId, result.InvitationLink);
+                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
 
-                var res1 = mapper.Map<GameInstanceResponse>(result);
+                var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
+                var gameCharacterResponse = mapper.Map<GameCharacterResponse>(result.GameCharacter);
 
-                await Clients.Group(result.InvitationLink).GetGameInstance(res1);
+                await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
+                await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
             }
             catch(Exception ex)
@@ -382,7 +391,10 @@ namespace GameService.Hubs
                 //await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
                 var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
 
+                var gameCharacterResponse = mapper.Map<GameCharacterResponse>(game.GameCharacter);
+
                 await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
+                await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
             }
             catch (Exception ex)

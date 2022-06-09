@@ -18,7 +18,7 @@ namespace GameService.Services.GameLobbyServices
     {
         Task<GameInstance> AddGameBot();
         Task CreateDebugLobby();
-        Task<GameInstance> CreateGameLobby();
+        Task<OnJoinLobbyResponse> CreateGameLobby();
         Task<OnJoinLobbyResponse> FindPublicMatch();
         Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl);
         Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
@@ -157,7 +157,7 @@ namespace GameService.Services.GameLobbyServices
             timer.OnGameStart(await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, context));
         }
 
-        public async Task<GameInstance> CreateGameLobby()
+        public async Task<OnJoinLobbyResponse> CreateGameLobby()
         {
             // Create url-link for people to join // Random string in header?
             // CLOSE ALL OTHER IN_LOBBY OPEN INSTANCES BY THIS PLAYER
@@ -172,7 +172,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return game.ExistingGame;
+                return new OnJoinLobbyResponse(game.ExistingGame, game.ExistingCharacter);
             }
 
             var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, user);
@@ -180,7 +180,7 @@ namespace GameService.Services.GameLobbyServices
             await db.AddAsync(gameInstance);
             await db.SaveChangesAsync();
 
-            return gameInstance;
+            return new OnJoinLobbyResponse(gameInstance, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
 

@@ -262,17 +262,19 @@ namespace GameService.Services
                 // Send to user the game instance response // GetGameInstance
                 var gameInstanceRes = mapper.Map<GameInstanceResponse>(currentGameInstance);
 
+                var gameCharacter =
+                    currentGameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter);
 
+                var gameCharacterRes = mapper.Map<GameCharacterResponse>(gameCharacter);
 
-
-                return new OnPlayerLoginResponse(gameInstanceRes, thisUser.PlayerId, 
+                return new OnPlayerLoginResponse(gameInstanceRes, gameCharacterRes, thisUser.PlayerId, 
                     roundingAttackerRes: roundingAttackerResponse,
                     questionClientResponse: currentStageQuestion,
                     mCPlayerQuestionAnswers: mCPlayerQuestionAnswers
                     );
             }
 
-            return new OnPlayerLoginResponse(null, user.Id);
+            return new OnPlayerLoginResponse(null, null, user.Id);
         }
 
 

@@ -32,4 +32,28 @@ namespace GameService.Dtos.SignalR_Responses
         public double? Price { get; set; }
     }
 
+    public abstract class GameCharacterAbilitiesResponse
+    {
+        public CharacterType CharacterType { get; set; }
+
+        public int GameCharacterId { get; set; }
+    }
+
+    public class VikingCharacterAbilitiesResponse : GameCharacterAbilitiesResponse
+    {
+        public int FortifyCapitalUseCount { get; set; }
+        public int FortifyCapitalMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.VikingCharacterFortifyCapitalMaxUseCount;
+    }
+
+    public class KingCharacterAbilitiesResponse : GameCharacterAbilitiesResponse
+    {
+        public double CurrentBonusPoints { get; set; }
+        public double PointsMultiplier { get; set; } = CharacterAbilitiesGlobalValues.KingCharacterPointsMultiplier;
+    }
+
+    public class WizardCharacterAbilitiesResponse : GameCharacterAbilitiesResponse
+    {
+        public int MCQuestionHintUseCount { get; set; }
+        public int MCQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.WizardCharacterMCQuestionHintMaxUseCount;
+    }
 }
