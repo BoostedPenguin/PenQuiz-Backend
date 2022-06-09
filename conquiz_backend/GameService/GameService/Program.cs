@@ -71,20 +71,28 @@ else
 
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
+// Example service
 builder.Services.AddSingleton<IExampleService, ExampleService>();
 
+// Statistics API
 builder.Services.AddSingleton<IStatisticsService, StatisticsService>();
 
+// RabbitMQ event processor
 builder.Services.AddSingleton<IEventProcessor, EventProcessor>();
 
+// Map generator service methods
 builder.Services.AddSingleton<IMapGeneratorService, MapGeneratorService>();
 
+// Game territory service methods
 builder.Services.AddSingleton<IGameTerritoryService, GameTerritoryService>();
 
+// Handles people's connection to the games and canceling existing games
 builder.Services.AddSingleton<IGameService, GameService.Services.GameService>();
 
+// Handles lobby creation, and joining games
 builder.Services.AddSingleton<IGameLobbyService, GameLobbyService>();
 
+// Controls the main game loop
 builder.Services.AddSingleton<IGameTimerService, GameTimerService>();
 
 // Neutral stage
@@ -113,8 +121,10 @@ builder.Services.AddSingleton<ITerritorySelectionService, TerritorySelectionServ
 builder.Services.AddScoped<IAccountDataClient, AccountDataClient>();
 
 
+
 // Character services
 builder.Services.AddSingleton<IWizardActions, WizardActions>();
+builder.Services.AddSingleton<ICharacterAbilityService, CharacterAbilityService>();
 
 
 // Helper stage services
