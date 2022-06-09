@@ -22,13 +22,22 @@ namespace GameService.Data.Models
             switch (character.CharacterType)
             {
                 case CharacterType.WIZARD:
-                    this.CharacterAbilities = new WizardCharacterAbilities();
+                    this.CharacterAbilities = new WizardCharacterAbilities()
+                    {
+                        CharacterType = CharacterType.WIZARD,
+                    };
                     break;
                 case CharacterType.KING:
-                    this.CharacterAbilities = new KingCharacterAbilities();
+                    this.CharacterAbilities = new KingCharacterAbilities()
+                    {
+                        CharacterType = CharacterType.KING,
+                    };
                     break;
                 case CharacterType.VIKING:
-                    this.CharacterAbilities = new VikingCharacterAbilities();
+                    this.CharacterAbilities = new VikingCharacterAbilities()
+                    {
+                        CharacterType = CharacterType.VIKING,
+                    };
                     break;
             }
         }

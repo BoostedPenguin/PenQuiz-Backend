@@ -90,7 +90,7 @@ namespace GameService.Services.GameLobbyServices
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
-                return new OnJoinLobbyResponse(gameInstance);
+                return new OnJoinLobbyResponse(gameInstance, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
             }
 
             // Add player to a random lobby

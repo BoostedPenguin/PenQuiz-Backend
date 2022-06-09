@@ -68,9 +68,6 @@ namespace GameService.Data.Models
         [ForeignKey("GameCharacter")]
         public int GameCharacterId { get; set; }
 
-
-        // Will cause a problem with serialization
-        [JsonIgnore]
         public virtual GameCharacter GameCharacter { get; set; }
     }
 
