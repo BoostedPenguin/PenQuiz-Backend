@@ -358,7 +358,7 @@ namespace GameService.Services.GameTimerServices
             // If the current attacked territory is capital, then we can presume this and next question are capital questions
             if (participants.AttackedTerritory.IsCapital)
                 response.CapitalRoundsRemaining = 
-                    currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted);
+                    currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted) + 1;
 
             return response;
         }
@@ -401,7 +401,7 @@ namespace GameService.Services.GameTimerServices
             // If the current attacked territory is capital, then we can presume this and next question are capital questions
             if (question.PvpRoundNum.AttackedTerritory.IsCapital)
                 response.CapitalRoundsRemaining =
-                    currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted);
+                    currentPvpRound.CapitalRounds.Count(e => !e.IsCompleted) + 1;
 
             return response;
         }

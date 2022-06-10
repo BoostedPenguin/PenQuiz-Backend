@@ -266,6 +266,8 @@ namespace GameService.Services.GameLobbyServices
 
             var botParticipant = await GenerateParticipant(db, gm.Participants.ToArray(), gameBot.Id);
 
+            botParticipant.Player = gameBot;
+
             gm.Participants.Add(botParticipant);
 
             db.Update(gm);
