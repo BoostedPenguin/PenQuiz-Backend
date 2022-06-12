@@ -60,6 +60,7 @@ namespace GameService.Services.CharacterActions
 
             var response = new WizardUseMultipleChoiceHint()
             {
+                PlayerId = participant.PlayerId,
                 Answers = new List<AnswerClientResponse>()
                 {
                      mapper.Map<AnswerClientResponse>(correct),

@@ -12,6 +12,7 @@ namespace GameService.Dtos.SignalR_Responses
 
         [JsonIgnore]
         public string GameLink { get; set; }
+        public int PlayerId { get; set; }
 
     }
 }
