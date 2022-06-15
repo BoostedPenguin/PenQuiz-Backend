@@ -84,6 +84,7 @@ namespace GameService.Data.Models
 
     public class KingCharacterAbilities : GameCharacterAbilities
     {
+        // Holds the additional points of the user, apart from the normal score
         public double CurrentBonusPoints { get; set; }
         [NotMapped]
         public double PointsMultiplier { get; set; } = CharacterAbilitiesGlobalValues.KingCharacterPointsMultiplier;

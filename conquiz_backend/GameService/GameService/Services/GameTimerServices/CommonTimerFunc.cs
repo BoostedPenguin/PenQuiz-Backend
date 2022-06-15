@@ -62,6 +62,19 @@ namespace GameService.Services.GameTimerServices
                     .Where(x => x.TakenBy == particip.PlayerId)
                     .Sum(x => x.TerritoryScore);
 
+                if(particip.GameCharacter.CharacterAbilities is KingCharacterAbilities kingCharacterAbilities)
+                {
+                    // Exclude the capital of the king from calculation
+                    var scoreWithoutCapital = game.ObjectTerritory
+                        .Where(e => e.TakenBy == particip.PlayerId && !e.IsCapital)
+                        .Sum(e => e.TerritoryScore);
+
+                    kingCharacterAbilities.CurrentBonusPoints = scoreWithoutCapital * kingCharacterAbilities.PointsMultiplier;
+
+                    totalParticipScore += Convert.ToInt32(kingCharacterAbilities.CurrentBonusPoints);
+                }
+
+
                 totalParticipScore += particip.FinalQuestionScore;
 
                 if (particip.Score != totalParticipScore)
