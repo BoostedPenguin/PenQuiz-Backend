@@ -66,6 +66,7 @@ namespace GameService.Hubs
 
         Task GetGameCharacter(GameCharacterResponse characterResponse);
 
+        Task VikingUseFortifyCapital(QuestionClientResponse characterResponse);
 
         Task VikingGetAbilityUsesLeft(int usesLeft);
 
@@ -205,6 +206,20 @@ namespace GameService.Hubs
             }
         }
 
+        public async Task VikingUseAbility()
+        {
+            try
+            {
+                var res = await characterAbilityService.VikingUseAbility();
+
+                await Clients.Caller.VikingUseFortifyCapital(res);
+            }
+            catch (Exception ex )
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
 
         public async Task WizardUseAbility()
         {
@@ -212,7 +227,7 @@ namespace GameService.Hubs
             {
                 var res = characterAbilityService.WizardUseAbility();
 
-                await Clients.Group(res.GameLink).WizardUseMultipleChoiceHint(res);
+                await Clients.Caller.WizardUseMultipleChoiceHint(res);
             }
             catch(Exception ex)
             {

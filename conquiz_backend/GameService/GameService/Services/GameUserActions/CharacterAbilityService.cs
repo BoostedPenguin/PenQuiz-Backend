@@ -12,6 +12,7 @@ namespace GameService.Services.GameUserActions
 {
     public interface ICharacterAbilityService
     {
+        Task<QuestionClientResponse> VikingUseAbility();
         WizardUseMultipleChoiceHint WizardUseAbility();
     }
 
@@ -19,15 +20,54 @@ namespace GameService.Services.GameUserActions
     {
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IGameTimerService gameTimerService;
+        private readonly IVikingActions vikingActions;
         private readonly ICurrentStageQuestionService currentStageQuestionService;
         private readonly IWizardActions wizardActions;
 
-        public CharacterAbilityService(IHttpContextAccessor httpContextAccessor, IGameTimerService gameTimerService, ICurrentStageQuestionService currentStageQuestionService, IWizardActions wizardActions)
+        public CharacterAbilityService(IHttpContextAccessor httpContextAccessor, IGameTimerService gameTimerService, 
+            IVikingActions vikingActions,
+            ICurrentStageQuestionService currentStageQuestionService, IWizardActions wizardActions)
         {
             this.httpContextAccessor = httpContextAccessor;
             this.gameTimerService = gameTimerService;
+            this.vikingActions = vikingActions;
             this.currentStageQuestionService = currentStageQuestionService;
             this.wizardActions = wizardActions;
+        }
+
+        public async Task<QuestionClientResponse> VikingUseAbility()
+        {
+            // Get the current game instance
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+
+            var playerGameTimer = gameTimerService.GameTimers.FirstOrDefault(e =>
+                e.Data.GameInstance.Participants.FirstOrDefault(e => e.Player.UserGlobalIdentifier == globalUserId) is not null);
+
+            if (playerGameTimer == null)
+                throw new GameException("There is no open game where this player participates");
+
+            var gm = playerGameTimer.Data.GameInstance;
+
+
+            var currentRound = gm.Rounds
+                .Where(x =>
+                    x.GameRoundNumber == x.GameInstance.GameRoundNumber)
+                .FirstOrDefault();
+
+            var currentParticipant = gm.Participants.First(e => e.Player.UserGlobalIdentifier == globalUserId);
+
+            if (currentRound.PvpRound == null)
+                throw new GameException("This is not a pvp round");
+
+            if (!currentRound.PvpRound.AttackedTerritory.IsCapital)
+                throw new GameException("Pvp Round isn't capital");
+
+
+            await vikingActions.UseFortifyCapital(currentParticipant, gm, currentRound);
+
+            var res = currentStageQuestionService.GetCurrentStageQuestionResponse(gm);
+
+            return res;
         }
 
 

@@ -82,7 +82,7 @@ namespace GameService.Services.GameTimerServices.NeutralTimerServices
             // PVP Rounds are always 18 rounds (3x6)
             // Base round is 41
             // 41 + 18 = 59 is last round
-            gm.GameRoundNumber = 56;
+            gm.GameRoundNumber = 48;
 
 
             rounds.ForEach(e => gm.Rounds.Add(e));

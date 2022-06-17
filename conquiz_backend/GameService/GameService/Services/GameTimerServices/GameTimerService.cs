@@ -133,10 +133,10 @@ namespace GameService.Services.GameTimerServices
                          * - Next event will be ActionState.OPEN_PLAYER_ATTACK_VOTING
                          */
 
-                        await Game_Preview_Time(timer);
+                        //await Game_Preview_Time(timer);
 
                         // Debug
-                        //await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
+                        await neutralNumberTimerEvents.Debug_Assign_All_Territories_Start_Pvp(timer);
                         //await neutralMCTimerEvents.Debug_Start_Number_Neutral(timer);
                         return;
 
@@ -461,20 +461,27 @@ namespace GameService.Services.GameTimerServices
 
         private async Task UnexpectedCriticalError(TimerWrapper timerWrapper, string message = "Unhandled game exception")
         {
-            timerWrapper.Stop();
+            try
+            {
+                timerWrapper.Stop();
 
-            using var db = contextFactory.CreateDbContext();
-            var gm = timerWrapper.Data.GameInstance;
-            gm.GameState = GameState.CANCELED;
-            db.Update(gm);
-            await db.SaveChangesAsync();
+                using var db = contextFactory.CreateDbContext();
+                var gm = timerWrapper.Data.GameInstance;
+                gm.GameState = GameState.CANCELED;
+                db.Update(gm);
+                await db.SaveChangesAsync();
 
-            timerWrapper.Data.CountDownTimer.Stop();
-            timerWrapper.Data.CountDownTimer.Dispose();
+                timerWrapper.Data.CountDownTimer.Stop();
+                timerWrapper.Data.CountDownTimer.Dispose();
 
-            await hubContext.Clients.Group(timerWrapper.Data.GameLink).LobbyCanceled($"Unexpected error occured. Game closed.\n{message}");
-            GameTimers.Remove(timerWrapper);
-            timerWrapper.Dispose();
+                await hubContext.Clients.Group(timerWrapper.Data.GameLink).LobbyCanceled($"Unexpected error occured. Game closed.\n{message}");
+                GameTimers.Remove(timerWrapper);
+                timerWrapper.Dispose();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"ERROR, while attempt to recover from critical error: {ex.Message} \n\n {ex.StackTrace}");
+            }
         }
 
 

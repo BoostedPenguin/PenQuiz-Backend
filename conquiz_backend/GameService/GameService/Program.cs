@@ -124,6 +124,7 @@ builder.Services.AddScoped<IAccountDataClient, AccountDataClient>();
 
 // Character services
 builder.Services.AddSingleton<IWizardActions, WizardActions>();
+builder.Services.AddSingleton<IVikingActions, VikingActions>();
 builder.Services.AddSingleton<ICharacterAbilityService, CharacterAbilityService>();
 
 

@@ -257,6 +257,12 @@ namespace GameService.Services.GameLobbyServices
 
             Character selectedCharacter = null;
 
+            // DEBUG PURPOSES ONLY, THIS ASSIGNS THE CREATOR A SPECIFIC CHARACTER
+            if(participants == null || participants.Length == 0)
+            {
+                return characters.First(e => e.CharacterType == CharacterType.VIKING);
+            }
+
             while (selectedCharacter == null)
             {
                 var randomCharacter = characters[r.Next(0, characters.Length)];
