@@ -66,7 +66,7 @@ namespace GameService.Hubs
 
         Task GetGameCharacter(GameCharacterResponse characterResponse);
 
-        Task VikingUseFortifyCapital(QuestionClientResponse characterResponse);
+        Task VikingUseFortifyCapital(VikingUseFortifyResponse characterResponse);
 
         Task VikingGetAbilityUsesLeft(int usesLeft);
 

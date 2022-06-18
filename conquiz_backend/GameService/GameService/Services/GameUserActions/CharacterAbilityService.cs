@@ -12,7 +12,7 @@ namespace GameService.Services.GameUserActions
 {
     public interface ICharacterAbilityService
     {
-        Task<QuestionClientResponse> VikingUseAbility();
+        Task<VikingUseFortifyResponse> VikingUseAbility();
         WizardUseMultipleChoiceHint WizardUseAbility();
     }
 
@@ -35,7 +35,7 @@ namespace GameService.Services.GameUserActions
             this.wizardActions = wizardActions;
         }
 
-        public async Task<QuestionClientResponse> VikingUseAbility()
+        public async Task<VikingUseFortifyResponse> VikingUseAbility()
         {
             // Get the current game instance
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
@@ -67,7 +67,11 @@ namespace GameService.Services.GameUserActions
 
             var res = currentStageQuestionService.GetCurrentStageQuestionResponse(gm);
 
-            return res;
+            return new VikingUseFortifyResponse()
+            {
+                QuestionResponse = res,
+                UsedInRoundId = currentRound.Id,
+            };
         }
 
 
