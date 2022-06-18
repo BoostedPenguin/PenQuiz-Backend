@@ -33,7 +33,6 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IGameTerritoryService gameTerritoryService;
         private readonly IMapper mapper;
-        private readonly IWizardActions wizardActions;
         private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMessageBusClient messageBus;
 
@@ -41,39 +40,17 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             IHubContext<GameHub, IGameHub> hubContext,
             IGameTerritoryService gameTerritoryService,
             IMapper mapper,
-            IWizardActions wizardActions,
             ICurrentStageQuestionService dataExtractionService,
             IMessageBusClient messageBus)
         {
             this.hubContext = hubContext;
             this.gameTerritoryService = gameTerritoryService;
             this.mapper = mapper;
-            this.wizardActions = wizardActions;
             this.dataExtractionService = dataExtractionService;
             this.messageBus = messageBus;
             contextFactory = _contextFactory;
         }
 
-        /// <summary>
-        /// Triggered after the primary function is complete, but the client response is still not sent
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        private async Task Before_Response_Show_Pvp_MultipleChoice_Screen(GameInstance gameInstance)
-        {
-            foreach(var particip in gameInstance.Participants)
-            {
-                switch (particip.GameCharacter.GetCharacterType)
-                {
-                    case CharacterType.WIZARD:
-                        await wizardActions.GetAvailableMultipleChoiceHints(particip, gameInstance.InvitationLink);
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-        }
 
         /// <summary>
         /// TODO
@@ -100,10 +77,6 @@ namespace GameService.Services.GameTimerServices.PvpTimerServices
             question.Round.IsQuestionVotingOpen = true;
             db.Update(gm);
             await db.SaveChangesAsync();
-
-
-            await Before_Response_Show_Pvp_MultipleChoice_Screen(gm);
-            
 
             await hubContext.Clients.Group(data.GameLink).GetRoundQuestion(response);
 
