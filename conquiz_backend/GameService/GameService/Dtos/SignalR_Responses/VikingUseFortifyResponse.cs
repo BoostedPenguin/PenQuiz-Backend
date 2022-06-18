@@ -4,5 +4,6 @@
     {
         public QuestionClientResponse QuestionResponse { get; set; }
         public int UsedInRoundId { get; set; }
+        public string GameLink { get; set; }
     }
 }

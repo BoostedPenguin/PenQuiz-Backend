@@ -71,6 +71,7 @@ namespace GameService.Services.GameUserActions
             {
                 QuestionResponse = res,
                 UsedInRoundId = currentRound.Id,
+                GameLink = gm.InvitationLink
             };
         }
 

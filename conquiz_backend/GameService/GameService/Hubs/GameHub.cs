@@ -212,7 +212,7 @@ namespace GameService.Hubs
             {
                 var res = await characterAbilityService.VikingUseAbility();
 
-                await Clients.Caller.VikingUseFortifyCapital(res);
+                await Clients.Group(res.GameLink).VikingUseFortifyCapital(res);
             }
             catch (Exception ex )
             {
