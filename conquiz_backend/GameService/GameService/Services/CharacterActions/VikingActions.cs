@@ -83,6 +83,9 @@ namespace GameService.Services.CharacterActions
             if (!vikingAbilities.IsFortifyCapitalAvailable)
                 throw new ArgumentException("Viking character has reached the max number of fortify capitals");
 
+            if(participant.PlayerId != currentRound.PvpRound.DefenderId)
+                throw new ArgumentException("Current player is not the defender in the capital round!");
+
             // Without using the viking ability the max capital rounds would be 1
             // Therefore, we can assume that if there is more than 1, then this person used it in this round
 
