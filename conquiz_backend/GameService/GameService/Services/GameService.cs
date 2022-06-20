@@ -263,7 +263,7 @@ namespace GameService.Services
                 var gameInstanceRes = mapper.Map<GameInstanceResponse>(currentGameInstance);
 
                 var gameCharacter =
-                    currentGameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter);
+                    currentGameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).First();
 
                 var gameCharacterRes = mapper.Map<GameCharacterResponse>(gameCharacter);
 
