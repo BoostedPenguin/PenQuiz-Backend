@@ -100,7 +100,7 @@ namespace GameService.Data.Models
         public bool IsMCHintsAvailable => MCQuestionHintUseCount < MCQuestionHintMaxUseCount;
 
         // Tracks whenever an ability has been used in a BASE round (no capitals for example)
-        public List<int> AbilityUsedInRounds { get; set; }
+        public List<int> AbilityUsedInRounds { get; set; } = new List<int>();
 
         public int MCQuestionHintUseCount { get; set; }
 
