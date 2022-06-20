@@ -86,12 +86,10 @@ namespace GameService.Services.CharacterActions
             if(participant.PlayerId != currentRound.PvpRound.DefenderId)
                 throw new ArgumentException("Current player is not the defender in the capital round!");
 
-            // Without using the viking ability the max capital rounds would be 1
-            // Therefore, we can assume that if there is more than 1, then this person used it in this round
 
-            if (currentRound.PvpRound.CapitalRounds.Count > 1)
+            // If the viking ability was used in this base round, do not allow usage until end of round
+            if(vikingAbilities.AbilityUsedInRounds.Any(e => e == currentRound.Id))
                 throw new ArgumentException("This person already used his viking ability this round.");
-
 
             var extraCapitalRound = new CapitalRound();
             currentRound.PvpRound.CapitalRounds.Add(extraCapitalRound);
@@ -107,8 +105,9 @@ namespace GameService.Services.CharacterActions
                 });
 
 
+            // Update viking abilities after use
             vikingAbilities.FortifyCapitalUseCount++;
-
+            vikingAbilities.AbilityUsedInRounds.Add(currentRound.Id);
 
 
             var res = currentStageQuestionService.GetCurrentStageQuestionResponse(gm);
@@ -116,7 +115,6 @@ namespace GameService.Services.CharacterActions
             return new VikingUseFortifyResponse()
             {
                 QuestionResponse = res,
-                UsedInRoundId = currentRound.Id,
                 GameLink = gm.InvitationLink
             };
         }

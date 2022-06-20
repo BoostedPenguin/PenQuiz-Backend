@@ -1,4 +1,5 @@
 ﻿using GameService.Data.Models;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace GameService.Dtos.SignalR_Responses
@@ -49,6 +50,7 @@ namespace GameService.Dtos.SignalR_Responses
     public class VikingCharacterAbilitiesResponse
     {
         public int FortifyCapitalUseCount { get; set; }
+        public List<int> AbilityUsedInRounds { get; set; }
         public int FortifyCapitalMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.VikingCharacterFortifyCapitalMaxUseCount;
     }
 
@@ -61,6 +63,7 @@ namespace GameService.Dtos.SignalR_Responses
     public class WizardCharacterAbilitiesResponse
     {
         public int MCQuestionHintUseCount { get; set; }
+        public List<int> AbilityUsedInRounds { get; set; }
         public int MCQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.WizardCharacterMCQuestionHintMaxUseCount;
     }
 }

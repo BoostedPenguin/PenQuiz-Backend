@@ -78,6 +78,10 @@ namespace GameService.Data.Models
 
         public int FortifyCapitalUseCount { get; set; }
 
+        // Tracks whenever an ability has been used in a BASE round (no capitals for example)
+        public List<int> AbilityUsedInRounds { get; set; } = new List<int>();
+
+
         [NotMapped]
         public int FortifyCapitalMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.VikingCharacterFortifyCapitalMaxUseCount;
     }
@@ -94,6 +98,9 @@ namespace GameService.Data.Models
     {
         [NotMapped]
         public bool IsMCHintsAvailable => MCQuestionHintUseCount < MCQuestionHintMaxUseCount;
+
+        // Tracks whenever an ability has been used in a BASE round (no capitals for example)
+        public List<int> AbilityUsedInRounds { get; set; }
 
         public int MCQuestionHintUseCount { get; set; }
 

@@ -88,12 +88,16 @@ namespace GameService.Services.CharacterActions
             if (participant.GameCharacter.CharacterAbilities is not WizardCharacterAbilities wizardAbilities)
                 throw new ArgumentException($"Character is {participant.GameCharacter.CharacterAbilities.CharacterType}, but WizardCharacter is expected");
 
+            if (wizardAbilities.AbilityUsedInRounds.Any(e => e == currentRound.Id))
+                throw new ArgumentException("Cannot use the wizard ability more than once per round!");
 
             if (!wizardAbilities.IsMCHintsAvailable)
                 throw new ArgumentException("Multiple choice hints use are maxed.");
 
-            wizardAbilities.MCQuestionHintUseCount++;
 
+            // Update wizard abilities data
+            wizardAbilities.MCQuestionHintUseCount++;
+            wizardAbilities.AbilityUsedInRounds.Add(currentRound.Id);
 
             var correct = question.Answers.FirstOrDefault(x => x.Correct);
 
@@ -102,6 +106,8 @@ namespace GameService.Services.CharacterActions
             var wrong = wrongAnswers[r.Next(wrongAnswers.Length)];
 
 
+
+            var questionResponse = currentStageQuestionService.GetCurrentStageQuestionResponse(gm);
             var response = new WizardUseMultipleChoiceHint()
             {
                 PlayerId = participant.PlayerId,
@@ -110,7 +116,8 @@ namespace GameService.Services.CharacterActions
                      mapper.Map<AnswerClientResponse>(correct),
                      mapper.Map<AnswerClientResponse>(wrong),
                 },
-                GameLink = gm.InvitationLink
+                GameLink = gm.InvitationLink,
+                QuestionResponse = questionResponse,
             };
 
 

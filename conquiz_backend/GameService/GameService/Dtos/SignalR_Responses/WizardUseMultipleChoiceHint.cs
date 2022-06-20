@@ -10,6 +10,8 @@ namespace GameService.Dtos.SignalR_Responses
         // 1 of them is correct, other one is wrong
         public List<AnswerClientResponse> Answers { get; set; }
 
+        public QuestionClientResponse QuestionResponse { get; set; }
+
         [JsonIgnore]
         public string GameLink { get; set; }
         public int PlayerId { get; set; }
