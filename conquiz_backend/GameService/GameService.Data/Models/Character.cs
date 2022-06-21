@@ -82,7 +82,7 @@ namespace GameService.Data.Models
         public List<int> AbilityUsedInRounds { get; set; } = new List<int>();
 
         [NotMapped]
-        public int NumberQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.ScientistCharacterNumberQuestionHintMaxUseCount
+        public int NumberQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.ScientistCharacterNumberQuestionHintMaxUseCount;
     }
 
     public class VikingCharacterAbilities : GameCharacterAbilities

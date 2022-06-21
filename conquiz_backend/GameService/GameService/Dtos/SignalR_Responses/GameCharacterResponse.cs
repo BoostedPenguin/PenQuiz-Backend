@@ -45,6 +45,8 @@ namespace GameService.Dtos.SignalR_Responses
         public virtual KingCharacterAbilitiesResponse KingCharacterAbilitiesResponse { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public virtual WizardCharacterAbilitiesResponse WizardCharacterAbilitiesResponse { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public virtual ScientistCharacterAbilitiesResponse ScientistCharacterAbilitiesResponse { get; set; }
     }
 
     public class VikingCharacterAbilitiesResponse
@@ -65,5 +67,12 @@ namespace GameService.Dtos.SignalR_Responses
         public int MCQuestionHintUseCount { get; set; }
         public List<int> AbilityUsedInRounds { get; set; }
         public int MCQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.WizardCharacterMCQuestionHintMaxUseCount;
+    }
+
+    public class ScientistCharacterAbilitiesResponse
+    {
+        public int NumberQuestionHintUseCount { get; set; }
+        public List<int> AbilityUsedInRounds { get; set; }
+        public int NumberQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.ScientistCharacterNumberQuestionHintMaxUseCount;
     }
 }

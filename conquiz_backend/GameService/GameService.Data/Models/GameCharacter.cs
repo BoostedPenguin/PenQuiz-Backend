@@ -39,6 +39,12 @@ namespace GameService.Data.Models
                         CharacterType = CharacterType.VIKING,
                     };
                     break;
+                case CharacterType.SCIENTIST:
+                    this.CharacterAbilities = new ScientistCharacterAbilities()
+                    {
+                        CharacterType = CharacterType.SCIENTIST,
+                    };
+                    break;
             }
         }
         public int Id { get; set; }

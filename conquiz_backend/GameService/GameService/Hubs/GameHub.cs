@@ -215,7 +215,8 @@ namespace GameService.Hubs
             {
                 var res = characterAbilityService.ScientistUseNumberHint();
 
-                await Clients.Group(res.GameLink).ScientistUseNumberHint(res);
+                // Calls caller only because this user does NOT change anything related to question for other instance players
+                await Clients.Caller.ScientistUseNumberHint(res);
 
             }
             catch(Exception ex)
@@ -245,6 +246,7 @@ namespace GameService.Hubs
             {
                 var res = characterAbilityService.WizardUseAbility();
 
+                // Calls caller only because this user does NOT change anything related to question for other instance players
                 await Clients.Caller.WizardUseMultipleChoiceHint(res);
             }
             catch(Exception ex)

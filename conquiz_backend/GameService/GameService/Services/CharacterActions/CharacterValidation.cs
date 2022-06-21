@@ -96,7 +96,7 @@ namespace GameService.Services.CharacterActions
                 AbilityDescription = $"Can help narrow down the number choice question answer. Ability can be used {CharacterAbilitiesGlobalValues.ScientistCharacterNumberQuestionHintMaxUseCount}",
                 AvatarName = "penguinAvatarScientist",
                 CharacterType = CharacterType.SCIENTIST,
-            }
+            };
         }
     }
 }
