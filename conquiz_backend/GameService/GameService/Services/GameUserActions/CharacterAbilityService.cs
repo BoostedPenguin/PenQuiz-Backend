@@ -12,6 +12,7 @@ namespace GameService.Services.GameUserActions
 {
     public interface ICharacterAbilityService
     {
+        ScientistUseNumberHintResponse ScientistUseNumberHint();
         Task<VikingUseFortifyResponse> VikingUseAbility();
         WizardUseMultipleChoiceHint WizardUseAbility();
     }
@@ -19,13 +20,16 @@ namespace GameService.Services.GameUserActions
     public class CharacterAbilityService : ICharacterAbilityService
     {
         private readonly IVikingActions vikingActions;
+        private readonly IScientistActions scientistActions;
         private readonly IWizardActions wizardActions;
 
         public CharacterAbilityService(
             IVikingActions vikingActions,
+            IScientistActions scientistActions,
             IWizardActions wizardActions)
         {
             this.vikingActions = vikingActions;
+            this.scientistActions = scientistActions;
             this.wizardActions = wizardActions;
         }
 
@@ -39,6 +43,11 @@ namespace GameService.Services.GameUserActions
         {
             return wizardActions
                 .UseMultipleChoiceHint();
+        }
+
+        public ScientistUseNumberHintResponse ScientistUseNumberHint()
+        {
+            return scientistActions.UseNumberHint();
         }
     }
 }

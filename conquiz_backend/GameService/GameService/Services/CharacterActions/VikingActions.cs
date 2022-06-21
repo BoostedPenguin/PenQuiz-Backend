@@ -18,7 +18,6 @@ namespace GameService.Services.CharacterActions
 {
     public interface IVikingActions
     {
-        Task GetAvailableFortifyCapitalUses(Participants participant, string invitationLink);
         Task<VikingUseFortifyResponse> UseFortifyCapital();
     }
 
@@ -117,21 +116,6 @@ namespace GameService.Services.CharacterActions
                 QuestionResponse = res,
                 GameLink = gm.InvitationLink
             };
-        }
-
-        public async Task GetAvailableFortifyCapitalUses(Participants participant, string invitationLink)
-        {
-            // Get the character
-            // Check if he can use fortify capital
-            // Send a message to the client with the available count
-
-
-            var vikingAbilities = participant.GameCharacter.CharacterAbilities as VikingCharacterAbilities;
-
-            var totalLeftUses = vikingAbilities.FortifyCapitalMaxUseCount - vikingAbilities.FortifyCapitalUseCount;
-
-            await hubContext.Clients.Group(invitationLink)
-                .VikingGetAbilityUsesLeft(totalLeftUses);
         }
     }
 }

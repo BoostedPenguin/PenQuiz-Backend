@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.MessageBus;
 using GameService.Services.Extensions;
@@ -13,7 +14,12 @@ using System.Linq;
 
 namespace GameService.Services.CharacterActions
 {
-    public class ScientistActions
+    public interface IScientistActions
+    {
+        ScientistUseNumberHintResponse UseNumberHint();
+    }
+
+    public class ScientistActions : IScientistActions
     {
         private readonly IHubContext<GameHub, IGameHub> hubContext;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
@@ -42,7 +48,7 @@ namespace GameService.Services.CharacterActions
         }
 
 
-        public void UseNumberHint()
+        public ScientistUseNumberHintResponse UseNumberHint()
         {
             // Get the current game instance
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
@@ -62,7 +68,7 @@ namespace GameService.Services.CharacterActions
 
             // If not multiple choice round return
             if (currentRound.AttackStage != AttackStage.NUMBER_NEUTRAL && currentRound.AttackStage != AttackStage.NUMBER_PVP)
-                throw new System.ArgumentException("Round type is not number choice");
+                throw new ArgumentException("Round type is not number choice");
 
             // If capital round, but it's number, return
             if (currentRound.PvpRound?.IsCurrentlyCapitalStage == true && currentRound
@@ -92,6 +98,18 @@ namespace GameService.Services.CharacterActions
 
             var correctAnswer = question.Answers.First(e => e.Correct);
 
+            var res = GenerateScientistHint(long.Parse(correctAnswer.Answer));
+
+            var questionResponse = currentStageQuestionService.GetCurrentStageQuestionResponse(gm);
+
+            return new ScientistUseNumberHintResponse()
+            {
+                GameLink = gm.InvitationLink,
+                MinRange = res.MinRange,
+                MaxRange = res.MaxRange,
+                PlayerId = participant.PlayerId,
+                QuestionResponse = questionResponse,
+            };
         }
 
         private class ScientistHint
@@ -107,16 +125,16 @@ namespace GameService.Services.CharacterActions
             // For very high correct answers  (70 000), adding or subtracting twice the margin would
             // Not be very helpful
             // Need a threshhold for when the answer becomes "too big"
-            
+
             // For year answers, presumably between 1500-2022, we can 
 
 
             // Presumed year answer
-            if(correctAnswer >= 1300 && correctAnswer <= 2022)
+            if (correctAnswer >= 1300 && correctAnswer <= 2022)
             {
                 var topAnswerMargin = 2022;
 
-                var topAnswer = random.NextInt64(correctAnswer, correctAnswer + 50 >= topAnswerMargin 
+                var topAnswer = random.NextInt64(correctAnswer, correctAnswer + 50 >= topAnswerMargin
                     ? topAnswerMargin : correctAnswer + 50);
 
                 var botAnswer = random.NextInt64(correctAnswer - 50, correctAnswer);
@@ -141,7 +159,7 @@ namespace GameService.Services.CharacterActions
 
             return new ScientistHint()
             {
-                MaxRange = random.NextInt64(correctAnswer * 2, correctAnswer).ToString(),
+                MaxRange = random.NextInt64(correctAnswer, correctAnswer * 2).ToString(),
                 MinRange = random.NextInt64(correctAnswer / 2, correctAnswer).ToString(),
             };
         }

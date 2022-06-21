@@ -66,11 +66,10 @@ namespace GameService.Hubs
 
         Task GetGameCharacter(GameCharacterResponse characterResponse);
 
+        Task ScientistUseNumberHint(ScientistUseNumberHintResponse response);
+
         Task VikingUseFortifyCapital(VikingUseFortifyResponse characterResponse);
 
-        Task VikingGetAbilityUsesLeft(int usesLeft);
-
-        Task WizardGetAbilityUsesLeft(int usesLeft);
         Task WizardUseMultipleChoiceHint(WizardUseMultipleChoiceHint useMultipleChoiceHint);
     }
     [Authorize]
@@ -147,6 +146,7 @@ namespace GameService.Hubs
         }
 
 
+
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             //var userId = int.Parse(Context.User.Claims
@@ -206,6 +206,24 @@ namespace GameService.Hubs
             }
         }
 
+
+        // Character abilities
+
+        public async Task ScientistUseAbility()
+        {
+            try
+            {
+                var res = characterAbilityService.ScientistUseNumberHint();
+
+                await Clients.Group(res.GameLink).ScientistUseNumberHint(res);
+
+            }
+            catch(Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
         public async Task VikingUseAbility()
         {
             try
@@ -234,6 +252,8 @@ namespace GameService.Hubs
                 logger.LogInformation($"Wizard ability not used: {ex.Message}");
             }
         }
+
+        // End of character abilities
 
         public async Task SelectTerritory(string mapTerritoryName)
         {
