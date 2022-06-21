@@ -41,6 +41,7 @@ namespace GameService.Data
         public virtual DbSet<KingCharacterAbilities> KingCharacterAbilities { get; set; }
         public virtual DbSet<WizardCharacterAbilities> WizardCharacterAbilities { get; set; }
         public virtual DbSet<VikingCharacterAbilities> VikingCharacterAbilities { get; set; }
+        public virtual DbSet<ScientistCharacterAbilities> ScientistCharacterAbilities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

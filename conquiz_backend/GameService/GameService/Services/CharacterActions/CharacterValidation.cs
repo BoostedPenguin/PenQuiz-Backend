@@ -63,7 +63,7 @@ namespace GameService.Services.CharacterActions
             {
                 Name = "King",
                 Description = "Some description",
-                PricingType = CharacterPricingType.FREE,
+                PricingType = CharacterPricingType.PREMIUM,
                 CharacterGlobalIdentifier = Guid.NewGuid().ToString(),
                 AbilityDescription = $"Has a permanent score bonus multiplier when you capture a territory. Multiplier: {CharacterAbilitiesGlobalValues.KingCharacterPointsMultiplier * 100}%",
                 CharacterType = CharacterType.KING,
