@@ -12,6 +12,7 @@ namespace GameService.Data.Models
     {
         public const double KingCharacterPointsMultiplier = 0.1;
         public const int WizardCharacterMCQuestionHintMaxUseCount = 3;
+        public const int ScientistCharacterNumberQuestionHintMaxUseCount = 3;
         public const int VikingCharacterFortifyCapitalMaxUseCount = 2;
     }
     public enum CharacterPricingType
@@ -24,7 +25,8 @@ namespace GameService.Data.Models
     {
         WIZARD,
         KING,
-        VIKING
+        VIKING,
+        SCIENTIST,
     }
 
     /// <summary>
@@ -69,6 +71,18 @@ namespace GameService.Data.Models
         public int GameCharacterId { get; set; }
 
         public virtual GameCharacter GameCharacter { get; set; }
+    }
+
+
+    public class ScientistCharacterAbilities : GameCharacterAbilities
+    {
+        [NotMapped]
+        public bool IsNumberHintsAvailable => NumberQuestionHintUseCount < NumberQuestionHintMaxUseCount;
+        public int NumberQuestionHintUseCount { get; set; }
+        public List<int> AbilityUsedInRounds { get; set; } = new List<int>();
+
+        [NotMapped]
+        public int NumberQuestionHintMaxUseCount { get; set; } = CharacterAbilitiesGlobalValues.ScientistCharacterNumberQuestionHintMaxUseCount
     }
 
     public class VikingCharacterAbilities : GameCharacterAbilities

@@ -33,6 +33,7 @@ namespace GameService.Services.CharacterActions
                     CharacterType.KING => GenerateKing(),
                     CharacterType.WIZARD => GenerateWizard(),
                     CharacterType.VIKING => GenerateViking(),
+                    CharacterType.SCIENTIST => GenerateScientist(),
                     _ => throw new ArgumentException("The missing character ENUM does not have a dedicated character template"),
                 };
 
@@ -82,6 +83,20 @@ namespace GameService.Services.CharacterActions
                 AvatarName = "penguinAvatarWizard",
                 CharacterType = CharacterType.WIZARD,
             };
+        }
+
+        private static Character GenerateScientist()
+        {
+            return new Character()
+            {
+                Name = "Scientist",
+                Description = "Some description",
+                PricingType = CharacterPricingType.FREE,
+                CharacterGlobalIdentifier = Guid.NewGuid().ToString(),
+                AbilityDescription = $"Can help narrow down the number choice question answer. Ability can be used {CharacterAbilitiesGlobalValues.ScientistCharacterNumberQuestionHintMaxUseCount}",
+                AvatarName = "penguinAvatarScientist",
+                CharacterType = CharacterType.SCIENTIST,
+            }
         }
     }
 }
