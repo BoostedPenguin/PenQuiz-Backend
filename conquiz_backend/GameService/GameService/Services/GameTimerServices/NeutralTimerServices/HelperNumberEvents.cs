@@ -91,6 +91,7 @@ namespace GameService.Services.GameTimerServices.NeutralTimerServices
 
             data.LastPvpRound = gm.Rounds.OrderByDescending(e => e.GameRoundNumber).Select(e => e.GameRoundNumber).First();
 
+            CommonTimerFunc.CalculateUserScore(gm);
             timerWrapper.StartTimer(ActionState.OPEN_PVP_PLAYER_ATTACK_VOTING);
         }
 
