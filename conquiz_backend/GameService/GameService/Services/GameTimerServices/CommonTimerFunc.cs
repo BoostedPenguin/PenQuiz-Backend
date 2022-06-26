@@ -170,14 +170,18 @@ namespace GameService.Services.GameTimerServices
                     .Where(x => !x.IsCapital).ToList();
 
                 var groupedBy = allPlayerTerritoriesWoCapital
-                    .GroupBy(x => x.TakenBy)
-                    .OrderBy(x => x.Count())
+                    .GroupBy(
+                        x => x.TakenBy,
+                        x => x,
+                        (key, g) => new { TakenBy = key, Territory = g.ToList(), TotalCombinedScore = g.Sum(e => e.TerritoryScore) }
+                    )
                     .ToList();
 
                 var identicalScores = groupedBy
-                    .Where(x => groupedBy
-                        .Where(y => y != x)
-                        .Any(y => x.Count() == y.Count()));
+                    .Where(thisPerson => groupedBy.Where(otherPerson => thisPerson != otherPerson)
+                    .Any(otherPerson => thisPerson.TotalCombinedScore == otherPerson.TotalCombinedScore))
+                    .ToList();
+
 
                 // On final pvp round and there are at least 2 people with the same score
                 // Request additional number question to make sure scoring for each user is unique
@@ -202,7 +206,7 @@ namespace GameService.Services.GameTimerServices
                     {
                         baseRound.NeutralRound.TerritoryAttackers.Add(new AttackingNeutralTerritory()
                         {
-                            AttackerId = person.Key.Value,
+                            AttackerId = person.TakenBy ?? 0,
                             AttackOrderNumber = 0,
                         });
                     }
