@@ -260,7 +260,7 @@ namespace GameService.Services.GameLobbyServices
             // DEBUG PURPOSES ONLY, THIS ASSIGNS THE CREATOR A SPECIFIC CHARACTER
             if(participants == null || participants.Length == 0)
             {
-                return characters.First(e => e.CharacterType == CharacterType.VIKING);
+                return characters.First(e => e.CharacterType == CharacterType.SCIENTIST);
             }
 
             while (selectedCharacter == null)

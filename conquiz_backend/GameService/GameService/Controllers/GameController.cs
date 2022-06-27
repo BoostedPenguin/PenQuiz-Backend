@@ -17,6 +17,7 @@ using GameService.Dtos;
 using GameService.Context;
 using GameService.Services.GameTimerServices;
 using GameService.Data;
+using GameService.Services.REST_Services;
 
 namespace GameService.Controllers
 {

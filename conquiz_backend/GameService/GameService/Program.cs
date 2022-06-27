@@ -24,6 +24,7 @@ using GameService.Services.GameTimerServices.PvpTimerServices;
 using GameService.Services.GameLobbyServices;
 using GameService.Services.CharacterActions;
 using GameService.Services.GameUserActions;
+using GameService.Services.REST_Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,6 +77,9 @@ builder.Services.AddSingleton<IExampleService, ExampleService>();
 
 // Statistics API
 builder.Services.AddSingleton<IStatisticsService, StatisticsService>();
+
+// Characters API
+builder.Services.AddSingleton<ICharacterService, CharacterService>();
 
 // RabbitMQ event processor
 builder.Services.AddSingleton<IEventProcessor, EventProcessor>();
