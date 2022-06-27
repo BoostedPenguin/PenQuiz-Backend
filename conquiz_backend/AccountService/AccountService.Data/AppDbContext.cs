@@ -22,6 +22,8 @@ namespace AccountService.Data
 
         public virtual DbSet<RefreshToken> RefreshToken { get; set; }
         public virtual DbSet<Users> Users { get; set; }
+        public virtual DbSet<Wallet> Wallets { get; set; }
+        public virtual DbSet<Character> Characters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

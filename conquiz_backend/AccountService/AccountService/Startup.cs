@@ -80,7 +80,11 @@ namespace AccountService
             
             services.AddSingleton<IAccountAdminService, AccountAdminService>();
 
+            services.AddSingleton<ICharacterService, CharacterService>();
+
             services.AddHttpClient();
+
+            services.AddHttpContextAccessor();
 
             services.AddGrpc();
 
