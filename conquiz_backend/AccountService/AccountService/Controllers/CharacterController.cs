@@ -1,4 +1,5 @@
-﻿using AccountService.Services;
+﻿using AccountService.Dtos;
+using AccountService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,11 +37,11 @@ namespace AccountService.Controllers
 
         [HttpPost("gift")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "admin")]
-        public async Task<IActionResult> GetOwnCharacters([FromBody]string userGlobalId, [FromBody]string characterGlobalId)
+        public async Task<IActionResult> GetOwnCharacters(OwnCharacterRequest request)
         {
             try
             {
-                await characterService.GiftCharacter(userGlobalId, characterGlobalId);
+                await characterService.GiftCharacter(request.UserGlobalId, request.CharacterGlobalId);
 
                 return Ok("Successfully gifted character to user!");
             }

@@ -1,5 +1,6 @@
 ﻿using GameService.Data;
 using GameService.Data.Models;
+using GameService.MessageBus;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,17 @@ namespace GameService.Services.CharacterActions
 {
     public class CharacterValidation
     {
+        private readonly IMessageBusClient messageBus;
+
+        public CharacterValidation(IMessageBusClient messageBus)
+        {
+            this.messageBus = messageBus;
+        }
+
+        public void SendEventMessage(Character character)
+        {
+
+        }
         public static async Task ValidateCharacters(DefaultContext db)
         {
             var allCharacter = Enum.GetValues(typeof(CharacterType)).Cast<CharacterType>();

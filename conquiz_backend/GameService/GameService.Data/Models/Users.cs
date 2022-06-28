@@ -16,6 +16,7 @@ namespace GameService.Data.Models
         public bool IsBot { get; set; }
         public string UserGlobalIdentifier { get; set; }
 
+        public virtual ICollection<Character> OwnedCharacters { get; set; }
         public virtual ICollection<Participants> Participants { get; set; }
     }
 }

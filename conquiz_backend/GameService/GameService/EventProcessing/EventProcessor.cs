@@ -51,9 +51,39 @@ namespace GameService.EventProcessing
                 case EventType.FinalQuestionResponse:
                     AddFinalQuestionResponse(message);
                     break;
+                case EventType.UserCharacterResponse:
+                    UserCharacterResponse(message);
+                    break;
                 default:
                     break;
             }
+        }
+
+        /// <summary>
+        /// Adds a reference from a user to a character as "Ownership"
+        /// </summary>
+        /// <param name="message"></param>
+        private void UserCharacterResponse(string message)
+        {
+            var result = JsonSerializer.Deserialize<UserCharacterEventResponse>(message);
+
+            using var db = contextFactory.CreateDbContext();
+
+            var character = db.Characters.FirstOrDefault(e => e.CharacterGlobalIdentifier == result.CharacterGlobalId);
+
+            var user = db.Users.Include(e => e.OwnedCharacters).FirstOrDefault(e => e.UserGlobalIdentifier == result.UserGlobalId);
+
+            var existingCharacter = user.OwnedCharacters.FirstOrDefault(e => e.CharacterGlobalIdentifier == character.CharacterGlobalIdentifier);
+
+            if(existingCharacter != null)
+            {
+                logger.LogWarning($"User {user.UserGlobalIdentifier}, already has {character.CharacterGlobalIdentifier} character in his inventory");
+                return;
+            }
+            user.OwnedCharacters.Add(character);
+
+            db.Update(user);
+            db.SaveChanges();
         }
 
         private void AddFinalQuestionResponse(string message)
@@ -258,6 +288,9 @@ namespace GameService.EventProcessing
                 case "Capital_Question_Response":
                     logger.LogDebug($"Capital Question Response Detected");
                     return EventType.CapitalQuestionResponse;
+                case "User_Character_Response":
+                    logger.LogDebug($"User Character Response Detected");
+                    return EventType.UserCharacterResponse;
                 default:
                     logger.LogDebug($"Could not determine the event type");
                     return EventType.Undetermined;
@@ -271,6 +304,7 @@ namespace GameService.EventProcessing
         CapitalQuestionResponse,
         QuestionsReceived,
         UserPublished,
+        UserCharacterResponse,
         Undetermined
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AccountService.Data;
 using AccountService.Data.Models;
+using AccountService.MessageBus;
 using AccountService.Services.Extensions;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -21,12 +22,14 @@ namespace AccountService.Services
         private readonly IDbContextFactory<AppDbContext> contextFactory;
         private readonly IHttpContextAccessor httpContext;
         private readonly IMapper mapper;
+        private readonly IMessageBusClient messageBus;
 
-        public CharacterService(IDbContextFactory<AppDbContext> contextFactory, IHttpContextAccessor httpContext, IMapper mapper)
+        public CharacterService(IDbContextFactory<AppDbContext> contextFactory, IHttpContextAccessor httpContext, IMapper mapper, IMessageBusClient messageBus)
         {
             this.contextFactory = contextFactory;
             this.httpContext = httpContext;
             this.mapper = mapper;
+            this.messageBus = messageBus;
         }
 
         public async Task<Character[]> GetOwnCharacters()
@@ -61,6 +64,12 @@ namespace AccountService.Services
 
             db.Update(user);
             await db.SaveChangesAsync();
+
+            messageBus.PublishUserCharacter(new Dtos.UserCharacterEventDto()
+            {
+                CharacterGlobalId = characterGlobalId,
+                UserGlobalId = userGlobalId
+            });
         }
     }
 }

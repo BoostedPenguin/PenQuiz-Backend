@@ -13,6 +13,7 @@ namespace AccountService.MessageBus
     public interface IMessageBusClient
     {
         void PublishNewUser(UserCreatedDto userCreatedDto);
+        void PublishUserCharacter(UserCharacterEventDto response);
     }
 
     public class MessageBusClient : IMessageBusClient
@@ -67,6 +68,21 @@ namespace AccountService.MessageBus
         public void PublishNewUser(UserCreatedDto userCreatedDto)
         {
             var message = JsonSerializer.Serialize(userCreatedDto);
+
+            if (connection.IsOpen)
+            {
+                Console.WriteLine("--> RabbitMQ Connection Open, sending message...");
+                SendMessage(message);
+            }
+            else
+            {
+                Console.WriteLine("--> RabbitMQ connectionis closed, not sending");
+            }
+        }
+
+        public void PublishUserCharacter(UserCharacterEventDto response)
+        {
+            var message = JsonSerializer.Serialize(response);
 
             if (connection.IsOpen)
             {

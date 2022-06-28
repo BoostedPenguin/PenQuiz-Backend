@@ -31,6 +31,9 @@ namespace GameService.Dtos.SignalR_Responses
         public CharacterPricingType PricingType { get; set; }
         public CharacterType CharacterType { get; set; }
         public double? Price { get; set; }
+
+        [JsonIgnore]
+        public string Event { get; set; }
     }
 
     public class GameCharacterAbilitiesResponse

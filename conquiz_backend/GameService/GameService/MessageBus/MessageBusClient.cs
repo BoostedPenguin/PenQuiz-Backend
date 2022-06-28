@@ -1,4 +1,5 @@
 ﻿using GameService.Dtos;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Helpers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -19,6 +20,7 @@ namespace GameService.MessageBus
         void RequestQuestions(RequestQuestionsDto requestQuestionsDto);
         void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto);
         void RequestFinalNumberQuestion(RequestFinalNumberQuestionDto requestFinalNumberDto);
+        void SendNewCharacter(CharacterResponse character);
     }
 
     public class MessageBusClient : IMessageBusClient, IDisposable
@@ -105,6 +107,11 @@ namespace GameService.MessageBus
             {
                 logger.LogWarning($"RabbitMQ connectionis closed, not sending message.");
             }
+        }
+
+        private void SendNewCharacter(CharacterResponse character)
+        {
+            QRequest(character);
         }
 
         public void RequestQuestions(RequestQuestionsDto requestQuestionsDto)

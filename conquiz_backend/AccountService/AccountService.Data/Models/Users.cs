@@ -25,7 +25,6 @@ namespace AccountService.Data.Models
         public bool IsInGame { get; set; }
         public string UserGlobalIdentifier { get; set; }
 
-        public virtual Wallet Wallet { get; set; }
         public virtual ICollection<Character> OwnedCharacters { get; set; }
         public virtual ICollection<RefreshToken> RefreshToken { get; set; }
     }
