@@ -1,5 +1,7 @@
-﻿using GameService.Data;
+﻿using AutoMapper;
+using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos.SignalR_Responses;
 using GameService.MessageBus;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -9,26 +11,35 @@ using System.Threading.Tasks;
 
 namespace GameService.Services.CharacterActions
 {
-    public class CharacterValidation
+    public interface ICharacterValidationService
+    {
+        Task ValidateCharacters(DefaultContext db);
+    }
+
+    public class CharacterValidationService : ICharacterValidationService
     {
         private readonly IMessageBusClient messageBus;
+        private readonly IMapper mapper;
 
-        public CharacterValidation(IMessageBusClient messageBus)
+        public CharacterValidationService(IMessageBusClient messageBus, IMapper mapper)
         {
             this.messageBus = messageBus;
+            this.mapper = mapper;
         }
 
-        public void SendEventMessage(Character character)
+        private void SendEventMessage(Character character)
         {
-
+            var mappedCharacter = mapper.Map<CharacterResponse>(character);
+            messageBus.SendNewCharacter(mappedCharacter);
         }
-        public static async Task ValidateCharacters(DefaultContext db)
+
+
+        public async Task ValidateCharacters(DefaultContext db)
         {
             var allCharacter = Enum.GetValues(typeof(CharacterType)).Cast<CharacterType>();
 
             var allCharactersInDb = await db.Characters
                 .Where(e => allCharacter.Contains(e.CharacterType))
-                .AsNoTracking()
                 .ToListAsync();
 
             var charactersNotInDb = allCharacter
@@ -38,7 +49,7 @@ namespace GameService.Services.CharacterActions
             if (charactersNotInDb.Count == 0)
                 return;
 
-            foreach(var cNotInDb in charactersNotInDb)
+            foreach (var cNotInDb in charactersNotInDb)
             {
                 var g = cNotInDb switch
                 {
@@ -48,6 +59,9 @@ namespace GameService.Services.CharacterActions
                     CharacterType.SCIENTIST => GenerateScientist(),
                     _ => throw new ArgumentException("The missing character ENUM does not have a dedicated character template"),
                 };
+
+                // Notify account server that a new character is going to be added
+                SendEventMessage(g);
 
                 await db.AddAsync(g);
             }

@@ -34,28 +34,35 @@ namespace GameService.EventProcessing
         }
         public void ProcessEvent(string message)
         {
-            var eventType = DetermineEvent(message);
-
-            switch (eventType)
+            try
             {
-                case EventType.UserPublished:
-                    AddUser(message);
-                    break;
-                case EventType.QuestionsReceived:
-                    var result = JsonSerializer.Deserialize<QResponse>(message);
-                    AddGameQuestions(result);
-                    break;
-                case EventType.CapitalQuestionResponse:
-                    AddCapitalQuestions(message);
-                    break;
-                case EventType.FinalQuestionResponse:
-                    AddFinalQuestionResponse(message);
-                    break;
-                case EventType.UserCharacterResponse:
-                    UserCharacterResponse(message);
-                    break;
-                default:
-                    break;
+                var eventType = DetermineEvent(message);
+
+                switch (eventType)
+                {
+                    case EventType.UserPublished:
+                        AddUser(message);
+                        break;
+                    case EventType.QuestionsReceived:
+                        var result = JsonSerializer.Deserialize<QResponse>(message);
+                        AddGameQuestions(result);
+                        break;
+                    case EventType.CapitalQuestionResponse:
+                        AddCapitalQuestions(message);
+                        break;
+                    case EventType.FinalQuestionResponse:
+                        AddFinalQuestionResponse(message);
+                        break;
+                    case EventType.UserCharacterResponse:
+                        UserCharacterResponse(message);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch(Exception ex)
+            {
+                logger.LogError(ex.Message);
             }
         }
 
@@ -71,7 +78,25 @@ namespace GameService.EventProcessing
 
             var character = db.Characters.FirstOrDefault(e => e.CharacterGlobalIdentifier == result.CharacterGlobalId);
 
+            if(character == null)
+            {
+                logger.LogWarning($"Character {character.CharacterGlobalIdentifier} does not exist!");
+                return;
+            }
+
+            if(character.PricingType == CharacterPricingType.FREE)
+            {
+                logger.LogWarning($"Character {character.CharacterGlobalIdentifier} is free! Not added to user!");
+                return;
+            }
+
             var user = db.Users.Include(e => e.OwnedCharacters).FirstOrDefault(e => e.UserGlobalIdentifier == result.UserGlobalId);
+
+            if(user == null)
+            {
+                logger.LogWarning($"User {result.UserGlobalId} does not exist!");
+                return;
+            }
 
             var existingCharacter = user.OwnedCharacters.FirstOrDefault(e => e.CharacterGlobalIdentifier == character.CharacterGlobalIdentifier);
 

@@ -118,6 +118,8 @@ builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
 
 builder.Services.AddSingleton<IGameControlService, GameControlService>();
 
+builder.Services.AddSingleton<ICharacterValidationService, CharacterValidationService>();
+
 builder.Services.AddSingleton<IAnswerQuestionService, AnswerQuestionService>();
 
 builder.Services.AddSingleton<ITerritorySelectionService, TerritorySelectionService>();

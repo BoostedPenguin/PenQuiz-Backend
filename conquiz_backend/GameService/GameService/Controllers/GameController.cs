@@ -58,18 +58,18 @@ namespace GameService.Controllers
         {
             try
             {
-                messageBus.SendNewCharacter(new Dtos.SignalR_Responses.CharacterResponse()
-                {
-                    AbilityDescription = "data",
-                    AvatarName = "someData",
-                    CharacterGlobalIdentifier = "8123-1238123-1238123",
-                    CharacterType = Data.Models.CharacterType.VIKING,
-                    Description = "awe",
-                    Event = "Character_Published",
-                    Name = "ea",
-                    Price = 0.51,
-                    PricingType = Data.Models.CharacterPricingType.FREE
-                });
+                //messageBus.SendNewCharacter(new Dtos.SignalR_Responses.CharacterResponse()
+                //{
+                //    AbilityDescription = "data",
+                //    AvatarName = "someData",
+                //    CharacterGlobalIdentifier = "8123-1238123-1238123",
+                //    CharacterType = Data.Models.CharacterType.VIKING,
+                //    Description = "awe",
+                //    Event = "Character_Published",
+                //    Name = "ea",
+                //    Price = 0.51,
+                //    PricingType = Data.Models.CharacterPricingType.FREE
+                //});
 
                 return Ok("Success");
             }

@@ -33,6 +33,7 @@ namespace GameService.Context
             ValidateResources(
                 db,
                 serviceScope.ServiceProvider.GetService<IMapGeneratorService>(),
+                serviceScope.ServiceProvider.GetService<ICharacterValidationService>(),
                 serviceScope.ServiceProvider.GetService<IGameService>(), logger).Wait();
 
 
@@ -78,7 +79,7 @@ namespace GameService.Context
             logger.LogInformation("Migrations added");
         }
 
-        private static async Task ValidateResources(DefaultContext db,IMapGeneratorService mapGeneratorService, IGameService gameService, ILogger logger = null)
+        private static async Task ValidateResources(DefaultContext db,IMapGeneratorService mapGeneratorService, ICharacterValidationService characterValidationService, IGameService gameService, ILogger logger = null)
         {
             try
             {
@@ -92,7 +93,7 @@ namespace GameService.Context
                 //questionService.AddDefaultQuestions();
 
                 // Validate that every character model exists in the database
-                await CharacterValidation.ValidateCharacters(db);
+                await characterValidationService.ValidateCharacters(db);
 
                 // Loads all Antarctica map borders in memory for subsequent games
                 await MapGeneratorService.LoadDefaultMapBordersInMemory(db, logger);
