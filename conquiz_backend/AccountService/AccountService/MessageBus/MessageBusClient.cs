@@ -1,4 +1,6 @@
 ﻿using AccountService.Dtos;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using System;
@@ -20,8 +22,11 @@ namespace AccountService.MessageBus
     {
         private readonly IConnection connection;
         private readonly IModel channel;
+        private readonly IWebHostEnvironment env;
 
-        public MessageBusClient(IOptions<AppSettings> appSettings)
+        public string AccountsExchange { get; }
+
+        public MessageBusClient(IOptions<AppSettings> appSettings, IWebHostEnvironment env)
         {
             var factory = new ConnectionFactory()
             {
@@ -45,10 +50,20 @@ namespace AccountService.MessageBus
 
             try
             {
+
+                if (env.IsProduction())
+                {
+                    AccountsExchange = "account_events";
+                }
+                else
+                {
+                    AccountsExchange = "dev_account_events";
+                }
+
                 connection = factory.CreateConnection();
                 channel = connection.CreateModel();
 
-                channel.ExchangeDeclare(exchange: "trigger", type: ExchangeType.Fanout);
+                channel.ExchangeDeclare(exchange: AccountsExchange, type: ExchangeType.Direct);
 
                 connection.ConnectionShutdown += Connection_ConnectionShutdown;
 
@@ -58,6 +73,8 @@ namespace AccountService.MessageBus
             {
                 Console.WriteLine($"--> Could not connect to the Message Bus: {ex.Message}");
             }
+
+            this.env = env;
         }
 
         private void Connection_ConnectionShutdown(object sender, ShutdownEventArgs e)
@@ -99,8 +116,15 @@ namespace AccountService.MessageBus
         {
             var body = Encoding.UTF8.GetBytes(message);
 
-            channel.BasicPublish(exchange: "trigger",
-                            routingKey: "",
+            var rk = "account_response";
+
+            if (!env.IsProduction())
+            {
+                rk = "dev_account_response";
+            }
+
+            channel.BasicPublish(exchange: AccountsExchange,
+                            routingKey: rk,
                             basicProperties: null,
                             body: body);
 

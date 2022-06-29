@@ -8,6 +8,7 @@ namespace GameService.Data.Models
         public Users()
         {
             Participants = new HashSet<Participants>();
+            OwnedCharacters = new HashSet<Character>();
         }
 
         public int Id { get; set; }

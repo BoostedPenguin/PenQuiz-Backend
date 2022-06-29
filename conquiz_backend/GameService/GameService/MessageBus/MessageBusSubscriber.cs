@@ -58,18 +58,24 @@ namespace GameService.MessageBus
 
             this.connection = factory.CreateConnection();
             this.channel = connection.CreateModel();
-            channel.ExchangeDeclare(exchange: "trigger", type: ExchangeType.Fanout);
+            //channel.ExchangeDeclare(exchange: "trigger", type: ExchangeType.Fanout);
             queue = channel.QueueDeclare().QueueName;
             
-            channel.QueueBind(queue, "trigger", "");
-
             if(env.IsProduction())
             {
+                channel.ExchangeDeclare(exchange: "question_events", type: ExchangeType.Direct);
+                channel.ExchangeDeclare(exchange: "account_events", type: ExchangeType.Direct);
+
                 channel.QueueBind(queue, "question_events", "question_response");
+                channel.QueueBind(queue, "account_events", "account_response");
             }
             else
             {
+                channel.ExchangeDeclare(exchange: "dev_question_events", type: ExchangeType.Direct);
+                channel.ExchangeDeclare(exchange: "dev_account_events", type: ExchangeType.Direct);
+
                 channel.QueueBind(queue, "dev_question_events", "dev_question_response");
+                channel.QueueBind(queue, "dev_account_events", "dev_account_response");
             }
 
             logger.LogInformation("Listening on the Message Bus..");

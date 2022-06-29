@@ -86,59 +86,74 @@ namespace GameService.MessageBus
             logger.LogInformation($"RabbitMQ Connection Shutdown");
         }
 
-        private void QRequest(object requestDto)
+        private void SendMessageToAccount(object requestDto)
         {
             var message = JsonSerializer.Serialize(requestDto);
 
+            if (env.IsProduction())
+            {
+                SendMessage(message, "account_events", "account_request");
+            }
+            else
+            {
+                SendMessage(message, "dev_account_events", "dev_account_request");
+            }
+        }
+
+        private void SendMessageToQuestion(object requestDto)
+        {
+            var message = JsonSerializer.Serialize(requestDto);
+
+            if (env.IsProduction())
+            {
+                SendMessage(message, "question_events", "question_request");
+            }
+            else
+            {
+                SendMessage(message, "dev_question_events", "dev_question_request");
+            }
+        }
+
+
+        public void SendNewCharacter(CharacterResponse character)
+        {
+            SendMessageToAccount(character);
+        }
+
+        public void RequestQuestions(RequestQuestionsDto requestQuestionsDto)
+        {
+            SendMessageToQuestion(requestQuestionsDto);
+        }
+
+        public void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto)
+        {
+            SendMessageToQuestion(requestQuestionsDto);
+        }
+
+        public void RequestFinalNumberQuestion(RequestFinalNumberQuestionDto requestQuestionsDto)
+        {
+            SendMessageToQuestion(requestQuestionsDto);
+        }
+
+        private void SendMessage(string message, string exchange, string rk)
+        {
             if (connection.IsOpen)
             {
                 logger.LogDebug($"RabbitMQ Connection Open, sending message...");
 
-                if (env.IsProduction())
-                {
-                    SendMessage(message, "question_request");
-                }
-                else
-                {
-                    SendMessage(message, "dev_question_request");
-                }
+                var body = Encoding.UTF8.GetBytes(message);
+
+                channel.BasicPublish(exchange: exchange,
+                                routingKey: rk,
+                                basicProperties: null,
+                                body: body);
+
+                logger.LogInformation($"We have sent a DIRECT msg with: {rk}");
             }
             else
             {
                 logger.LogWarning($"RabbitMQ connectionis closed, not sending message.");
             }
-        }
-
-        public void SendNewCharacter(CharacterResponse character)
-        {
-            QRequest(character);
-        }
-
-        public void RequestQuestions(RequestQuestionsDto requestQuestionsDto)
-        {
-            QRequest(requestQuestionsDto);
-        }
-
-        public void RequestQuestions(RequestCapitalQuestionsDto requestQuestionsDto)
-        {
-            QRequest(requestQuestionsDto);
-        }
-
-        public void RequestFinalNumberQuestion(RequestFinalNumberQuestionDto requestQuestionsDto)
-        {
-            QRequest(requestQuestionsDto);
-        }
-
-        private void SendMessage(string message, string rk)
-        {
-            var body = Encoding.UTF8.GetBytes(message);
-
-            channel.BasicPublish(exchange: QuestionsExchange,
-                            routingKey: rk,
-                            basicProperties: null,
-                            body: body);
-
-            logger.LogInformation($"We have sent a DIRECT msg with: {rk}");
         }
 
         public void Dispose()

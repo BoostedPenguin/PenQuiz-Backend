@@ -55,10 +55,19 @@ namespace AccountService.MessageBus
 
             this.connection = factory.CreateConnection();
             this.channel = connection.CreateModel();
-            channel.ExchangeDeclare(exchange: "trigger", type: ExchangeType.Fanout);
             queue = channel.QueueDeclare().QueueName;
 
-            channel.QueueBind(queue, "trigger", "");
+
+            if (env.IsProduction())
+            {
+                channel.ExchangeDeclare(exchange: "account_events", type: ExchangeType.Direct);
+                channel.QueueBind(queue, "account_events", "account_request");
+            }
+            else
+            {
+                channel.ExchangeDeclare(exchange: "dev_account_events", type: ExchangeType.Direct);
+                channel.QueueBind(queue, "dev_account_events", "dev_account_request");
+            }
 
             logger.LogInformation("Listening on the Message Bus..");
 

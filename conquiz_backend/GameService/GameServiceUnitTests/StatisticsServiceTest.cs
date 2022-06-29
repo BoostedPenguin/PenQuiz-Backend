@@ -11,6 +11,7 @@ using Xunit;
 using Shouldly;
 using GameService.Data;
 using GameService.Data.Models;
+using GameService.Services.REST_Services;
 
 namespace GameServiceUnitTests
 {
