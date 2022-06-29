@@ -109,7 +109,7 @@ namespace GameService.MessageBus
             }
         }
 
-        private void SendNewCharacter(CharacterResponse character)
+        public void SendNewCharacter(CharacterResponse character)
         {
             QRequest(character);
         }

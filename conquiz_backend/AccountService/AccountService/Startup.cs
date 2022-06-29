@@ -1,5 +1,6 @@
 using AccountService.Context;
 using AccountService.Data;
+using AccountService.EventProcessing;
 using AccountService.Grpc;
 using AccountService.MessageBus;
 using AccountService.Services;
@@ -81,6 +82,7 @@ namespace AccountService
             services.AddSingleton<IAccountAdminService, AccountAdminService>();
 
             services.AddSingleton<ICharacterService, CharacterService>();
+            services.AddSingleton<IEventProcessor, EventProcessor>();
 
             services.AddHttpClient();
 
@@ -94,6 +96,9 @@ namespace AccountService
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "AccountService", Version = "v1" });
             });
+
+            services.AddHostedService<MessageBusSubscriber>();
+
 
             services.AddControllers().AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
         }

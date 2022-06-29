@@ -68,7 +68,8 @@ namespace AccountService.Services
             messageBus.PublishUserCharacter(new Dtos.UserCharacterEventDto()
             {
                 CharacterGlobalId = characterGlobalId,
-                UserGlobalId = userGlobalId
+                UserGlobalId = userGlobalId,
+                Event = "User_Character_Response"
             });
         }
     }

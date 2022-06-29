@@ -206,8 +206,6 @@ builder.Services.AddControllers();
 
 builder.Services.AddHostedService<MessageBusSubscriber>();
 
-
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

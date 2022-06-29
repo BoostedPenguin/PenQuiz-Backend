@@ -4,5 +4,6 @@
     {
         public string UserGlobalId { get; set; }
         public string CharacterGlobalId { get; set;}
+        public string Event { get; set; }
     }
 }
