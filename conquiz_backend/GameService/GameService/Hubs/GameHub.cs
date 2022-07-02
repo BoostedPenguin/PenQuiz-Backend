@@ -38,6 +38,10 @@ namespace GameService.Hubs
         Task NavigateToGame();
 
 
+        // Game lobby available characters res
+        Task GameLobbyGetAvailableCharacters(CharacterResponse[] characterResponses);
+
+
         // Client game actions
         // Send by user
         Task PlayerAnsweredMCQuestion(int answerId);
@@ -386,7 +390,10 @@ namespace GameService.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
 
                 var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
-                var gameCharacterResponse = mapper.Map<GameCharacterResponse>(result.GameCharacter);
+                //var gameCharacterResponse = mapper.Map<GameCharacterResponse>(result.GameCharacter);
+
+
+                await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
 
                 await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);

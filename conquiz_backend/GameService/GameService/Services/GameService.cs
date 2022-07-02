@@ -43,10 +43,13 @@ namespace GameService.Services
     public class ExistingLobbyGameException : Exception
     {
         public GameInstance ExistingGame { get; }
+        public CharacterResponse[] AvailableUserCharacters { get; init; }
+        [Obsolete("Stripped during character development phase, we use QuestionClientResponse for character data")]
         public GameCharacter ExistingCharacter { get; }
-        public ExistingLobbyGameException(GameInstance existingGame, GameCharacter gameCharacter, string message) : base(message)
+        public ExistingLobbyGameException(GameInstance existingGame, string message, CharacterResponse[] availableUserCharacters, GameCharacter gameCharacter = null) : base(message)
         {
             this.ExistingGame = existingGame;
+            AvailableUserCharacters = availableUserCharacters;
             ExistingCharacter = gameCharacter;
         }
     }

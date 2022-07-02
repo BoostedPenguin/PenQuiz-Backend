@@ -84,6 +84,10 @@ namespace GameService.Services.GameTimerServices
 
         public void OnGameStart(GameInstance gm)
         {
+            // Notify client game is starting
+            hubContext.Clients.Group(gm.InvitationLink).GetGameInstance(mapper.Map<GameInstanceResponse>(gm));
+            hubContext.Clients.Group(gm.InvitationLink).GameStarting();
+
             if (GameTimers.FirstOrDefault(x => x.Data.GameInstanceId == gm.Id) != null)
                 throw new ArgumentException("Timer already exists for this game instance");
 

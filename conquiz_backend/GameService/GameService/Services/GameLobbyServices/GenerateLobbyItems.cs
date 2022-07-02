@@ -1,5 +1,6 @@
 ﻿using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Services.GameTimerServices;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -48,6 +49,26 @@ namespace GameService.Services.GameLobbyServices
             gameInstance.Participants.Add(newParticipant);
 
             return gameInstance;
+        }
+
+        private async Task<CharacterResponse[]> GetThisUserAvailableCharacters(DefaultContext context, int userId)
+        {
+            var player = await context.Users.Include(e => e.OwnedCharacters).FirstOrDefaultAsync(e => e.Id == userId);
+
+            // All free characters
+            var characters = await context.Characters.Where(e => e.PricingType == CharacterPricingType.FREE).ToListAsync();
+
+            var ownedFreeCharacters = mapper.Map<List<CharacterResponse>>(characters);
+
+
+            // Premium owned characters
+            var ownedCharacters = player.OwnedCharacters;
+
+            var ownedCharacterRes = mapper.Map<List<CharacterResponse>>(ownedCharacters);
+            
+            ownedCharacterRes.AddRange(ownedFreeCharacters);
+
+            return ownedCharacterRes.ToArray();
         }
 
         private string GenerateInvCode()
@@ -99,9 +120,12 @@ namespace GameService.Services.GameLobbyServices
             // Redirect him to this instead of creating a new instance.
             if (lobbyGames.Count == 1)
             {
-                throw new ExistingLobbyGameException(lobbyGames[0], 
-                    lobbyGames[0].Participants.Where(e => e.PlayerId == userId).Select(e => e.GameCharacter).FirstOrDefault(), 
-                    "User participates already in an open lobby");
+                var availableCharacters = await GetThisUserAvailableCharacters(db, userId);
+                throw new ExistingLobbyGameException(lobbyGames[0],
+                    "User participates already in an open lobby",
+                    availableCharacters,
+                    lobbyGames[0].Participants.Where(e => e.PlayerId == userId).Select(e => e.GameCharacter).FirstOrDefault()
+                    );
             }
 
             return true;

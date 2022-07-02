@@ -11,6 +11,8 @@ using GameService.Dtos;
 using GameService.Services.GameTimerServices;
 using GameService.Data.Models;
 using GameService.Data;
+using AutoMapper;
+using System.Timers;
 
 namespace GameService.Services.GameLobbyServices
 {
@@ -21,8 +23,13 @@ namespace GameService.Services.GameLobbyServices
         Task<OnJoinLobbyResponse> CreateGameLobby();
         Task<OnJoinLobbyResponse> FindPublicMatch();
         Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl);
+        
+        // Game lobby character selection
+        Task LockInSelectedLobbyCharacter();
+        Task SelectLobbyCharacter(int characterId);
+        
         Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
-        Task<GameInstance> StartGame(GameInstance gameInstance = null);
+        //Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
 
     /// <summary>
@@ -33,11 +40,13 @@ namespace GameService.Services.GameLobbyServices
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IMapGeneratorService mapGeneratorService;
+        private readonly IMapper mapper;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
         private const int DefaultTerritoryScore = 500;
         private const int DefaultCapitalScore = 1000;
         private readonly IGameTimerService timer;
+        private List<GameLobbyTimer> CurrentGameLobbies { get; set; }
 
 
         const int RequiredPlayers = GameService.RequiredPlayers;
@@ -47,13 +56,24 @@ namespace GameService.Services.GameLobbyServices
             IGameTimerService timer, 
             IDbContextFactory<DefaultContext> _contextFactory, 
             IHttpContextAccessor httpContextAccessor, 
-            IMapGeneratorService mapGeneratorService
+            IMapGeneratorService mapGeneratorService,
+            IMapper mapper
             )
         {
             this.timer = timer;
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.mapGeneratorService = mapGeneratorService;
+            this.mapper = mapper;
+        }
+
+        public Task LockInSelectedLobbyCharacter()
+        {
+            throw new NotImplementedException("Not implemented");
+        }
+        public Task SelectLobbyCharacter(int characterId)
+        {
+            throw new NotImplementedException("Not implemented");
         }
 
 
@@ -69,7 +89,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return new OnJoinLobbyResponse(game.ExistingGame, game.ExistingCharacter);
+                return new OnJoinLobbyResponse(game.ExistingGame, game.AvailableUserCharacters, game.ExistingCharacter);
             }
 
             var openPublicGames = await db.GameInstance
@@ -90,7 +110,7 @@ namespace GameService.Services.GameLobbyServices
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
-                return new OnJoinLobbyResponse(gameInstance, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+                return new OnJoinLobbyResponse(gameInstance, await GetThisUserAvailableCharacters(db, user.Id), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
             }
 
             // Add player to a random lobby
@@ -105,7 +125,7 @@ namespace GameService.Services.GameLobbyServices
             db.Update(chosenLobby);
             await db.SaveChangesAsync();
 
-            return new OnJoinLobbyResponse(chosenLobby, chosenLobby.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+            return new OnJoinLobbyResponse(chosenLobby, await GetThisUserAvailableCharacters(db, user.Id), chosenLobby.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
         public async Task CreateDebugLobby()
@@ -172,7 +192,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return new OnJoinLobbyResponse(game.ExistingGame, game.ExistingCharacter);
+                return new OnJoinLobbyResponse(game.ExistingGame, game.AvailableUserCharacters, game.ExistingCharacter);
             }
 
             var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, user);
@@ -180,7 +200,55 @@ namespace GameService.Services.GameLobbyServices
             await db.AddAsync(gameInstance);
             await db.SaveChangesAsync();
 
-            return new OnJoinLobbyResponse(gameInstance, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+            var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
+
+
+            return new OnJoinLobbyResponse(gameInstance, availableUserCharacters, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+        }
+
+
+        /// <summary>
+        /// When a user CREATES a lobby, add a reference to the timer list
+        /// </summary>
+        /// <param name="invitiationLink"></param>
+        /// <param name=""></param>
+        private void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId)
+        {
+            var gameLobbyData = new GameLobbyTimer(invitiationLink, allCharacterIds, creatorPlayerId);
+            gameLobbyData.Elapsed += StartGame;
+            CurrentGameLobbies.Add(gameLobbyData);
+        }
+
+        private void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            gameLobby.Stop();
+
+            gameLobby.GameLobbyData.RemoveParticipant(disconnectedPlayerId);
+        }
+
+        private void AddPlayerToLobbyData(int playerId, int characterId, string invitiationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            gameLobby.GameLobbyData.AddInitialParticipant(playerId, characterId);
+        }
+
+        private void RemovePlayerFromLobbyData(int playerId, string invitiationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            gameLobby.GameLobbyData.RemoveParticipant(playerId);
         }
 
 
@@ -306,7 +374,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return new OnJoinLobbyResponse(game.ExistingGame, game.ExistingCharacter);
+                return new OnJoinLobbyResponse(game.ExistingGame, game.AvailableUserCharacters, game.ExistingCharacter);
             }
 
             var newParticipant = await GenerateParticipant(db, gameInstance.Participants.ToArray(), user.Id);
@@ -316,24 +384,21 @@ namespace GameService.Services.GameLobbyServices
             db.Update(gameInstance);
             await db.SaveChangesAsync();
 
-            return new OnJoinLobbyResponse(gameInstance, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+            return new OnJoinLobbyResponse(gameInstance, await GetThisUserAvailableCharacters(db, user.Id), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
-        public async Task<GameInstance> StartGame(GameInstance gameInstance = null)
+        private async void StartGame(object sender, ElapsedEventArgs e)
         {
             using var a = contextFactory.CreateDbContext();
-            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            //var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            //var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var lobbyTimer = (GameLobbyTimer)sender;
 
-
-            if (gameInstance == null)
-            {
-                gameInstance = await a.GameInstance
-                    .Include(x => x.Participants)
-                    .ThenInclude(x => x.Player)
-                    .Where(x => x.GameCreatorId == user.Id && x.GameState == GameState.IN_LOBBY)
-                    .FirstOrDefaultAsync();
-            }
+            var gameInstance = await a.GameInstance
+                .Include(x => x.Participants)
+                .ThenInclude(x => x.Player)
+                .Where(x => x.InvitationLink == lobbyTimer.GameLobbyData.GameCode && x.GameState == GameState.IN_LOBBY)
+                .FirstOrDefaultAsync();
 
             if (gameInstance == null)
                 throw new ArgumentException("Game instance is null or has completed already");
@@ -372,8 +437,8 @@ namespace GameService.Services.GameLobbyServices
             a.Update(gameInstance);
             await a.SaveChangesAsync();
 
-            return await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
+            // Officially end lobby stage and start the game timer
+            timer.OnGameStart(await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a));
         }
-
     }
 }
