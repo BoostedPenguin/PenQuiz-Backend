@@ -212,9 +212,9 @@ namespace GameService.Services.GameLobbyServices
         /// </summary>
         /// <param name="invitiationLink"></param>
         /// <param name=""></param>
-        private void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId)
+        private void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds)
         {
-            var gameLobbyData = new GameLobbyTimer(invitiationLink, allCharacterIds, creatorPlayerId);
+            var gameLobbyData = new GameLobbyTimer(invitiationLink, allCharacterIds, creatorPlayerId, ownedCreatorCharacterIds);
             gameLobbyData.Elapsed += StartGame;
             CurrentGameLobbies.Add(gameLobbyData);
         }
@@ -231,14 +231,14 @@ namespace GameService.Services.GameLobbyServices
             gameLobby.GameLobbyData.RemoveParticipant(disconnectedPlayerId);
         }
 
-        private void AddPlayerToLobbyData(int playerId, int characterId, string invitiationLink)
+        private void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)
         {
             var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
 
             if (gameLobby == null)
                 throw new ArgumentException("This lobby does not exist");
 
-            gameLobby.GameLobbyData.AddInitialParticipant(playerId, characterId);
+            gameLobby.GameLobbyData.AddInitialParticipant(playerId, ownedPlayerCharacterIds);
         }
 
         private void RemovePlayerFromLobbyData(int playerId, string invitiationLink)

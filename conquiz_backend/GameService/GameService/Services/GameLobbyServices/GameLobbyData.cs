@@ -8,12 +8,12 @@ namespace GameService.Services.GameLobbyServices
 {
     public class GameLobbyTimer : Timer
     {
-        public GameLobbyTimer(string gameCode, int[] allCharacterIds, int creatorPlayerId)
+        public GameLobbyTimer(string gameCode, int[] allCharacterIds, int creatorPlayerId, int[] creatorOwnedCharacterIds)
         {
             GameLobbyData.GameCode = gameCode;
             GameLobbyData = new GameLobbyData(gameCode, allCharacterIds);
             
-            GameLobbyData.AddInitialParticipant(creatorPlayerId);
+            GameLobbyData.AddInitialParticipant(creatorPlayerId, creatorOwnedCharacterIds);
         }
         public GameLobbyData GameLobbyData { get; set; }
     }
@@ -34,6 +34,7 @@ namespace GameService.Services.GameLobbyServices
         public class ParticipantCharacter
         {
             public int PlayerId { get; set; }
+            public int[] OwnedCharacterIds { get; set; }
             public int CharacterId { get; set; }
             public GameLobbyParticipantCharacterStatus ParticipantCharacterStatus { get; set; }
         }
@@ -45,7 +46,7 @@ namespace GameService.Services.GameLobbyServices
         private List<ParticipantCharacter> ParticipantCharacters { get; set; }
 
 
-        public void AddInitialParticipant(int playerId)
+        public void AddInitialParticipant(int playerId, int[] ownedCharacterIds)
         {
             if (ParticipantCharacters.FirstOrDefault(e => e.PlayerId == playerId) != null)
                 throw new ArgumentException("This user is already in the list for this lobby");
@@ -53,6 +54,7 @@ namespace GameService.Services.GameLobbyServices
             ParticipantCharacters.Add(new ParticipantCharacter()
             {
                 PlayerId = playerId,
+                OwnedCharacterIds = ownedCharacterIds,
                 ParticipantCharacterStatus = GameLobbyParticipantCharacterStatus.UNSELECTED,
             });
 
@@ -86,6 +88,9 @@ namespace GameService.Services.GameLobbyServices
 
             if (ParticipantCharacters.FirstOrDefault(e => e.CharacterId == characterId && playerId != e.PlayerId) != null)
                 throw new ArgumentException("The given character is taken by someone else!");
+
+            if (participantCharacter.OwnedCharacterIds.FirstOrDefault(e => e == characterId) == 0)
+                throw new ArgumentException("This person does not own the given character!");
 
 
             participantCharacter.CharacterId = characterId;
