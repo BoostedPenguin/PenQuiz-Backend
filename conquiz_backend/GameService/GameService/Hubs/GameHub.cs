@@ -354,22 +354,6 @@ namespace GameService.Hubs
 
                 //await Clients.Caller.GetGameCharacter(gameCharacterRes);
                 await Clients.Caller.NavigateToLobby();
-
-
-                // If lobby is full automatically start
-                // Public lobbies don't have a "host"
-                // To prevent stale lobbies
-                if(result.GameInstance.Participants.Count() == 3)
-                {
-                    var gameInstance = await gameLobbyService.StartGame(result.GameInstance);
-                    var res2 = mapper.Map<GameInstanceResponse>(result.GameInstance);
-
-                    await Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
-
-                    await Clients.Group(gameInstance.InvitationLink).GameStarting();
-
-                    timer.OnGameStart(gameInstance);
-                }
             }
             catch (Exception ex)
             {
@@ -431,26 +415,5 @@ namespace GameService.Hubs
                 await Clients.Caller.GameException(ex.Message);
             }
         }
-
-        public async Task StartGame()
-        {
-            try
-            {
-                var gameInstance = await gameLobbyService.StartGame();
-
-                var res1 = mapper.Map<GameInstanceResponse>(gameInstance);
-
-                await Clients.Group(gameInstance.InvitationLink).GetGameInstance(res1);
-
-                await Clients.Group(gameInstance.InvitationLink).GameStarting();
-
-                timer.OnGameStart(gameInstance);
-            }
-            catch(Exception ex)
-            {
-                await Clients.Caller.GameException(ex.Message);
-            }
-        }
-
     }
 }

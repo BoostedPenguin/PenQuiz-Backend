@@ -39,6 +39,7 @@ namespace GameService.Services.GameLobbyServices
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly IMapGeneratorService mapGeneratorService;
+        private readonly IGameLobbyTimerService lobbyTimerService;
         private readonly IMapper mapper;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
@@ -51,12 +52,14 @@ namespace GameService.Services.GameLobbyServices
             IDbContextFactory<DefaultContext> _contextFactory, 
             IHttpContextAccessor httpContextAccessor, 
             IMapGeneratorService mapGeneratorService,
+            IGameLobbyTimerService lobbyTimerService,
             IMapper mapper
             )
         {
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.mapGeneratorService = mapGeneratorService;
+            this.lobbyTimerService = lobbyTimerService;
             this.mapper = mapper;
         }
 
@@ -64,9 +67,17 @@ namespace GameService.Services.GameLobbyServices
         {
             throw new NotImplementedException("Not implemented");
         }
-        public Task SelectLobbyCharacter(int characterId)
+
+        public async Task SelectLobbyCharacter(int characterId)
         {
-            throw new NotImplementedException("Not implemented");
+            using var db = contextFactory.CreateDbContext();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+
+            var gmLink = await db.GameInstance.FirstOrDefaultAsync(e => e.GameState == GameState.IN_LOBBY && e.Participants.Any(y => y.PlayerId == user.Id));
+            var availableCharacters = await GetThisUserAvailableCharacters(db, user.Id);
+
+            lobbyTimerService.PlayerSelectCharacter(user.Id, characterId, gmLink.InvitationLink);
         }
 
 
@@ -103,7 +114,7 @@ namespace GameService.Services.GameLobbyServices
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
-                return new OnJoinLobbyResponse(gameInstance, await GetThisUserAvailableCharacters(db, user.Id), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+                return new OnJoinLobbyResponse(gameInstance, await GetAllCharacters(db), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
             }
 
             // Add player to a random lobby
@@ -118,7 +129,7 @@ namespace GameService.Services.GameLobbyServices
             db.Update(chosenLobby);
             await db.SaveChangesAsync();
 
-            return new OnJoinLobbyResponse(chosenLobby, await GetThisUserAvailableCharacters(db, user.Id), chosenLobby.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+            return new OnJoinLobbyResponse(chosenLobby, await GetAllCharacters(db), chosenLobby.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
         public async Task<OnJoinLobbyResponse> CreateGameLobby()
@@ -146,8 +157,15 @@ namespace GameService.Services.GameLobbyServices
 
             var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
 
+            var allCharacters = await GetAllCharacters(db);
 
-            return new OnJoinLobbyResponse(gameInstance, availableUserCharacters, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+            lobbyTimerService.CreateGameLobbyTimer(
+                gameInstance.InvitationLink,
+                allCharacters.Select(e => e.Id).ToArray(), 
+                user.Id, 
+                availableUserCharacters.Select(e => e.Id).ToArray());
+
+            return new OnJoinLobbyResponse(gameInstance, allCharacters, gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
 
@@ -285,6 +303,11 @@ namespace GameService.Services.GameLobbyServices
 
             db.Update(gameInstance);
             await db.SaveChangesAsync();
+
+
+            var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
+
+            lobbyTimerService.AddPlayerToLobbyData(user.Id, availableUserCharacters.Select(e => e.Id).ToArray(), gameInstance.InvitationLink);
 
             return new OnJoinLobbyResponse(gameInstance, await GetThisUserAvailableCharacters(db, user.Id), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }

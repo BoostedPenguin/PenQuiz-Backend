@@ -1,5 +1,7 @@
-﻿using GameService.Data;
+﻿using AutoMapper;
+using GameService.Data;
 using GameService.Data.Models;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.Services.GameTimerServices;
 using Microsoft.AspNetCore.SignalR;
@@ -12,9 +14,19 @@ using System.Timers;
 
 namespace GameService.Services.GameLobbyServices
 {
-    public class GameLobbyTimerService
+    public interface IGameLobbyTimerService
+    {
+        void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink);
+        void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink);
+        void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds);
+        void PlayerSelectCharacter(int playerId, int characterId, string invitiationLink);
+        //void RemovePlayerFromLobbyData(int playerId, string invitiationLink);
+    }
+
+    public class GameLobbyTimerService : IGameLobbyTimerService
     {
         private readonly IHubContext<GameHub, IGameHub> hubContext;
+        private readonly IMapper mapper;
         private readonly IDbContextFactory<DefaultContext> contextFactory;
         private readonly IGameTimerService gameTimerService;
         private readonly IMapGeneratorService mapGeneratorService;
@@ -25,9 +37,12 @@ namespace GameService.Services.GameLobbyServices
         private readonly Random r = new();
         private List<GameLobbyTimer> CurrentGameLobbies { get; set; }
 
-        public GameLobbyTimerService(IHubContext<GameHub, IGameHub> hubContext, IDbContextFactory<DefaultContext> contextFactory, IGameTimerService gameTimerService, IMapGeneratorService mapGeneratorService)
+        public GameLobbyTimerService(IHubContext<GameHub, IGameHub> hubContext,
+            IMapper mapper,
+            IDbContextFactory<DefaultContext> contextFactory, IGameTimerService gameTimerService, IMapGeneratorService mapGeneratorService)
         {
             this.hubContext = hubContext;
+            this.mapper = mapper;
             this.contextFactory = contextFactory;
             this.gameTimerService = gameTimerService;
             this.mapGeneratorService = mapGeneratorService;
@@ -39,14 +54,14 @@ namespace GameService.Services.GameLobbyServices
         /// </summary>
         /// <param name="invitiationLink"></param>
         /// <param name=""></param>
-        private void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds)
+        public void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds)
         {
             var gameLobbyData = new GameLobbyTimer(invitiationLink, allCharacterIds, creatorPlayerId, ownedCreatorCharacterIds, hubContext);
             gameLobbyData.Elapsed += StartGame;
             CurrentGameLobbies.Add(gameLobbyData);
         }
 
-        private void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
+        public void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
         {
             var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
 
@@ -58,7 +73,17 @@ namespace GameService.Services.GameLobbyServices
             gameLobby.GameLobbyData.RemoveParticipant(disconnectedPlayerId);
         }
 
-        private void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)
+        public void PlayerSelectCharacter(int playerId, int characterId, string invitiationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            gameLobby.GameLobbyData.ParticipantSelectCharacter(playerId, characterId);
+        }
+
+        public void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)
         {
             var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
 
@@ -73,16 +98,6 @@ namespace GameService.Services.GameLobbyServices
             {
                 gameLobby.Start();
             }
-        }
-
-        private void RemovePlayerFromLobbyData(int playerId, string invitiationLink)
-        {
-            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
-
-            if (gameLobby == null)
-                throw new ArgumentException("This lobby does not exist");
-
-            gameLobby.GameLobbyData.RemoveParticipant(playerId);
         }
 
 
@@ -136,8 +151,15 @@ namespace GameService.Services.GameLobbyServices
             a.Update(gameInstance);
             await a.SaveChangesAsync();
 
+            var fullGame = await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
+            var res2 = mapper.Map<GameInstanceResponse>(fullGame);
+
+            await hubContext.Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
+
+            await hubContext.Clients.Group(gameInstance.InvitationLink).GameStarting();
+
             // Officially end lobby stage and start the game timer
-            gameTimerService.OnGameStart(await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a));
+            gameTimerService.OnGameStart(fullGame);
         }
 
 

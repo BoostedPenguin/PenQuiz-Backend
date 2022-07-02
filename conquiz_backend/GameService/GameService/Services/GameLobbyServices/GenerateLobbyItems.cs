@@ -51,6 +51,11 @@ namespace GameService.Services.GameLobbyServices
             return gameInstance;
         }
 
+        private async Task<CharacterResponse[]> GetAllCharacters(DefaultContext context)
+        {
+            return mapper.Map<CharacterResponse[]>(await context.Characters.Include(e => e.BelongToUsers).ToArrayAsync());
+        }
+
         private async Task<CharacterResponse[]> GetThisUserAvailableCharacters(DefaultContext context, int userId)
         {
             var player = await context.Users.Include(e => e.OwnedCharacters).FirstOrDefaultAsync(e => e.Id == userId);
@@ -120,7 +125,7 @@ namespace GameService.Services.GameLobbyServices
             // Redirect him to this instead of creating a new instance.
             if (lobbyGames.Count == 1)
             {
-                var availableCharacters = await GetThisUserAvailableCharacters(db, userId);
+                var availableCharacters = await GetAllCharacters(db);
                 throw new ExistingLobbyGameException(lobbyGames[0],
                     "User participates already in an open lobby",
                     availableCharacters,

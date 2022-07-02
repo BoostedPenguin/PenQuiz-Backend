@@ -13,6 +13,7 @@ using GameService.Data;
 using AutoMapper;
 using GameService.Dtos.SignalR_Responses;
 using Microsoft.Extensions.Logging;
+using GameService.Services.GameLobbyServices;
 
 namespace GameService.Services
 {
@@ -99,6 +100,7 @@ namespace GameService.Services
         private readonly IHttpContextAccessor httpContextAccessor;
         private readonly ILogger<GameService> logger;
         private readonly IGameTerritoryService gameTerritoryService;
+        private readonly IGameLobbyTimerService gameLobbyTimerService;
         private readonly ICurrentStageQuestionService dataExtractionService;
         private readonly IMapper mapper;
         private readonly IGameTimerService gameTimerService;
@@ -111,6 +113,7 @@ namespace GameService.Services
             IHttpContextAccessor httpContextAccessor, 
             ILogger<GameService> logger,
             IGameTerritoryService gameTerritoryService,
+            IGameLobbyTimerService gameLobbyTimerService,
             ICurrentStageQuestionService dataExtractionService,
             IMapper mapper,
             IGameTimerService gameTimerService) 
@@ -119,6 +122,7 @@ namespace GameService.Services
             this.httpContextAccessor = httpContextAccessor;
             this.logger = logger;
             this.gameTerritoryService = gameTerritoryService;
+            this.gameLobbyTimerService = gameLobbyTimerService;
             this.dataExtractionService = dataExtractionService;
             this.mapper = mapper;
             this.gameTimerService = gameTimerService;
@@ -342,6 +346,7 @@ namespace GameService.Services
                     }
                     else
                     {
+                        gameLobbyTimerService.CancelGameLobbyTimer(thisUser.Id, activeGames[0].InvitationLink);
                         db.Remove(thisUser);
                     }
 

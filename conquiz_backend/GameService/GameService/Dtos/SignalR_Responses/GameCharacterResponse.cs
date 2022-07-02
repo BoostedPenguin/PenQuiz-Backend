@@ -33,6 +33,8 @@ namespace GameService.Dtos.SignalR_Responses
         public double? Price { get; set; }
 
         public string Event { get; set; }
+
+        public UsersResponse[] BelongToUsers { get; set; }
     }
 
     public class GameCharacterAbilitiesResponse

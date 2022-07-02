@@ -95,6 +95,7 @@ builder.Services.AddSingleton<IGameService, GameService.Services.GameService>();
 
 // Handles lobby creation, and joining games
 builder.Services.AddSingleton<IGameLobbyService, GameLobbyService>();
+builder.Services.AddSingleton<IGameLobbyTimerService, GameLobbyTimerService>();
 
 // Controls the main game loop
 builder.Services.AddSingleton<IGameTimerService, GameTimerService>();

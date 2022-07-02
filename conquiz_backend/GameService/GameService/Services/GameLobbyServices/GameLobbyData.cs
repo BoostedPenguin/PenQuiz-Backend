@@ -87,6 +87,7 @@ namespace GameService.Services.GameLobbyServices
                 throw new ArgumentException("This person does not exist in the lobby!");
 
             ParticipantCharacters.Remove(participantCharacter);
+
         }
 
         public void ParticipantSelectCharacter(int playerId, int characterId)
