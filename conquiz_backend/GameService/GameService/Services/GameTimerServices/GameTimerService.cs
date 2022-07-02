@@ -96,7 +96,7 @@ namespace GameService.Services.GameTimerServices
                 AutoReset = false,
                 Interval = 500,
             };
-            actionTimer.Data.CountDownTimer = new TimerWrapper.CountDownTimer(hubContext, actionTimer.Data.GameLink);
+            actionTimer.Data.CountDownTimer = new CountDownTimer(hubContext, actionTimer.Data.GameLink);
 
             // Set the last neutral mc round 
             actionTimer.Data.LastNeutralMCRound = gm.Rounds.Where(x => x.AttackStage == AttackStage.MULTIPLE_NEUTRAL).Count();

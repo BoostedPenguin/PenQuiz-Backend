@@ -19,7 +19,6 @@ namespace GameService.Services.GameLobbyServices
     public interface IGameLobbyService
     {
         Task<GameInstance> AddGameBot();
-        Task CreateDebugLobby();
         Task<OnJoinLobbyResponse> CreateGameLobby();
         Task<OnJoinLobbyResponse> FindPublicMatch();
         Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl);
@@ -43,24 +42,18 @@ namespace GameService.Services.GameLobbyServices
         private readonly IMapper mapper;
         private readonly Random r = new Random();
         private const string DefaultMap = GameService.DefaultMap;
-        private const int DefaultTerritoryScore = 500;
-        private const int DefaultCapitalScore = 1000;
-        private readonly IGameTimerService timer;
-        private List<GameLobbyTimer> CurrentGameLobbies { get; set; }
 
 
         const int RequiredPlayers = GameService.RequiredPlayers;
         const int InvitationCodeLength = GameService.InvitationCodeLength;
 
         public GameLobbyService(
-            IGameTimerService timer, 
             IDbContextFactory<DefaultContext> _contextFactory, 
             IHttpContextAccessor httpContextAccessor, 
             IMapGeneratorService mapGeneratorService,
             IMapper mapper
             )
         {
-            this.timer = timer;
             contextFactory = _contextFactory;
             this.httpContextAccessor = httpContextAccessor;
             this.mapGeneratorService = mapGeneratorService;
@@ -128,55 +121,6 @@ namespace GameService.Services.GameLobbyServices
             return new OnJoinLobbyResponse(chosenLobby, await GetThisUserAvailableCharacters(db, user.Id), chosenLobby.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
 
-        public async Task CreateDebugLobby()
-        {
-            using var context = contextFactory.CreateDbContext();
-
-            var gameInstance = new GameInstance()
-            {
-                GameGlobalIdentifier = Guid.NewGuid().ToString(),
-                GameType = GameType.PUBLIC,
-                GameState = GameState.IN_LOBBY,
-                InvitationLink = "1241",
-                GameCreatorId = 1,
-                Mapid = 1,
-                StartTime = DateTime.Now,
-                QuestionTimerSeconds = 30,
-            };
-            var allParticip = new List<Participants>();
-
-
-            allParticip.Add(await GenerateParticipant(context, allParticip.ToArray(), 1));
-            allParticip.Add(await GenerateParticipant(context, allParticip.ToArray(), 2));
-            allParticip.Add(await GenerateParticipant(context, allParticip.ToArray(), 3));
-
-
-            await context.AddAsync(gameInstance);
-
-            await context.SaveChangesAsync();
-
-
-            // Create the game territories from the map territory templates
-            var gameTerritories = await CreateGameTerritories(context, 1, gameInstance.Id);
-
-            // Includes capitals
-            var modifiedTerritories = await ChooseCapitals(context, gameTerritories, gameInstance.Participants.ToArray());
-
-            // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
-            var initialRounding = await CreateNeutralAttackRounding(context, 1, gameInstance.Participants.ToList(), gameInstance.Id);
-
-            // Assign all object territories & rounds and change gamestate
-            gameInstance.GameState = GameState.IN_PROGRESS;
-            gameInstance.ObjectTerritory = gameTerritories;
-            gameInstance.Rounds = initialRounding;
-            gameInstance.GameRoundNumber = 1;
-
-            context.Update(gameInstance);
-            await context.SaveChangesAsync();
-
-            timer.OnGameStart(await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, context));
-        }
-
         public async Task<OnJoinLobbyResponse> CreateGameLobby()
         {
             // Create url-link for people to join // Random string in header?
@@ -207,49 +151,7 @@ namespace GameService.Services.GameLobbyServices
         }
 
 
-        /// <summary>
-        /// When a user CREATES a lobby, add a reference to the timer list
-        /// </summary>
-        /// <param name="invitiationLink"></param>
-        /// <param name=""></param>
-        private void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds)
-        {
-            var gameLobbyData = new GameLobbyTimer(invitiationLink, allCharacterIds, creatorPlayerId, ownedCreatorCharacterIds);
-            gameLobbyData.Elapsed += StartGame;
-            CurrentGameLobbies.Add(gameLobbyData);
-        }
 
-        private void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
-        {
-            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
-
-            if (gameLobby == null)
-                throw new ArgumentException("This lobby does not exist");
-
-            gameLobby.Stop();
-
-            gameLobby.GameLobbyData.RemoveParticipant(disconnectedPlayerId);
-        }
-
-        private void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)
-        {
-            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
-
-            if (gameLobby == null)
-                throw new ArgumentException("This lobby does not exist");
-
-            gameLobby.GameLobbyData.AddInitialParticipant(playerId, ownedPlayerCharacterIds);
-        }
-
-        private void RemovePlayerFromLobbyData(int playerId, string invitiationLink)
-        {
-            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
-
-            if (gameLobby == null)
-                throw new ArgumentException("This lobby does not exist");
-
-            gameLobby.GameLobbyData.RemoveParticipant(playerId);
-        }
 
 
 
@@ -385,60 +287,6 @@ namespace GameService.Services.GameLobbyServices
             await db.SaveChangesAsync();
 
             return new OnJoinLobbyResponse(gameInstance, await GetThisUserAvailableCharacters(db, user.Id), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
-        }
-
-        private async void StartGame(object sender, ElapsedEventArgs e)
-        {
-            using var a = contextFactory.CreateDbContext();
-            //var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            //var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
-            var lobbyTimer = (GameLobbyTimer)sender;
-
-            var gameInstance = await a.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.InvitationLink == lobbyTimer.GameLobbyData.GameCode && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
-
-            if (gameInstance == null)
-                throw new ArgumentException("Game instance is null or has completed already");
-
-            var allPlayers = gameInstance.Participants.ToList();
-
-            if (allPlayers.Count != RequiredPlayers)
-                throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
-
-            // Make sure no player is in another game
-            foreach (var us in allPlayers)
-            {
-                if (us.Player.IsInGame)
-                    throw new ArgumentException($"Can't start game. `{us.Player.Username}` is in another game currently.");
-            }
-
-
-            // Get default map id
-            var mapId = await a.Maps.Where(x => x.Name == DefaultMap).Select(x => x.Id).FirstAsync();
-
-            // Create the game territories from the map territory templates
-            var gameTerritories = await CreateGameTerritories(a, mapId, gameInstance.Id);
-
-            // Includes capitals
-            var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
-
-            // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
-            var initialRounding = await CreateNeutralAttackRounding(a, mapId, allPlayers, gameInstance.Id);
-
-            // Assign all object territories & rounds and change gamestate
-            gameInstance.GameState = GameState.IN_PROGRESS;
-            gameInstance.ObjectTerritory = gameTerritories;
-            gameInstance.Rounds = initialRounding;
-            gameInstance.GameRoundNumber = 1;
-
-            a.Update(gameInstance);
-            await a.SaveChangesAsync();
-
-            // Officially end lobby stage and start the game timer
-            timer.OnGameStart(await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a));
         }
     }
 }

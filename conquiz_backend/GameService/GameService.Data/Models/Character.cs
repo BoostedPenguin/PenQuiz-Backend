@@ -52,6 +52,7 @@ namespace GameService.Data.Models
         public double? Price { get; set; }
 
         public ICollection<GameCharacter> GameCharacters { get; set; }
+        public ICollection<Users> BelongToUsers { get; set; }
     }
 
     /// <summary>

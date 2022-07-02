@@ -1,4 +1,7 @@
 ﻿using GameService.Data.Models;
+using GameService.Hubs;
+using GameService.Services.GameTimerServices;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,14 +11,27 @@ namespace GameService.Services.GameLobbyServices
 {
     public class GameLobbyTimer : Timer
     {
-        public GameLobbyTimer(string gameCode, int[] allCharacterIds, int creatorPlayerId, int[] creatorOwnedCharacterIds)
+        public GameLobbyTimer(string gameCode, int[] allCharacterIds, int creatorPlayerId, int[] creatorOwnedCharacterIds, IHubContext<GameHub, IGameHub> hubContext)
         {
             GameLobbyData.GameCode = gameCode;
             GameLobbyData = new GameLobbyData(gameCode, allCharacterIds);
             
             GameLobbyData.AddInitialParticipant(creatorPlayerId, creatorOwnedCharacterIds);
+
+            CountDownTimer = new CountDownTimer(hubContext, gameCode);
         }
         public GameLobbyData GameLobbyData { get; set; }
+        public CountDownTimer CountDownTimer { get; set; }
+
+
+        public void StartTimer(int? overrideMsInterval)
+        {
+            var interval = overrideMsInterval ?? 30000;
+            this.Interval = interval;
+
+            CountDownTimer.StartCountDownTimer(interval);
+            this.Start();
+        }
     }
 
     public class GameLobbyData
@@ -110,6 +126,36 @@ namespace GameService.Services.GameLobbyServices
 
             participantCharacter.ParticipantCharacterStatus = GameLobbyParticipantCharacterStatus.LOCKED;
         }
+
+        private readonly Random r = new();
+        public void SelectCharactersForNonlockedPlayers()
+        {
+            var nonlockedPlayers = ParticipantCharacters
+                .Where(e => e.ParticipantCharacterStatus != GameLobbyParticipantCharacterStatus.LOCKED)
+                .ToList();
+
+            // As long as there 3 or more free characters in the system, this will not be an infinite loop!
+            foreach(var player in nonlockedPlayers)
+            {
+                while(player.ParticipantCharacterStatus != GameLobbyParticipantCharacterStatus.LOCKED)
+                {
+                    var randomOwnedCharacterIndex = r.Next(0, player.OwnedCharacterIds.Length);
+
+                    // If any other participant has LOCKED this character, skip
+                    if (ParticipantCharacters.Any(e => e.CharacterId == player.OwnedCharacterIds[randomOwnedCharacterIndex] && 
+                        e.ParticipantCharacterStatus == GameLobbyParticipantCharacterStatus.LOCKED))
+                        continue;
+
+                    player.CharacterId = player.OwnedCharacterIds[randomOwnedCharacterIndex];
+                    player.ParticipantCharacterStatus = GameLobbyParticipantCharacterStatus.LOCKED;
+                }
+            }
+        }
+
+        public ParticipantCharacter[] GetParticipantCharacters()
+        {
+            return this.ParticipantCharacters.ToArray();
+        } 
 
         public int[] GetAllUnselectedCharacters()
         {
