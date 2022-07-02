@@ -63,9 +63,6 @@ namespace GameService.Hubs
         Task TESTING(string message);
 
         // Characters
-
-        Task GetGameCharacter(GameCharacterResponse characterResponse);
-
         Task ScientistUseNumberHint(ScientistUseNumberHintResponse response);
 
         Task VikingUseFortifyCapital(VikingUseFortifyResponse characterResponse);
@@ -130,7 +127,9 @@ namespace GameService.Hubs
                 //if(response.MCPlayerQuestionAnswers is not null)
                 //    await Clients.Caller.MCQuestionPreviewResult(response.MCPlayerQuestionAnswers);
 
-                await Clients.Caller.GetGameCharacter(response.GameCharacter);
+
+                // Give a permanent state game character for this user to the frontend
+                //await Clients.Caller.GetGameCharacter(response.GameCharacter);
                 await Clients.Caller.GetGameInstance(response.GameInstanceResponse);
 
                 await Clients.Group(response.GameInstanceResponse.InvitationLink).PlayerRejoined(response.UserId);
@@ -349,7 +348,7 @@ namespace GameService.Hubs
 
                 await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
 
-                await Clients.Caller.GetGameCharacter(gameCharacterRes);
+                //await Clients.Caller.GetGameCharacter(gameCharacterRes);
                 await Clients.Caller.NavigateToLobby();
 
 
@@ -374,6 +373,11 @@ namespace GameService.Hubs
             }
         }
 
+
+        /// <summary>
+        /// Create PRIVATE game lobby
+        /// </summary>
+        /// <returns></returns>
         public async Task CreateGameLobby()
         {
             try
@@ -385,10 +389,37 @@ namespace GameService.Hubs
                 var gameCharacterResponse = mapper.Map<GameCharacterResponse>(result.GameCharacter);
 
                 await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
-                await Clients.Caller.GetGameCharacter(gameCharacterResponse);
+                //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
             }
             catch(Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Join PRIVATE game lobby
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        public async Task JoinGameLobby(string code)
+        {
+            try
+            {
+                var game = await gameLobbyService.JoinGameLobby(code);
+
+                await Groups.AddToGroupAsync(Context.ConnectionId, game.GameInstance.InvitationLink);
+
+                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
+
+                var gameCharacterResponse = mapper.Map<GameCharacterResponse>(game.GameCharacter);
+
+                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
+                //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
+                await Clients.Caller.NavigateToLobby();
+            }
+            catch (Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }
@@ -414,30 +445,5 @@ namespace GameService.Hubs
             }
         }
 
-        public async Task JoinGameLobby(string code)
-        {
-            try
-            {
-                var game = await gameLobbyService.JoinGameLobby(code);
-
-                await Groups.AddToGroupAsync(Context.ConnectionId, game.GameInstance.InvitationLink);
-                //await Clients.Caller.GetGameInstance(game);
-
-                //var users = game.Participants.Select(x => x.Player).ToArray();
-                //var current = result.Participants.Where(x => x.PlayerId == httpContext.GetCurrentUserId()).FirstOrDefault();
-                //await Clients.Group(game.InvitationLink).AllLobbyPlayers(users);
-                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
-
-                var gameCharacterResponse = mapper.Map<GameCharacterResponse>(game.GameCharacter);
-
-                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
-                await Clients.Caller.GetGameCharacter(gameCharacterResponse);
-                await Clients.Caller.NavigateToLobby();
-            }
-            catch (Exception ex)
-            {
-                await Clients.Caller.GameException(ex.Message);
-            }
-        }
     }
 }
