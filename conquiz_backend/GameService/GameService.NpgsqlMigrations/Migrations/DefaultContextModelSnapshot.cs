@@ -238,12 +238,7 @@ namespace GameService.NpgsqlMigrations.Migrations
                         .HasColumnType("text")
                         .HasColumnName("pricingType");
 
-                    b.Property<int?>("UsersId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UsersId");
 
                     b.ToTable("Characters");
                 });
@@ -864,13 +859,6 @@ namespace GameService.NpgsqlMigrations.Migrations
                     b.Navigation("CapitalRound");
                 });
 
-            modelBuilder.Entity("GameService.Data.Models.Character", b =>
-                {
-                    b.HasOne("GameService.Data.Models.Users", null)
-                        .WithMany("OwnedCharacters")
-                        .HasForeignKey("UsersId");
-                });
-
             modelBuilder.Entity("GameService.Data.Models.GameCharacter", b =>
                 {
                     b.HasOne("GameService.Data.Models.Character", "Character")
@@ -1128,8 +1116,6 @@ namespace GameService.NpgsqlMigrations.Migrations
 
             modelBuilder.Entity("GameService.Data.Models.Users", b =>
                 {
-                    b.Navigation("OwnedCharacters");
-
                     b.Navigation("Participants");
                 });
 #pragma warning restore 612, 618
