@@ -29,7 +29,6 @@ namespace GameService.Services.GameLobbyServices
     {
         public GameLobbyTimer(string gameCode, int[] allCharacterIds, int creatorPlayerId, int[] creatorOwnedCharacterIds, IHubContext<GameHub, IGameHub> hubContext)
         {
-            GameLobbyData.GameCode = gameCode;
             GameLobbyData = new GameLobbyData(gameCode, allCharacterIds);
             
             GameLobbyData.AddInitialParticipant(creatorPlayerId, creatorOwnedCharacterIds);
@@ -64,7 +63,7 @@ namespace GameService.Services.GameLobbyServices
         public string GameCode { get; set; }
 
 
-        private List<ParticipantCharacter> ParticipantCharacters { get; set; }
+        private List<ParticipantCharacter> ParticipantCharacters { get; set; } = new List<ParticipantCharacter>();
 
 
         public void AddInitialParticipant(int playerId, int[] ownedCharacterIds)

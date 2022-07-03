@@ -10,10 +10,9 @@ namespace GameService.Data.Models
 
         }
 
-        public Participants(GameCharacter character, int playerId, int inGameParticipantNumber)
+        public Participants(int playerId, int inGameParticipantNumber)
         {
             PlayerId = playerId;
-            GameCharacter = character;
             Score = 0;
             InGameParticipantNumber = inGameParticipantNumber;
         }

@@ -375,10 +375,10 @@ namespace GameService.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
 
                 var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
-                //var gameCharacterResponse = mapper.Map<GameCharacterResponse>(result.GameCharacter);
 
-
-                await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
+                // Give out all characters as a response
+                var characterRes = mapper.Map<CharacterResponse[]>(result.AvailableUserCharacters);
+                await Clients.Caller.GameLobbyGetAvailableCharacters(characterRes);
 
                 await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
@@ -405,7 +405,9 @@ namespace GameService.Hubs
 
                 var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
 
-                var gameCharacterResponse = mapper.Map<GameCharacterResponse>(game.GameCharacter);
+                // Give out all characters as a response
+                var characterRes = mapper.Map<CharacterResponse[]>(game.AvailableUserCharacters);
+                await Clients.Caller.GameLobbyGetAvailableCharacters(characterRes);
 
                 await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);

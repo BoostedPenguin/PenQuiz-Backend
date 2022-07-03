@@ -315,7 +315,7 @@ namespace GameService.Services.GameLobbyServices
 
             lobbyTimerService.AddPlayerToLobbyData(user.Id, availableUserCharacters.Select(e => e.Id).ToArray(), gameInstance.InvitationLink);
 
-            return new OnJoinLobbyResponse(gameInstance, await GetThisUserAvailableCharacters(db, user.Id), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
+            return new OnJoinLobbyResponse(gameInstance, await GetAllCharacters(db), gameInstance.Participants.Where(e => e.PlayerId == user.Id).Select(e => e.GameCharacter).FirstOrDefault());
         }
     }
 }
