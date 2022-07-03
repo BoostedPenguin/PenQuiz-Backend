@@ -128,7 +128,8 @@ namespace GameService.Services.GameLobbyServices
                 var availableCharacters = await GetAllCharacters(db);
                 throw new ExistingLobbyGameException(lobbyGames[0],
                     "User participates already in an open lobby",
-                    availableCharacters
+                    availableCharacters,
+                    lobbyTimerService.GetExistingLobbyParticipantCharacters(lobbyGames[0].InvitationLink)
                     );
             }
 

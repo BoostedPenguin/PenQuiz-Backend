@@ -16,9 +16,10 @@ namespace GameService.Services.GameLobbyServices
 {
     public interface IGameLobbyTimerService
     {
-        void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink);
+        LobbyParticipantCharacterResponse AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink);
         void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink);
-        void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds);
+        LobbyParticipantCharacterResponse CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds);
+        LobbyParticipantCharacterResponse GetExistingLobbyParticipantCharacters(string invitationLink);
         LobbyParticipantCharacterResponse PlayerLockCharacter(int playerId, string invitiationLink);
         LobbyParticipantCharacterResponse PlayerSelectCharacter(int playerId, int characterId, string invitiationLink);
         //void RemovePlayerFromLobbyData(int playerId, string invitiationLink);
@@ -55,11 +56,23 @@ namespace GameService.Services.GameLobbyServices
         /// </summary>
         /// <param name="invitiationLink"></param>
         /// <param name=""></param>
-        public void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds)
+        public LobbyParticipantCharacterResponse CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds)
         {
             var gameLobbyData = new GameLobbyTimer(invitiationLink, allCharacterIds, creatorPlayerId, ownedCreatorCharacterIds, hubContext);
             gameLobbyData.Elapsed += StartGame;
             CurrentGameLobbies.Add(gameLobbyData);
+
+            return gameLobbyData.GameLobbyData.GetParticipantCharactersResponse();
+        }
+
+        public LobbyParticipantCharacterResponse GetExistingLobbyParticipantCharacters(string invitationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
         public void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
@@ -98,7 +111,7 @@ namespace GameService.Services.GameLobbyServices
             return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
-        public void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)
+        public LobbyParticipantCharacterResponse AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)
         {
             var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
 
@@ -113,6 +126,8 @@ namespace GameService.Services.GameLobbyServices
             {
                 gameLobby.Start();
             }
+
+            return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
 

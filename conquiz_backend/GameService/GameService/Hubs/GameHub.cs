@@ -387,6 +387,8 @@ namespace GameService.Hubs
                 // Give out all characters as a response
                 await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
 
+                await Clients.Group(result.GameLobbyDataResponse.InvitationLink).GameLobbyGetTakenCharacters(result.LobbyParticipantCharacterResponse);
+
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
             }
@@ -414,6 +416,9 @@ namespace GameService.Hubs
 
                 // Give out all characters as a response
                 await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
+
+
+                await Clients.Group(result.GameLobbyDataResponse.InvitationLink).GameLobbyGetTakenCharacters(result.LobbyParticipantCharacterResponse);
 
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();

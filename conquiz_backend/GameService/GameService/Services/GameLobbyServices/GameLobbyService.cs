@@ -99,7 +99,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters);
+                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters, game.LobbyParticipantCharacterResponse); ;
             }
 
             var openPublicGames = await db.GameInstance
@@ -120,8 +120,11 @@ namespace GameService.Services.GameLobbyServices
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
+                var aeUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
 
-                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(gameInstance), await GetAllCharacters(db));
+                var onRes = lobbyTimerService.AddPlayerToLobbyData(user.Id, aeUserCharacters.Select(e => e.Id).ToArray(), gameInstance.InvitationLink);
+
+                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(gameInstance), await GetAllCharacters(db), onRes);
             }
 
             // Add player to a random lobby
@@ -138,7 +141,11 @@ namespace GameService.Services.GameLobbyServices
 
             var lobbyResponse = mapper.Map<GameLobbyDataResponse>(chosenLobby);
 
-            return new OnJoinLobbyResponse(lobbyResponse, await GetAllCharacters(db));
+            var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
+
+            var res = lobbyTimerService.AddPlayerToLobbyData(user.Id, availableUserCharacters.Select(e => e.Id).ToArray(), lobbyResponse.InvitationLink);
+
+            return new OnJoinLobbyResponse(lobbyResponse, await GetAllCharacters(db), res);
         }
 
         public async Task<OnJoinLobbyResponse> CreateGameLobby()
@@ -156,7 +163,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters);
+                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters, game.LobbyParticipantCharacterResponse);
             }
 
             var gameInstance = await CreateGameInstance(db, GameType.PRIVATE, user);
@@ -168,7 +175,7 @@ namespace GameService.Services.GameLobbyServices
 
             var allCharacters = await GetAllCharacters(db);
 
-            lobbyTimerService.CreateGameLobbyTimer(
+            var res = lobbyTimerService.CreateGameLobbyTimer(
                 gameInstance.InvitationLink,
                 allCharacters.Select(e => e.Id).ToArray(), 
                 user.Id, 
@@ -176,7 +183,7 @@ namespace GameService.Services.GameLobbyServices
 
             var lobbyResponse = mapper.Map<GameLobbyDataResponse>(gameInstance);
 
-            return new OnJoinLobbyResponse(lobbyResponse, allCharacters);
+            return new OnJoinLobbyResponse(lobbyResponse, allCharacters, res);
         }
 
 
@@ -305,7 +312,7 @@ namespace GameService.Services.GameLobbyServices
             }
             catch (ExistingLobbyGameException game)
             {
-                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters);
+                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters, game.LobbyParticipantCharacterResponse);
             }
 
             var newParticipant = await GenerateParticipant(db, gameInstance.Participants.ToArray(), user.Id);
@@ -318,12 +325,12 @@ namespace GameService.Services.GameLobbyServices
 
             var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
 
-            lobbyTimerService.AddPlayerToLobbyData(user.Id, availableUserCharacters.Select(e => e.Id).ToArray(), gameInstance.InvitationLink);
+            var res = lobbyTimerService.AddPlayerToLobbyData(user.Id, availableUserCharacters.Select(e => e.Id).ToArray(), gameInstance.InvitationLink);
 
 
             var lobbyResponse = mapper.Map<GameLobbyDataResponse>(gameInstance);
 
-            return new OnJoinLobbyResponse(lobbyResponse, await GetAllCharacters(db));
+            return new OnJoinLobbyResponse(lobbyResponse, await GetAllCharacters(db), res);
         }
     }
 }

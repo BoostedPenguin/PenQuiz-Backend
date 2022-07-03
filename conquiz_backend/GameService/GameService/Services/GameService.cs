@@ -45,11 +45,13 @@ namespace GameService.Services
     {
         public GameInstance ExistingGame { get; }
         public CharacterResponse[] AvailableUserCharacters { get; init; }
+        public LobbyParticipantCharacterResponse LobbyParticipantCharacterResponse { get; }
 
-        public ExistingLobbyGameException(GameInstance existingGame, string message, CharacterResponse[] availableUserCharacters) : base(message)
+        public ExistingLobbyGameException(GameInstance existingGame, string message, CharacterResponse[] availableUserCharacters, LobbyParticipantCharacterResponse lobbyParticipantCharacterResponse) : base(message)
         {
             this.ExistingGame = existingGame;
             AvailableUserCharacters = availableUserCharacters;
+            LobbyParticipantCharacterResponse = lobbyParticipantCharacterResponse;
         }
     }
 
