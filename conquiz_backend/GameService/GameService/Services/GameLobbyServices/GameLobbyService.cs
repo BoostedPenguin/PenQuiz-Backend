@@ -13,6 +13,7 @@ using GameService.Data.Models;
 using GameService.Data;
 using AutoMapper;
 using System.Timers;
+using GameService.Dtos.SignalR_Responses;
 
 namespace GameService.Services.GameLobbyServices
 {
@@ -24,10 +25,10 @@ namespace GameService.Services.GameLobbyServices
         Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl);
         
         // Game lobby character selection
-        Task LockInSelectedLobbyCharacter();
-        Task SelectLobbyCharacter(int characterId);
         
         Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
+        Task<LobbyParticipantCharacterResponse> LockInSelectedLobbyCharacter();
+        Task<LobbyParticipantCharacterResponse> SelectLobbyCharacter(int characterId);
         //Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
 
@@ -63,21 +64,26 @@ namespace GameService.Services.GameLobbyServices
             this.mapper = mapper;
         }
 
-        public Task LockInSelectedLobbyCharacter()
-        {
-            throw new NotImplementedException("Not implemented");
-        }
-
-        public async Task SelectLobbyCharacter(int characterId)
+        public async Task<LobbyParticipantCharacterResponse> SelectLobbyCharacter(int characterId)
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
             var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
 
             var gmLink = await db.GameInstance.FirstOrDefaultAsync(e => e.GameState == GameState.IN_LOBBY && e.Participants.Any(y => y.PlayerId == user.Id));
-            var availableCharacters = await GetThisUserAvailableCharacters(db, user.Id);
 
-            lobbyTimerService.PlayerSelectCharacter(user.Id, characterId, gmLink.InvitationLink);
+            return lobbyTimerService.PlayerSelectCharacter(user.Id, characterId, gmLink.InvitationLink);
+        }
+
+        public async Task<LobbyParticipantCharacterResponse> LockInSelectedLobbyCharacter()
+        {
+            using var db = contextFactory.CreateDbContext();
+            var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+            var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+         
+            var gmLink = await db.GameInstance.FirstOrDefaultAsync(e => e.GameState == GameState.IN_LOBBY && e.Participants.Any(y => y.PlayerId == user.Id));
+
+            return lobbyTimerService.PlayerLockCharacter(user.Id, gmLink.InvitationLink);
         }
 
 

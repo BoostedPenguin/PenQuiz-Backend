@@ -19,7 +19,8 @@ namespace GameService.Services.GameLobbyServices
         void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink);
         void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink);
         void CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds);
-        void PlayerSelectCharacter(int playerId, int characterId, string invitiationLink);
+        LobbyParticipantCharacterResponse PlayerLockCharacter(int playerId, string invitiationLink);
+        LobbyParticipantCharacterResponse PlayerSelectCharacter(int playerId, int characterId, string invitiationLink);
         //void RemovePlayerFromLobbyData(int playerId, string invitiationLink);
     }
 
@@ -73,7 +74,19 @@ namespace GameService.Services.GameLobbyServices
             gameLobby.GameLobbyData.RemoveParticipant(disconnectedPlayerId);
         }
 
-        public void PlayerSelectCharacter(int playerId, int characterId, string invitiationLink)
+        public LobbyParticipantCharacterResponse PlayerLockCharacter(int playerId, string invitiationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            gameLobby.GameLobbyData.ParticipantLockCharacter(playerId);
+
+            return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
+        }
+
+        public LobbyParticipantCharacterResponse PlayerSelectCharacter(int playerId, int characterId, string invitiationLink)
         {
             var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
 
@@ -81,6 +94,8 @@ namespace GameService.Services.GameLobbyServices
                 throw new ArgumentException("This lobby does not exist");
 
             gameLobby.GameLobbyData.ParticipantSelectCharacter(playerId, characterId);
+
+            return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
         public void AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink)

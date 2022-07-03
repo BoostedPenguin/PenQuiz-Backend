@@ -1,4 +1,5 @@
 ﻿using GameService.Data.Models;
+using GameService.Dtos.SignalR_Responses;
 using GameService.Hubs;
 using GameService.Services.GameTimerServices;
 using Microsoft.AspNetCore.SignalR;
@@ -9,6 +10,21 @@ using System.Timers;
 
 namespace GameService.Services.GameLobbyServices
 {
+    public enum GameLobbyParticipantCharacterStatus
+    {
+        SELECTED,
+        UNSELECTED,
+        LOCKED
+    }
+
+    public class ParticipantCharacter
+    {
+        public int PlayerId { get; set; }
+        public int[] OwnedCharacterIds { get; set; }
+        public int CharacterId { get; set; }
+        public GameLobbyParticipantCharacterStatus ParticipantCharacterStatus { get; set; }
+    }
+
     public class GameLobbyTimer : Timer
     {
         public GameLobbyTimer(string gameCode, int[] allCharacterIds, int creatorPlayerId, int[] creatorOwnedCharacterIds, IHubContext<GameHub, IGameHub> hubContext)
@@ -41,19 +57,8 @@ namespace GameService.Services.GameLobbyServices
             GameCode = gameCode;
             this.allCharacterIds = allCharacterIds;
         }
-        public enum GameLobbyParticipantCharacterStatus
-        {
-            SELECTED,
-            UNSELECTED,
-            LOCKED
-        }
-        public class ParticipantCharacter
-        {
-            public int PlayerId { get; set; }
-            public int[] OwnedCharacterIds { get; set; }
-            public int CharacterId { get; set; }
-            public GameLobbyParticipantCharacterStatus ParticipantCharacterStatus { get; set; }
-        }
+
+
 
         private readonly int[] allCharacterIds;
         public string GameCode { get; set; }
@@ -151,6 +156,15 @@ namespace GameService.Services.GameLobbyServices
                     player.ParticipantCharacterStatus = GameLobbyParticipantCharacterStatus.LOCKED;
                 }
             }
+        }
+
+        public LobbyParticipantCharacterResponse GetParticipantCharactersResponse()
+        {
+            return new LobbyParticipantCharacterResponse()
+            {
+                ParticipantCharacters = this.ParticipantCharacters.ToArray(),
+                InvitiationCode = GameCode,
+            };
         }
 
         public ParticipantCharacter[] GetParticipantCharacters()

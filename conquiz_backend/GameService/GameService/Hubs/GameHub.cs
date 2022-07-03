@@ -40,6 +40,7 @@ namespace GameService.Hubs
 
         // Game lobby available characters res
         Task GameLobbyGetAvailableCharacters(CharacterResponse[] characterResponses);
+        Task GameLobbyGetTakenCharacters(LobbyParticipantCharacterResponse response);
 
 
         // Client game actions
@@ -409,6 +410,34 @@ namespace GameService.Hubs
                 await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+        public async Task SelectLobbyCharacter(int characterId)
+        {
+            try
+            {
+                var participantCharacters = await gameLobbyService.SelectLobbyCharacter(characterId);
+
+                await Clients.Group(participantCharacters.InvitiationCode).GameLobbyGetTakenCharacters(participantCharacters);
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.GameException(ex.Message);
+            }
+        }
+
+        public async Task LockInSelectedLobbyCharacter()
+        {
+            try
+            {
+                var participantCharacters = await gameLobbyService.LockInSelectedLobbyCharacter();
+
+                await Clients.Group(participantCharacters.InvitiationCode).GameLobbyGetTakenCharacters(participantCharacters);
             }
             catch (Exception ex)
             {
