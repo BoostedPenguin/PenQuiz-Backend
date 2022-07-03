@@ -124,7 +124,7 @@ namespace GameService.Services.GameLobbyServices
             // Required player amount, begin countdown for starting game
             if (gameLobby.GameLobbyData.GetParticipantCharacters().Length == 3)
             {
-                gameLobby.Start();
+                gameLobby.StartTimer();
             }
 
             return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
@@ -137,12 +137,30 @@ namespace GameService.Services.GameLobbyServices
             //var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
             //var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
             var lobbyTimer = (GameLobbyTimer)sender;
+            lobbyTimer.AutoReset = false;
+            lobbyTimer.Stop();
+            lobbyTimer.CountDownTimer.AutoReset = false;
+            lobbyTimer.CountDownTimer.Stop();
 
             var gameInstance = await a.GameInstance
                 .Include(x => x.Participants)
                 .ThenInclude(x => x.Player)
                 .Where(x => x.InvitationLink == lobbyTimer.GameLobbyData.GameCode && x.GameState == GameState.IN_LOBBY)
                 .FirstOrDefaultAsync();
+
+
+            // Assign non-locked players a character
+            var allCharacters = await a.Characters.ToListAsync();
+
+            var participantCharacters = lobbyTimer.GameLobbyData.SelectCharactersForNonlockedPlayers();
+
+            foreach(var participantCharacter in participantCharacters)
+            {
+                var currentParticipant = 
+                    gameInstance.Participants.FirstOrDefault(e => e.PlayerId == participantCharacter.PlayerId);
+
+                currentParticipant.GameCharacter = new GameCharacter(allCharacters.FirstOrDefault(e => e.Id == participantCharacter.CharacterId));
+            }
 
             if (gameInstance == null)
                 throw new ArgumentException("Game instance is null or has completed already");
@@ -190,6 +208,13 @@ namespace GameService.Services.GameLobbyServices
 
             // Officially end lobby stage and start the game timer
             gameTimerService.OnGameStart(fullGame);
+
+
+            // Cleanup lobby data
+            CurrentGameLobbies.Remove(lobbyTimer);
+            lobbyTimer.GameLobbyData = null;
+            lobbyTimer.CountDownTimer.Dispose();
+            lobbyTimer.Dispose();
         }
 
 

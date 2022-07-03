@@ -449,7 +449,10 @@ namespace GameService.Hubs
             {
                 var participantCharacters = await gameLobbyService.LockInSelectedLobbyCharacter();
 
-                await Clients.Group(participantCharacters.InvitiationLink).GameLobbyGetTakenCharacters(participantCharacters);
+                await Clients.Group(participantCharacters.LobbyParticipantCharacterResponse.InvitiationLink).GameLobbyGetTakenCharacters(participantCharacters.LobbyParticipantCharacterResponse);
+
+                // Give lobby data to client
+                await Clients.Group(participantCharacters.LobbyParticipantCharacterResponse.InvitiationLink).GetGameLobbyData(participantCharacters.GameLobbyDataResponse);
             }
             catch (Exception ex)
             {

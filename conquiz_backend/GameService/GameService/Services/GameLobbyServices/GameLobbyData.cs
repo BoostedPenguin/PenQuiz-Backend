@@ -39,9 +39,9 @@ namespace GameService.Services.GameLobbyServices
         public CountDownTimer CountDownTimer { get; set; }
 
 
-        public void StartTimer(int? overrideMsInterval)
+        public void StartTimer(int overrideMsInterval = 0)
         {
-            var interval = overrideMsInterval ?? 30000;
+            var interval = overrideMsInterval == 0 ? 10000 : overrideMsInterval;
             this.Interval = interval;
 
             CountDownTimer.StartCountDownTimer(interval);
@@ -133,7 +133,7 @@ namespace GameService.Services.GameLobbyServices
         }
 
         private readonly Random r = new();
-        public void SelectCharactersForNonlockedPlayers()
+        public ParticipantCharacter[] SelectCharactersForNonlockedPlayers()
         {
             var nonlockedPlayers = ParticipantCharacters
                 .Where(e => e.ParticipantCharacterStatus != GameLobbyParticipantCharacterStatus.LOCKED)
@@ -155,6 +155,8 @@ namespace GameService.Services.GameLobbyServices
                     player.ParticipantCharacterStatus = GameLobbyParticipantCharacterStatus.LOCKED;
                 }
             }
+
+            return nonlockedPlayers.ToArray();
         }
 
         public LobbyParticipantCharacterResponse GetParticipantCharactersResponse()

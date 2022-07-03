@@ -27,7 +27,7 @@ namespace GameService.Services.GameLobbyServices
         // Game lobby character selection
         
         Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
-        Task<LobbyParticipantCharacterResponse> LockInSelectedLobbyCharacter();
+        Task<GameDataWrapperResponse> LockInSelectedLobbyCharacter();
         Task<LobbyParticipantCharacterResponse> SelectLobbyCharacter(int characterId);
         //Task<GameInstance> StartGame(GameInstance gameInstance = null);
     }
@@ -75,15 +75,36 @@ namespace GameService.Services.GameLobbyServices
             return lobbyTimerService.PlayerSelectCharacter(user.Id, characterId, gmLink.InvitationLink);
         }
 
-        public async Task<LobbyParticipantCharacterResponse> LockInSelectedLobbyCharacter()
+        public async Task<GameDataWrapperResponse> LockInSelectedLobbyCharacter()
         {
             using var db = contextFactory.CreateDbContext();
             var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
             var user = await db.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
          
-            var gmLink = await db.GameInstance.FirstOrDefaultAsync(e => e.GameState == GameState.IN_LOBBY && e.Participants.Any(y => y.PlayerId == user.Id));
+            var gm = await db.GameInstance
+                .Include(e => e.Participants)
+                .ThenInclude(e => e.GameCharacter)
+                .ThenInclude(e => e.Character)
+                .FirstOrDefaultAsync(e => e.GameState == GameState.IN_LOBBY && e.Participants.Any(y => y.PlayerId == user.Id));
 
-            return lobbyTimerService.PlayerLockCharacter(user.Id, gmLink.InvitationLink);
+            var response = lobbyTimerService.PlayerLockCharacter(user.Id, gm.InvitationLink);
+
+            var selectedCharacterId = response.ParticipantCharacters.FirstOrDefault(e => e.PlayerId == user.Id).CharacterId;
+
+            var currentParticipant = gm.Participants.FirstOrDefault(e => e.PlayerId == user.Id);
+
+
+            var character = await db.Characters.FirstOrDefaultAsync(e => e.Id == selectedCharacterId);
+            currentParticipant.GameCharacter = new GameCharacter(character);
+
+            db.Update(currentParticipant);
+            await db.SaveChangesAsync();
+
+            return new GameDataWrapperResponse()
+            {
+                GameLobbyDataResponse = mapper.Map<GameLobbyDataResponse>(gm),
+                LobbyParticipantCharacterResponse = response,
+            };
         }
 
 
