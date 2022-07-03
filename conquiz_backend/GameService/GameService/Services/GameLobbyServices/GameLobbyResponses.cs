@@ -12,16 +12,13 @@ namespace GameService.Services.GameLobbyServices
 
     public class OnJoinLobbyResponse
     {
-        public OnJoinLobbyResponse(GameInstance gameInstance, CharacterResponse[] availableUserCharacters = null, GameCharacter gameCharacter = null)
+        public OnJoinLobbyResponse(GameLobbyDataResponse gameLobbyDataResponse, CharacterResponse[] availableUserCharacters)
         {
-            GameInstance = gameInstance;
+            GameLobbyDataResponse = gameLobbyDataResponse;
             AvailableUserCharacters = availableUserCharacters;
-            GameCharacter = gameCharacter;
         }
-        public GameInstance GameInstance { get; init; }
-        public CharacterResponse[] AvailableUserCharacters { get; init; }
 
-        [Obsolete("This functionality was stripped during Character development phase, we send all character data to QuestionClientResponse now.")]
-        public GameCharacter GameCharacter { get; init; }
+        public GameLobbyDataResponse GameLobbyDataResponse { get; init; }
+        public CharacterResponse[] AvailableUserCharacters { get; init; }
     }
 }

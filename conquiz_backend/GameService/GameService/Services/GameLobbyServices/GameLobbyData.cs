@@ -162,7 +162,7 @@ namespace GameService.Services.GameLobbyServices
             return new LobbyParticipantCharacterResponse()
             {
                 ParticipantCharacters = this.ParticipantCharacters.ToArray(),
-                InvitiationCode = GameCode,
+                InvitiationLink = GameCode,
             };
         }
 

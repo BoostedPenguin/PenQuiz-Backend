@@ -63,6 +63,8 @@ namespace GameService.Profiles
                 .ForMember(dest => dest.ScientistCharacterAbilitiesResponse,
                     opt => opt.MapFrom(e => e.GetType() == typeof(ScientistCharacterAbilities) ? (ScientistCharacterAbilities)e : null));
 
+            CreateMap<GameInstance, GameLobbyDataResponse>();
+
             CreateMap<ScientistCharacterAbilities, ScientistCharacterAbilitiesResponse>();
             CreateMap<VikingCharacterAbilities, VikingCharacterAbilitiesResponse>();
             CreateMap<WizardCharacterAbilities, WizardCharacterAbilitiesResponse>();

@@ -26,6 +26,9 @@ namespace GameService.Hubs
     public interface IGameHub
     {
         Task GameStarting();
+
+        // Receives the full mapped game instance
+        // Very expensive
         Task GetGameInstance(GameInstanceResponse instance);
         Task LobbyCanceled(string message = "");
         Task CallerLeftGame();
@@ -36,6 +39,8 @@ namespace GameService.Hubs
         Task AnswerSubmittedGameException(string message);
         Task NavigateToLobby();
         Task NavigateToGame();
+
+        Task GetGameLobbyData(GameLobbyDataResponse response);
 
 
         // Game lobby available characters res
@@ -347,11 +352,13 @@ namespace GameService.Hubs
             {
                 var result = await gameLobbyService.FindPublicMatch();
 
-                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
-                var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
-                var gameCharacterRes = mapper.Map<GameCharacterResponse>(result.GameCharacter);
+                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameLobbyDataResponse.InvitationLink);
 
-                await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
+                // Give lobby data to client
+                await Clients.Group(result.GameLobbyDataResponse.InvitationLink).GetGameLobbyData(result.GameLobbyDataResponse);
+
+                // Give out all characters as a response
+                await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
 
                 //await Clients.Caller.GetGameCharacter(gameCharacterRes);
                 await Clients.Caller.NavigateToLobby();
@@ -372,15 +379,14 @@ namespace GameService.Hubs
             try
             {
                 var result = await gameLobbyService.CreateGameLobby();
-                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameInstance.InvitationLink);
+                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameLobbyDataResponse.InvitationLink);
 
-                var res1 = mapper.Map<GameInstanceResponse>(result.GameInstance);
+                // Give lobby data to client
+                await Clients.Group(result.GameLobbyDataResponse.InvitationLink).GetGameLobbyData(result.GameLobbyDataResponse);
 
                 // Give out all characters as a response
-                var characterRes = mapper.Map<CharacterResponse[]>(result.AvailableUserCharacters);
-                await Clients.Caller.GameLobbyGetAvailableCharacters(characterRes);
+                await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
 
-                await Clients.Group(result.GameInstance.InvitationLink).GetGameInstance(res1);
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
             }
@@ -399,17 +405,16 @@ namespace GameService.Hubs
         {
             try
             {
-                var game = await gameLobbyService.JoinGameLobby(code);
+                var result = await gameLobbyService.JoinGameLobby(code);
+                await Groups.AddToGroupAsync(Context.ConnectionId, result.GameLobbyDataResponse.InvitationLink);
 
-                await Groups.AddToGroupAsync(Context.ConnectionId, game.GameInstance.InvitationLink);
 
-                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
+                // Give lobby data to client
+                await Clients.Group(result.GameLobbyDataResponse.InvitationLink).GetGameLobbyData(result.GameLobbyDataResponse);
 
                 // Give out all characters as a response
-                var characterRes = mapper.Map<CharacterResponse[]>(game.AvailableUserCharacters);
-                await Clients.Caller.GameLobbyGetAvailableCharacters(characterRes);
+                await Clients.Caller.GameLobbyGetAvailableCharacters(result.AvailableUserCharacters);
 
-                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
                 //await Clients.Caller.GetGameCharacter(gameCharacterResponse);
                 await Clients.Caller.NavigateToLobby();
             }
@@ -425,7 +430,7 @@ namespace GameService.Hubs
             {
                 var participantCharacters = await gameLobbyService.SelectLobbyCharacter(characterId);
 
-                await Clients.Group(participantCharacters.InvitiationCode).GameLobbyGetTakenCharacters(participantCharacters);
+                await Clients.Group(participantCharacters.InvitiationLink).GameLobbyGetTakenCharacters(participantCharacters);
             }
             catch (Exception ex)
             {
@@ -439,7 +444,7 @@ namespace GameService.Hubs
             {
                 var participantCharacters = await gameLobbyService.LockInSelectedLobbyCharacter();
 
-                await Clients.Group(participantCharacters.InvitiationCode).GameLobbyGetTakenCharacters(participantCharacters);
+                await Clients.Group(participantCharacters.InvitiationLink).GameLobbyGetTakenCharacters(participantCharacters);
             }
             catch (Exception ex)
             {

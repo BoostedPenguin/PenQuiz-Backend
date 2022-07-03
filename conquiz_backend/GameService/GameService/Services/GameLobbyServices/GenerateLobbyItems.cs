@@ -128,8 +128,7 @@ namespace GameService.Services.GameLobbyServices
                 var availableCharacters = await GetAllCharacters(db);
                 throw new ExistingLobbyGameException(lobbyGames[0],
                     "User participates already in an open lobby",
-                    availableCharacters,
-                    lobbyGames[0].Participants.Where(e => e.PlayerId == userId).Select(e => e.GameCharacter).FirstOrDefault()
+                    availableCharacters
                     );
             }
 
@@ -165,13 +164,11 @@ namespace GameService.Services.GameLobbyServices
 
 
             // This is the first player, he gets automatically selected character
-            var randomCharacter = GetRandomCharacter(participants, freeGameCharacters);
+            //var randomCharacter = GetRandomCharacter(participants, freeGameCharacters);
 
             var randomInGameNumber = GetRandomNumber(participants);
 
-            var selectedGameCharacter = new GameCharacter(randomCharacter);
-
-            return new Participants(selectedGameCharacter, userId, randomInGameNumber);
+            return new Participants(userId, randomInGameNumber);
         }
 
         private Character GetRandomCharacter(Participants[] participants, Character[] characters)
