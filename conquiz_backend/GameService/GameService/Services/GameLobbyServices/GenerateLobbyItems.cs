@@ -43,7 +43,7 @@ namespace GameService.Services.GameLobbyServices
                 QuestionTimerSeconds = 30,
             };
 
-            var newParticipant = await GenerateParticipant(db, null, user.Id);
+            var newParticipant = GenerateParticipant(null, user.Id);
 
             newParticipant.Player = user;
             gameInstance.Participants.Add(newParticipant);
@@ -159,10 +159,8 @@ namespace GameService.Services.GameLobbyServices
             return selectedNumber;
         }
 
-        private async Task<Participants> GenerateParticipant(DefaultContext db, Participants[] participants, int userId)
+        private Participants GenerateParticipant(Participants[] participants, int userId)
         {
-            var freeGameCharacters = await db.Characters.Where(e => e.PricingType == CharacterPricingType.FREE).ToArrayAsync();
-
 
             // This is the first player, he gets automatically selected character
             //var randomCharacter = GetRandomCharacter(participants, freeGameCharacters);
@@ -172,8 +170,9 @@ namespace GameService.Services.GameLobbyServices
             return new Participants(userId, randomInGameNumber);
         }
 
-        private Character GetRandomCharacter(Participants[] participants, Character[] characters)
+        private async Task<Character> GetRandomCharacter(DefaultContext db, Participants[] participants)
         {
+            var characters = await db.Characters.ToArrayAsync();
             if (characters.Length < 3)
                 throw new ArgumentException("There aren't enough playable characters for every player. Contact an administrator.");
 

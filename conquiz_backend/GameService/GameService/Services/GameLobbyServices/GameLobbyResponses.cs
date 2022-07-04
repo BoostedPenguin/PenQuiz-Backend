@@ -4,10 +4,10 @@ using System;
 
 namespace GameService.Services.GameLobbyServices
 {
-    public class RemovePlayerFromLobbyResponse
+    public class OnRemoveFromlobbyResponse
     {
-        public GameInstance GameInstance { get; set; }
-        public string RemovedPlayerId { get; set; }
+        public int RemovedPlayerId { get; set; }
+        public string InvitationLink { get; set; }
     }
 
     public class OnJoinLobbyResponse

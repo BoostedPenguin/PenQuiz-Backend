@@ -19,14 +19,14 @@ namespace GameService.Services.GameLobbyServices
 {
     public interface IGameLobbyService
     {
-        Task<GameInstance> AddGameBot();
+        Task<OnJoinLobbyResponse> AddGameBot();
         Task<OnJoinLobbyResponse> CreateGameLobby();
         Task<OnJoinLobbyResponse> FindPublicMatch();
         Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl);
         
         // Game lobby character selection
         
-        Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId);
+        Task<OnRemoveFromlobbyResponse> RemovePlayerFromLobby(int playerId);
         Task<GameDataWrapperResponse> LockInSelectedLobbyCharacter();
         Task<LobbyParticipantCharacterResponse> SelectLobbyCharacter(int characterId);
         //Task<GameInstance> StartGame(GameInstance gameInstance = null);
@@ -152,7 +152,7 @@ namespace GameService.Services.GameLobbyServices
             var randomGameIndex = r.Next(0, openPublicGames.Count());
             var chosenLobby = openPublicGames[randomGameIndex];
 
-            var newParticipant = await GenerateParticipant(db, chosenLobby.Participants.ToArray(), user.Id);
+            var newParticipant = GenerateParticipant(chosenLobby.Participants.ToArray(), user.Id);
 
             chosenLobby.Participants.Add(newParticipant);
 
@@ -212,7 +212,7 @@ namespace GameService.Services.GameLobbyServices
 
 
 
-        public async Task<RemovePlayerFromLobbyResponse> RemovePlayerFromLobby(int playerId)
+        public async Task<OnRemoveFromlobbyResponse> RemovePlayerFromLobby(int playerId)
         {
             using var db = contextFactory.CreateDbContext();
 
@@ -245,9 +245,10 @@ namespace GameService.Services.GameLobbyServices
                 var anyBot = gm.Participants.Where(e => e.Player.IsBot).FirstOrDefault();
 
                 // No bot present to remove
-                if (anyBot is null) return new RemovePlayerFromLobbyResponse()
+                if (anyBot is null) return new OnRemoveFromlobbyResponse()
                 {
-                    GameInstance = gm,
+                    InvitationLink = gm.InvitationLink,
+                    RemovedPlayerId = anyBot.PlayerId
                 };
 
                 db.Remove(anyBot);
@@ -258,17 +259,19 @@ namespace GameService.Services.GameLobbyServices
             }
 
 
+            lobbyTimerService.CancelGameLobbyTimer(selectedUser.PlayerId, gm.InvitationLink);
+
             await db.SaveChangesAsync();
 
-            return new RemovePlayerFromLobbyResponse()
+            return new OnRemoveFromlobbyResponse()
             {
-                GameInstance = gm,
-                RemovedPlayerId = selectedUser.Player.UserGlobalIdentifier,
+                InvitationLink = gm.InvitationLink,
+                RemovedPlayerId = selectedUser.PlayerId,
             };
         }
 
 
-        public async Task<GameInstance> AddGameBot()
+        public async Task<OnJoinLobbyResponse> AddGameBot()
         {
             using var db = contextFactory.CreateDbContext();
 
@@ -291,9 +294,25 @@ namespace GameService.Services.GameLobbyServices
 
             var gameBot = await GetRandomGameBot(db);
 
-            var botParticipant = await GenerateParticipant(db, gm.Participants.ToArray(), gameBot.Id);
+            var botParticipant = GenerateParticipant(gm.Participants.ToArray(), gameBot.Id);
+
+            var allCharacters = await db.Characters.ToArrayAsync();
 
             botParticipant.Player = gameBot;
+
+            var randomCharacterId = lobbyTimerService.GetRandomAvailableCharacter(gm.InvitationLink);
+
+            lobbyTimerService
+                .AddPlayerToLobbyData(gameBot.Id, allCharacters.Select(e => e.Id).ToArray(), gm.InvitationLink);
+
+            lobbyTimerService
+                .PlayerSelectCharacter(gameBot.Id, randomCharacterId, gm.InvitationLink);
+
+            var res = lobbyTimerService.PlayerLockCharacter(gameBot.Id, gm.InvitationLink);
+
+
+            botParticipant.GameCharacter = 
+                new GameCharacter(allCharacters.FirstOrDefault(e => e.Id == randomCharacterId));
 
             gm.Participants.Add(botParticipant);
 
@@ -301,7 +320,7 @@ namespace GameService.Services.GameLobbyServices
 
             await db.SaveChangesAsync();
 
-            return gm;
+            return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(gm), mapper.Map<CharacterResponse[]>(allCharacters), res);
         }
 
         public async Task<OnJoinLobbyResponse> JoinGameLobby(string lobbyUrl)
@@ -336,7 +355,7 @@ namespace GameService.Services.GameLobbyServices
                 return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(game.ExistingGame), game.AvailableUserCharacters, game.LobbyParticipantCharacterResponse);
             }
 
-            var newParticipant = await GenerateParticipant(db, gameInstance.Participants.ToArray(), user.Id);
+            var newParticipant = GenerateParticipant(gameInstance.Participants.ToArray(), user.Id);
 
             gameInstance.Participants.Add(newParticipant);
 

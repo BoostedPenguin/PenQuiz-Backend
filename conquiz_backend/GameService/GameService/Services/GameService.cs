@@ -346,7 +346,7 @@ namespace GameService.Services
                     }
                     else
                     {
-                        gameLobbyTimerService.CancelGameLobbyTimer(thisUser.Id, activeGames[0].InvitationLink);
+                        gameLobbyTimerService.CancelGameLobbyTimer(user.Id, activeGames[0].InvitationLink);
                         db.Remove(thisUser);
                     }
 

@@ -17,9 +17,10 @@ namespace GameService.Services.GameLobbyServices
     public interface IGameLobbyTimerService
     {
         LobbyParticipantCharacterResponse AddPlayerToLobbyData(int playerId, int[] ownedPlayerCharacterIds, string invitiationLink);
-        void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink);
+        LobbyParticipantCharacterResponse CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink);
         LobbyParticipantCharacterResponse CreateGameLobbyTimer(string invitiationLink, int[] allCharacterIds, int creatorPlayerId, int[] ownedCreatorCharacterIds);
         LobbyParticipantCharacterResponse GetExistingLobbyParticipantCharacters(string invitationLink);
+        int GetRandomAvailableCharacter(string invitiationLink);
         LobbyParticipantCharacterResponse PlayerLockCharacter(int playerId, string invitiationLink);
         LobbyParticipantCharacterResponse PlayerSelectCharacter(int playerId, int characterId, string invitiationLink);
         //void RemovePlayerFromLobbyData(int playerId, string invitiationLink);
@@ -75,7 +76,7 @@ namespace GameService.Services.GameLobbyServices
             return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
-        public void CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
+        public LobbyParticipantCharacterResponse CancelGameLobbyTimer(int disconnectedPlayerId, string invitiationLink)
         {
             var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
 
@@ -85,6 +86,8 @@ namespace GameService.Services.GameLobbyServices
             gameLobby.Stop();
 
             gameLobby.GameLobbyData.RemoveParticipant(disconnectedPlayerId);
+
+            return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
         public LobbyParticipantCharacterResponse PlayerLockCharacter(int playerId, string invitiationLink)
@@ -130,91 +133,116 @@ namespace GameService.Services.GameLobbyServices
             return gameLobby.GameLobbyData.GetParticipantCharactersResponse();
         }
 
+        public int GetRandomAvailableCharacter(string invitiationLink)
+        {
+            var gameLobby = CurrentGameLobbies.FirstOrDefault(e => e.GameLobbyData.GameCode == invitiationLink);
+
+            if (gameLobby == null)
+                throw new ArgumentException("This lobby does not exist");
+
+            return gameLobby.GameLobbyData.GetRandomUnselectedCharacter();
+        }
+
 
         private async void StartGame(object sender, ElapsedEventArgs e)
         {
-            using var a = contextFactory.CreateDbContext();
-            //var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
-            //var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+            var gameLink = "";
             var lobbyTimer = (GameLobbyTimer)sender;
-            lobbyTimer.AutoReset = false;
-            lobbyTimer.Stop();
-            lobbyTimer.CountDownTimer.AutoReset = false;
-            lobbyTimer.CountDownTimer.Stop();
-
-            var gameInstance = await a.GameInstance
-                .Include(x => x.Participants)
-                .ThenInclude(x => x.Player)
-                .Where(x => x.InvitationLink == lobbyTimer.GameLobbyData.GameCode && x.GameState == GameState.IN_LOBBY)
-                .FirstOrDefaultAsync();
-
-
-            // Assign non-locked players a character
-            var allCharacters = await a.Characters.ToListAsync();
-
-            var participantCharacters = lobbyTimer.GameLobbyData.SelectCharactersForNonlockedPlayers();
-
-            foreach(var participantCharacter in participantCharacters)
+            try
             {
-                var currentParticipant = 
-                    gameInstance.Participants.FirstOrDefault(e => e.PlayerId == participantCharacter.PlayerId);
+                using var a = contextFactory.CreateDbContext();
+                //var globalUserId = httpContextAccessor.GetCurrentUserGlobalId();
+                //var user = await a.Users.FirstOrDefaultAsync(x => x.UserGlobalIdentifier == globalUserId);
+                lobbyTimer.AutoReset = false;
+                lobbyTimer.Stop();
+                lobbyTimer.CountDownTimer.AutoReset = false;
+                lobbyTimer.CountDownTimer.Stop();
 
-                currentParticipant.GameCharacter = new GameCharacter(allCharacters.FirstOrDefault(e => e.Id == participantCharacter.CharacterId));
+                var gameInstance = await a.GameInstance
+                    .Include(x => x.Participants)
+                    .ThenInclude(x => x.Player)
+                    .Where(x => x.InvitationLink == lobbyTimer.GameLobbyData.GameCode && x.GameState == GameState.IN_LOBBY)
+                    .FirstOrDefaultAsync();
+
+                gameLink = gameInstance.InvitationLink;
+
+                // Assign non-locked players a character
+                var allCharacters = await a.Characters.ToListAsync();
+
+                var participantCharacters = lobbyTimer.GameLobbyData.SelectCharactersForNonlockedPlayers();
+
+                foreach (var participantCharacter in participantCharacters)
+                {
+                    var currentParticipant =
+                        gameInstance.Participants.FirstOrDefault(e => e.PlayerId == participantCharacter.PlayerId);
+
+                    currentParticipant.GameCharacter = new GameCharacter(allCharacters.FirstOrDefault(e => e.Id == participantCharacter.CharacterId));
+                }
+
+                if (gameInstance == null)
+                    throw new ArgumentException("Game instance is null or has completed already");
+
+                var allPlayers = gameInstance.Participants.ToList();
+
+                if (allPlayers.Count != RequiredPlayers)
+                    throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
+
+                // Make sure no player is in another game
+                foreach (var us in allPlayers)
+                {
+                    if (us.Player.IsInGame)
+                        throw new ArgumentException($"Can't start game. `{us.Player.Username}` is in another game currently.");
+                }
+
+
+                // Get default map id
+                var mapId = await a.Maps.Where(x => x.Name == DefaultMap).Select(x => x.Id).FirstAsync();
+
+                // Create the game territories from the map territory templates
+                var gameTerritories = await CreateGameTerritories(a, mapId, gameInstance.Id);
+
+                // Includes capitals
+                var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
+
+                // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
+                var initialRounding = await CreateNeutralAttackRounding(a, mapId, allPlayers);
+
+                // Assign all object territories & rounds and change gamestate
+                gameInstance.GameState = GameState.IN_PROGRESS;
+                gameInstance.ObjectTerritory = gameTerritories;
+                gameInstance.Rounds = initialRounding;
+                gameInstance.GameRoundNumber = 1;
+
+                a.Update(gameInstance);
+                await a.SaveChangesAsync();
+
+                var fullGame = await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
+                var res2 = mapper.Map<GameInstanceResponse>(fullGame);
+
+                await hubContext.Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
+
+                await hubContext.Clients.Group(gameInstance.InvitationLink).GameStarting();
+
+                // Officially end lobby stage and start the game timer
+                gameTimerService.OnGameStart(fullGame);
+
+
+
             }
-
-            if (gameInstance == null)
-                throw new ArgumentException("Game instance is null or has completed already");
-
-            var allPlayers = gameInstance.Participants.ToList();
-
-            if (allPlayers.Count != RequiredPlayers)
-                throw new ArgumentException("Game instance doesn't contain 3 players. Can't start yet.");
-
-            // Make sure no player is in another game
-            foreach (var us in allPlayers)
+            catch(Exception ex)
             {
-                if (us.Player.IsInGame)
-                    throw new ArgumentException($"Can't start game. `{us.Player.Username}` is in another game currently.");
+                Console.WriteLine(ex.Message);
+                if(!string.IsNullOrEmpty(gameLink))
+                    await hubContext.Clients.Group(gameLink).GameException(ex.Message);
             }
-
-
-            // Get default map id
-            var mapId = await a.Maps.Where(x => x.Name == DefaultMap).Select(x => x.Id).FirstAsync();
-
-            // Create the game territories from the map territory templates
-            var gameTerritories = await CreateGameTerritories(a, mapId, gameInstance.Id);
-
-            // Includes capitals
-            var modifiedTerritories = await ChooseCapitals(a, gameTerritories, gameInstance.Participants.ToArray());
-
-            // Create the rounds for the NEUTRAL attack stage of the game (until all territories are taken)
-            var initialRounding = await CreateNeutralAttackRounding(a, mapId, allPlayers);
-
-            // Assign all object territories & rounds and change gamestate
-            gameInstance.GameState = GameState.IN_PROGRESS;
-            gameInstance.ObjectTerritory = gameTerritories;
-            gameInstance.Rounds = initialRounding;
-            gameInstance.GameRoundNumber = 1;
-
-            a.Update(gameInstance);
-            await a.SaveChangesAsync();
-
-            var fullGame = await CommonTimerFunc.GetFullGameInstance(gameInstance.Id, a);
-            var res2 = mapper.Map<GameInstanceResponse>(fullGame);
-
-            await hubContext.Clients.Group(gameInstance.InvitationLink).GetGameInstance(res2);
-
-            await hubContext.Clients.Group(gameInstance.InvitationLink).GameStarting();
-
-            // Officially end lobby stage and start the game timer
-            gameTimerService.OnGameStart(fullGame);
-
-
-            // Cleanup lobby data
-            CurrentGameLobbies.Remove(lobbyTimer);
-            lobbyTimer.GameLobbyData = null;
-            lobbyTimer.CountDownTimer.Dispose();
-            lobbyTimer.Dispose();
+            finally
+            {
+                // Cleanup lobby data
+                CurrentGameLobbies.Remove(lobbyTimer);
+                lobbyTimer.GameLobbyData = null;
+                lobbyTimer.CountDownTimer.Dispose();
+                lobbyTimer.Dispose();
+            }
         }
 
 

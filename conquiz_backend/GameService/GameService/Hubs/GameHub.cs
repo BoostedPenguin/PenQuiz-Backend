@@ -167,6 +167,10 @@ namespace GameService.Hubs
             {
                 await RemoveCurrentPersonFromGame();
             }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
             finally {
                 await base.OnDisconnectedAsync(exception);
             }
@@ -306,9 +310,11 @@ namespace GameService.Hubs
             {
                 var game = await gameLobbyService.AddGameBot();
 
-                var res1 = mapper.Map<GameInstanceResponse>(game);
+                // Give lobby data to client
+                await Clients.Group(game.GameLobbyDataResponse.InvitationLink).GetGameLobbyData(game.GameLobbyDataResponse);
 
-                await Clients.Group(game.InvitationLink).GetGameInstance(res1);
+                await Clients.Group(game.GameLobbyDataResponse.InvitationLink).GameLobbyGetTakenCharacters(game.LobbyParticipantCharacterResponse);
+
             }
             catch (Exception ex)
             {
@@ -327,20 +333,18 @@ namespace GameService.Hubs
         {
             try
             {
-                var game = await gameLobbyService.RemovePlayerFromLobby(playerId);
+                var removedBot = await gameLobbyService.RemovePlayerFromLobby(playerId);
 
-                var res1 = mapper.Map<GameInstanceResponse>(game.GameInstance);
+                //if(game.RemovedPlayerId == 0)
+                //{
+                //    await Clients.User(game.RemovedPlayerId).LobbyCanceled("You were kicked from the game lobby!");
 
-                if(!string.IsNullOrEmpty(game.RemovedPlayerId))
-                {
-                    await Clients.User(game.RemovedPlayerId).LobbyCanceled("You were kicked from the game lobby!");
+                //    await Groups.RemoveFromGroupAsync(game.RemovedPlayerId, game.GameInstance.InvitationLink);
+                //}
+                await Clients.Group(removedBot.InvitationLink).PersonLeftGame(removedBot.RemovedPlayerId);
 
-                    await Groups.RemoveFromGroupAsync(game.RemovedPlayerId, game.GameInstance.InvitationLink);
-                }
-
-                await Clients.Group(game.GameInstance.InvitationLink).GetGameInstance(res1);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await Clients.Caller.GameException(ex.Message);
             }

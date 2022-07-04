@@ -159,6 +159,15 @@ namespace GameService.Services.GameLobbyServices
             return nonlockedPlayers.ToArray();
         }
 
+        public int GetRandomUnselectedCharacter()
+        {
+            var unselected = allCharacterIds.Except(ParticipantCharacters.Select(e => e.CharacterId)).ToArray();
+
+            var randomIndex = r.Next(0, unselected.Length);
+
+            return unselected[randomIndex];
+        }
+
         public LobbyParticipantCharacterResponse GetParticipantCharactersResponse()
         {
             return new LobbyParticipantCharacterResponse()
