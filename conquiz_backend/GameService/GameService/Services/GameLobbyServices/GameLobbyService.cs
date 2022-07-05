@@ -132,20 +132,30 @@ namespace GameService.Services.GameLobbyServices
                 .Where(x => x.GameType == GameType.PUBLIC && x.GameState == GameState.IN_LOBBY && x.Participants.Count() < RequiredPlayers)
                 .ToListAsync();
 
+
+            var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
+
+
             // No open public games
             // Create a new public lobby
-            if(openPublicGames.Count() == 0)
+            if (openPublicGames.Count() == 0)
             {
                 var gameInstance = await CreateGameInstance(db, GameType.PUBLIC, user);
 
                 await db.AddAsync(gameInstance);
                 await db.SaveChangesAsync();
 
-                var aeUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
 
-                var onRes = lobbyTimerService.AddPlayerToLobbyData(user.Id, aeUserCharacters.Select(e => e.Id).ToArray(), gameInstance.InvitationLink);
+                var allCharacters = await GetAllCharacters(db);
 
-                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(gameInstance), await GetAllCharacters(db), onRes);
+                var timerRes = lobbyTimerService.CreateGameLobbyTimer(
+                    gameInstance.InvitationLink,
+                    allCharacters.Select(e => e.Id).ToArray(),
+                    user.Id,
+                    availableUserCharacters.Select(e => e.Id).ToArray());
+
+
+                return new OnJoinLobbyResponse(mapper.Map<GameLobbyDataResponse>(gameInstance), allCharacters, timerRes);
             }
 
             // Add player to a random lobby
@@ -161,8 +171,6 @@ namespace GameService.Services.GameLobbyServices
             await db.SaveChangesAsync();
 
             var lobbyResponse = mapper.Map<GameLobbyDataResponse>(chosenLobby);
-
-            var availableUserCharacters = await GetThisUserAvailableCharacters(db, user.Id);
 
             var res = lobbyTimerService.AddPlayerToLobbyData(user.Id, availableUserCharacters.Select(e => e.Id).ToArray(), lobbyResponse.InvitationLink);
 
