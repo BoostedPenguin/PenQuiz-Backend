@@ -341,6 +341,7 @@ namespace GameService.Services
                     if (user.Id == gameInstance.GameCreatorId)
                     {
                         gameInstance.GameState = GameState.CANCELED;
+                        gameLobbyTimerService.CancelGameLobbyTimer(user.Id, activeGames[0].InvitationLink);
                         //var removeAll = gameInstance.Participants.Where(x => x.PlayerId != userId).ToList();
                         //db.RemoveRange(removeAll);
                     }

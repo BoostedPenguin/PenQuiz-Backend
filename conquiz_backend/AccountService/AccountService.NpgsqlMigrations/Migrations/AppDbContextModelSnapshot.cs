@@ -41,12 +41,7 @@ namespace AccountService.NpgsqlMigrations.Migrations
                     b.Property<int>("PricingType")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("UsersId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("UsersId");
 
                     b.ToTable("Characters");
                 });
@@ -154,11 +149,19 @@ namespace AccountService.NpgsqlMigrations.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("AccountService.Data.Models.Character", b =>
+            modelBuilder.Entity("CharacterUsers", b =>
                 {
-                    b.HasOne("AccountService.Data.Models.Users", null)
-                        .WithMany("OwnedCharacters")
-                        .HasForeignKey("UsersId");
+                    b.Property<int>("BelongToUsersId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OwnedCharactersId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("BelongToUsersId", "OwnedCharactersId");
+
+                    b.HasIndex("OwnedCharactersId");
+
+                    b.ToTable("CharacterUsers");
                 });
 
             modelBuilder.Entity("AccountService.Data.Models.RefreshToken", b =>
@@ -172,10 +175,23 @@ namespace AccountService.NpgsqlMigrations.Migrations
                     b.Navigation("Users");
                 });
 
+            modelBuilder.Entity("CharacterUsers", b =>
+                {
+                    b.HasOne("AccountService.Data.Models.Users", null)
+                        .WithMany()
+                        .HasForeignKey("BelongToUsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AccountService.Data.Models.Character", null)
+                        .WithMany()
+                        .HasForeignKey("OwnedCharactersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AccountService.Data.Models.Users", b =>
                 {
-                    b.Navigation("OwnedCharacters");
-
                     b.Navigation("RefreshToken");
                 });
 #pragma warning restore 612, 618
