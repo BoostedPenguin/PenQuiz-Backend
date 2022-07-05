@@ -43,7 +43,7 @@ namespace AccountService.Controllers
             {
                 await characterService.GiftCharacter(request.UserGlobalId, request.CharacterGlobalId);
 
-                return Ok("Successfully gifted character to user!");
+                return Ok(new {Message = "Successfully gifted character to user!" });
             }
             catch (Exception ex)
             {

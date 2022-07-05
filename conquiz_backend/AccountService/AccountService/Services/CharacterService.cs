@@ -51,11 +51,25 @@ namespace AccountService.Services
         {
             using var db = contextFactory.CreateDbContext();
 
-            var character = await db.Characters.FirstOrDefaultAsync(e => e.CharacterGlobalIdentifier == characterGlobalId);
+            Character character;
+            if(string.IsNullOrWhiteSpace(characterGlobalId)) 
+            {
+                character = await db.Characters.FirstOrDefaultAsync(e => e.CharacterType == CharacterType.KING);
+            }
+            else 
+            {
+                character = await db.Characters.FirstOrDefaultAsync(e => e.CharacterGlobalIdentifier == characterGlobalId);
+            }
+
+            if (character == null)
+                throw new ArgumentException("There was no character with this ID in the database!");
+
+            if(character.PricingType == CharacterPricingType.FREE)
+                throw new ArgumentException("The given character is FREE! Not added to user!");
 
             var user = await db.Users.Include(e => e.OwnedCharacters).FirstOrDefaultAsync(e => e.UserGlobalIdentifier == userGlobalId);
 
-            var existingCharacter = user.OwnedCharacters.FirstOrDefault(e => e.CharacterGlobalIdentifier == characterGlobalId);
+            var existingCharacter = user.OwnedCharacters.FirstOrDefault(e => e.CharacterGlobalIdentifier == character.CharacterGlobalIdentifier);
 
             if (existingCharacter != null)
                 throw new ArgumentException($"This person already has the character of type {existingCharacter.CharacterType}");
@@ -67,7 +81,7 @@ namespace AccountService.Services
 
             messageBus.PublishUserCharacter(new Dtos.UserCharacterEventDto()
             {
-                CharacterGlobalId = characterGlobalId,
+                CharacterGlobalId = character.CharacterGlobalIdentifier,
                 UserGlobalId = userGlobalId,
                 Event = "User_Character_Response"
             });

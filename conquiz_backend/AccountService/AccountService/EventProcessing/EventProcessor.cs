@@ -86,7 +86,7 @@ namespace AccountService.EventProcessing
             switch (eventType.Event)
             {
                 case "Character_Published":
-                    logger.LogDebug($"Characted response event detected!");
+                    logger.LogInformation($"Characted response event detected!");
                     return EventType.CharacterPublished;
                 default:
                     logger.LogDebug($"Could not determine the event type");

@@ -30,6 +30,7 @@ namespace GameService.Services.CharacterActions
         private void SendEventMessage(Character character)
         {
             var mappedCharacter = mapper.Map<CharacterResponse>(character);
+            mappedCharacter.Event = "Character_Published";
             messageBus.SendNewCharacter(mappedCharacter);
         }
 
@@ -47,7 +48,15 @@ namespace GameService.Services.CharacterActions
 
             // If all characters exist in the db exit
             if (charactersNotInDb.Count == 0)
+            {
+                // Notify account service for all characters
+                foreach (var character in allCharactersInDb)
+                {
+                    SendEventMessage(character);
+                }
+
                 return;
+            }
 
             foreach (var cNotInDb in charactersNotInDb)
             {

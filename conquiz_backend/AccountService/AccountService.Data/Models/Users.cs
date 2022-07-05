@@ -10,6 +10,7 @@ namespace AccountService.Data.Models
         public Users()
         {
             RefreshToken = new HashSet<RefreshToken>();
+            OwnedCharacters = new HashSet<Character>();
         }
 
         public int Id { get; set; }
