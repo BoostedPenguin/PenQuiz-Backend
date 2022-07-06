@@ -83,6 +83,8 @@ namespace GameService.Services.GameLobbyServices
          
             var gm = await db.GameInstance
                 .Include(e => e.Participants)
+                .ThenInclude(e => e.Player)
+                .Include(e => e.Participants)
                 .ThenInclude(e => e.GameCharacter)
                 .ThenInclude(e => e.Character)
                 .FirstOrDefaultAsync(e => e.GameState == GameState.IN_LOBBY && e.Participants.Any(y => y.PlayerId == user.Id));
