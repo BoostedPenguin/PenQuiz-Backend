@@ -1,8 +1,8 @@
-<h1 align="center"> ConQuiz </h1>
-ConQuiz is a trivia PvP game which is set in Antarctica. The game consists of 3 different stages with multiple rounds and requires 3 people per match to play. The core concept of the game is to capture territories from other players by answering trivia questions. The end score of a game is calculated by the amount of territories you control.
+<h1 align="center"> PenQuiz </h1>
+PenQuiz is a trivia PvP game which is set in Antarctica. The game consists of 3 different stages with multiple rounds and requires 3 people per match to play. The core concept of the game is to capture territories from other players by answering trivia questions. The end score of a game is calculated by the amount of territories you control.
 <br />
 <br />
-This repository contains all the backend logic and kubernetes configuration files for the ConQuiz project. The front-end React Native repository is located <a href="https://github.com/BoostedPenguin/ConQuiz-Frontend">here</a>.
+This repository contains all the backend logic and kubernetes configuration files for the PenQuiz project. The front-end React Native repository is located <a href="https://github.com/BoostedPenguin/ConQuiz-Frontend">here</a>.
 
 # Table of contents
 1. [Features](#features)
@@ -54,7 +54,7 @@ Embracing eventual consistency pattern, we use the RabbitMQ message bus to send 
 
 
 # Run local production cluster <a name="runninglocalcluster" />
-If you want to run ConQuiz locally with Kubernetes you need the following pre-requisites:
+If you want to run PenQuiz locally with Kubernetes you need the following pre-requisites:
 
 * Docker Desktop installed
 * Kubernetes enabled in docker desktop
