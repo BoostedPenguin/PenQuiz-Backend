@@ -24,7 +24,7 @@ This repository contains all the backend logic and kubernetes configuration file
 # Production <a name="production" />
 The production backend is hosted on Azure, while the frontend React Native application is hosted on Netlify. The RabbitMQ provider we use is CloudAMQP.
 
-Visit the fully working game at https://conquiz.netlify.app/
+Visit the fully working game at https://penquiz.netlify.app/
 
 # Game rules <a name="gamerules" />
 

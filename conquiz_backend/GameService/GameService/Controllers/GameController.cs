@@ -104,7 +104,7 @@ namespace GameService.Controllers
             try
             {
                 logger.LogInformation("Testing Logger");
-                return Ok($"Successfully contacted ConQuiz question service. Version 1.6");
+                return Ok($"Successfully contacted PenQuiz question service. Version 1.6");
             }
             catch (Exception ex)
             {

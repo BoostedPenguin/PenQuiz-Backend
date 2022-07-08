@@ -40,7 +40,7 @@ namespace AccountService
             {
                 options.AddDefaultPolicy(builder =>
                 {
-                    builder.WithOrigins("http://localhost:19006/, http://192.168.0.100:19006/, exp://192.168.0.100:19000, https://192.168.0.100.nip.io:19006/, https://conquiz.netlify.app/")
+                    builder.WithOrigins("http://localhost:19006/, http://192.168.0.100:19006/, exp://192.168.0.100:19000, https://192.168.0.100.nip.io:19006/, https://conquiz.netlify.app/, https://penquiz.netlify.app/")
                                 .SetIsOriginAllowed((host) => true)
                                 .AllowAnyHeader()
                                 .AllowAnyMethod()
